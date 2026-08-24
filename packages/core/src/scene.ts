@@ -1,4 +1,4 @@
-import type { CanvasScene, CreateRectangleInput } from './model.js'
+import type { CanvasNode, CanvasScene, CreateCircleInput, CreateRectangleInput, CreateTextInput } from './model.js'
 
 export function createScene(): CanvasScene {
   return {
@@ -19,3 +19,9 @@ export function addRectangle(scene: CanvasScene, input: CreateRectangleInput): C
     nodes: [...scene.nodes, { ...input, type: 'rectangle' }],
   }
 }
+function addNode(scene: CanvasScene, node: CanvasNode): CanvasScene {
+  if (scene.nodes.some((item) => item.id === node.id)) throw new Error(`A node with id "${node.id}" already exists.`)
+  return { ...scene, nodes: [...scene.nodes, node] }
+}
+export function addCircle(scene: CanvasScene, input: CreateCircleInput): CanvasScene { return addNode(scene, { ...input, type: 'circle' }) }
+export function addText(scene: CanvasScene, input: CreateTextInput): CanvasScene { return addNode(scene, { ...input, type: 'text' }) }

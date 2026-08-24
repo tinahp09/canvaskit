@@ -15,4 +15,4 @@ renderer.render(canvas.getScene())
 attachPointerInput(document.querySelector('canvas')!, canvas)
 ```
 
-Use `canvas.toJSON()` to persist a scene and `canvas.load(json)` to restore it. Phase 1 supports rectangle nodes and canvas navigation; selection, edges, history, and plugins arrive in later phases.
+Use `canvas.toJSON()` to persist a scene and `canvas.load(json)` to restore it. Current support includes rectangle, circle, and text nodes; viewport navigation; selection; keyboard deletion; and grid snapping. Edges, history, and plugins arrive in later phases.

@@ -1,4 +1,4 @@
-import type { CanvasScene, RectangleNode } from './model.js'
+import type { CanvasNode, CanvasScene, RectangleNode } from './model.js'
 
 export class UnsupportedSceneVersionError extends Error {
   constructor(version: unknown) {
@@ -21,10 +21,15 @@ export function loadScene(json: string): CanvasScene {
 
   return {
     version: 1,
-    nodes: value.nodes.map(parseRectangle),
+    nodes: value.nodes.map(parseNode),
     viewport: value.viewport,
     metadata: value.metadata,
   }
+}
+function parseNode(value: unknown): CanvasNode {
+  if (isRecord(value) && value.type === 'circle' && typeof value.id === 'string' && isPoint(value.position) && typeof value.radius === 'number' && typeof value.fill === 'string') return { id: value.id, type: 'circle', position: value.position, radius: value.radius, fill: value.fill }
+  if (isRecord(value) && value.type === 'text' && typeof value.id === 'string' && isPoint(value.position) && typeof value.text === 'string' && typeof value.fill === 'string' && typeof value.fontSize === 'number') return { id: value.id, type: 'text', position: value.position, text: value.text, fill: value.fill, fontSize: value.fontSize }
+  return parseRectangle(value)
 }
 
 function parseRectangle(value: unknown): RectangleNode {

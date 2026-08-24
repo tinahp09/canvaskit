@@ -15,12 +15,18 @@ export class CanvasRenderer {
     for (const node of scene.nodes) {
       const { viewport } = scene
       this.context.fillStyle = node.fill
-      this.context.fillRect(
-        node.position.x * viewport.zoom + viewport.x,
-        node.position.y * viewport.zoom + viewport.y,
-        node.size.width * viewport.zoom,
-        node.size.height * viewport.zoom,
-      )
+      const x = node.position.x * viewport.zoom + viewport.x
+      const y = node.position.y * viewport.zoom + viewport.y
+      if (node.type === 'rectangle') {
+        this.context.fillRect(x, y, node.size.width * viewport.zoom, node.size.height * viewport.zoom)
+      } else if (node.type === 'circle') {
+        this.context.beginPath()
+        this.context.arc(x, y, node.radius * viewport.zoom, 0, Math.PI * 2)
+        this.context.fill()
+      } else {
+        this.context.font = `${node.fontSize * viewport.zoom}px sans-serif`
+        this.context.fillText(node.text, x, y)
+      }
     }
   }
 }
