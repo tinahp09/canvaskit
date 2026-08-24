@@ -26,14 +26,16 @@ export class CanvasKit {
     this.viewport = new ViewportController(this.scene.viewport)
   }
 
-  getScene(): CanvasScene { return this.scene }
+  getScene(): CanvasScene {
+    return { ...this.scene, viewport: this.viewport.getTransform() }
+  }
 
   setScene(scene: CanvasScene): void {
     this.scene = scene
     this.viewport = new ViewportController(scene.viewport)
   }
 
-  toJSON(): string { return serializeScene(this.scene) }
+  toJSON(): string { return serializeScene(this.getScene()) }
 
   load(json: string): void { this.setScene(loadScene(json)) }
 

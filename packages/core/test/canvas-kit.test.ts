@@ -15,3 +15,9 @@ it('loads serialized scene data', () => {
   canvas.load('{"version":1,"nodes":[],"viewport":{"x":4,"y":5,"zoom":2},"metadata":{}}')
   expect(canvas.getScene().viewport).toEqual({ x: 4, y: 5, zoom: 2 })
 })
+
+it('reflects viewport navigation in the scene snapshot', () => {
+  const canvas = new CanvasKit()
+  canvas.viewport.panBy({ x: 10, y: 20 })
+  expect(canvas.getScene().viewport).toEqual({ x: 10, y: 20, zoom: 1 })
+})

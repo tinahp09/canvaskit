@@ -23,3 +23,26 @@ it('emits element-local pointer coordinates', () => {
     type: 'pointermove', screen: { x: 25, y: 45 }, world: { x: 25, y: 45 },
   })
 })
+
+it('pans with a middle-button drag', () => {
+  const element = new FakeElement()
+  const canvas = new CanvasKit()
+
+  attachPointerInput(element as unknown as HTMLElement, canvas)
+  element.dispatch('pointerdown', { button: 1, clientX: 10, clientY: 20 } as PointerEvent)
+  element.dispatch('pointermove', { clientX: 30, clientY: 50 } as PointerEvent)
+  element.dispatch('pointerup', { button: 1, clientX: 30, clientY: 50 } as PointerEvent)
+
+  expect(canvas.viewport.getTransform()).toMatchObject({ x: 20, y: 30 })
+})
+
+it('zooms at the wheel pointer location', () => {
+  const element = new FakeElement()
+  const canvas = new CanvasKit()
+
+  attachPointerInput(element as unknown as HTMLElement, canvas)
+  element.dispatch('wheel', { clientX: 310, clientY: 220, deltaY: -100, preventDefault() {} } as WheelEvent)
+
+  expect(canvas.viewport.getTransform().zoom).toBeGreaterThan(1)
+  expect(canvas.createPointerEvent({ x: 300, y: 200 }, 'pointermove').world).toEqual({ x: 300, y: 200 })
+})
