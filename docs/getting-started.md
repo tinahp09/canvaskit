@@ -15,4 +15,4 @@ renderer.render(canvas.getScene())
 attachPointerInput(document.querySelector('canvas')!, canvas)
 ```
 
-Use `canvas.toJSON()` to persist a scene and `canvas.load(json)` to restore it. Current support includes rectangle, circle, and text nodes; viewport navigation; selection; keyboard deletion; and grid snapping. Edges, history, and plugins arrive in later phases.
+Use `canvas.toJSON()` to persist a scene and `canvas.load(json)` to restore it. Current support includes rectangle, circle, and text nodes; viewport navigation; selection; keyboard deletion; grid snapping; graph groups; and line, arrow, or Bezier edges. In the workflow example, select a node and drag from its white connection handle to another node to create an arrow. History and plugins arrive in later phases.
