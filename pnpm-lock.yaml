@@ -41,6 +41,12 @@ importers:
 
   packages/geometry: {}
 
+  packages/plugins:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/renderer-canvas:
     dependencies:
       '@canvaskit/core':
