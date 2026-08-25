@@ -1,19 +1,35 @@
-import { CanvasKit, addCircle, addRectangle, addText, attachKeyboardInput, attachPointerInput, connectNodes, createScene, exportScene, hitTestNode, importScene, moveNodes, nodesInRect, snapPointToGrid } from '@canvaskit/core'
-import { CanvasRenderer } from '@canvaskit/renderer-canvas'
+import { CanvasKit, addCircle, addRectangle, addText, attachKeyboardInput, attachPointerInput, connectNodes, createScene, exportScene, hitTestNode, importScene, moveNodes, nodesInRect } from '@canvaskit/core'
+import { CanvasRenderer, exportPNG } from '@canvaskit/renderer-canvas'
+import { renderSVG } from '@canvaskit/renderer-svg'
+import { createGridPlugin, createSnapPlugin } from '@canvaskit/plugins'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<header><strong>CanvasKit Phase 4 — Durable editing</strong><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><button id="export">Export scene</button><button id="import">Import scene</button></header><canvas aria-label="CanvasKit example" tabindex="0"></canvas><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><p id="scene-status" role="status" aria-live="polite"></p>`
+app.innerHTML = `<header><strong>CanvasKit Phase 5 — Extensible export</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset></header><canvas aria-label="CanvasKit example" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
 const canvasElement = app.querySelector('canvas')!
 canvasElement.width = 1200
 canvasElement.height = 720
 const workflow = addRectangle(addRectangle(addRectangle(createScene(), { id: 'webhook', position: { x: 120, y: 180 }, size: { width: 150, height: 70 }, fill: '#7C7FF2' }), { id: 'request', position: { x: 400, y: 180 }, size: { width: 150, height: 70 }, fill: '#60A5FA' }), { id: 'database', position: { x: 680, y: 180 }, size: { width: 150, height: 70 }, fill: '#34D399' })
 const kit = new CanvasKit({ scene: connectNodes(connectNodes(workflow, 'webhook', 'request'), 'request', 'database') })
+const gridPlugin = createGridPlugin({ size: 20, style: 'dots', color: '#3A414D' })
+const snapPlugin = createSnapPlugin({ gridSize: 20 })
+kit.use(gridPlugin)
+kit.use(snapPlugin)
 const renderer = new CanvasRenderer(canvasElement)
 const redraw = () => renderer.render(kit.getScene(), kit.selection.get())
 attachPointerInput(canvasElement, kit)
 attachKeyboardInput(canvasElement, kit)
 kit.onPointer(redraw)
+const showGrid = app.querySelector<HTMLInputElement>('#show-grid')!
+const snapToGrid = app.querySelector<HTMLInputElement>('#snap-to-grid')!
+const updateGrid = () => {
+  canvasElement.style.backgroundImage = showGrid.checked
+    ? `radial-gradient(${gridPlugin.config.color} 1px, transparent 1px)`
+    : 'none'
+  canvasElement.style.backgroundSize = `${gridPlugin.config.size}px ${gridPlugin.config.size}px`
+}
+showGrid.addEventListener('change', updateGrid)
+updateGrid()
 let dragStart: { x: number; y: number } | undefined
 let marqueeStart: { x: number; y: number } | undefined
 let connectionSource: string | undefined
@@ -42,7 +58,7 @@ canvasElement.addEventListener('pointerdown', (event) => {
 canvasElement.addEventListener('pointermove', (event) => {
   if (!dragStart || event.buttons !== 1) return
   const point = worldPoint(event)
-  const snapped = snapPointToGrid(point, 20)
+  const snapped = snapToGrid.checked ? snapPlugin.snap(point) : point
   const before = kit.getScene()
   const after = moveNodes(before, kit.selection.get(), { x: snapped.x - dragStart.x, y: snapped.y - dragStart.y })
   kit.execute({ label: 'move selection', execute: () => after, undo: () => before })
@@ -69,6 +85,7 @@ canvasElement.addEventListener('pointerup', (event) => {
 })
 redraw()
 const json = app.querySelector<HTMLTextAreaElement>('[data-testid="scene-json"]')!
+const exportPreview = app.querySelector<HTMLTextAreaElement>('[data-testid="export-preview"]')!
 const status = app.querySelector<HTMLParagraphElement>('#scene-status')!
 app.querySelector<HTMLButtonElement>('#undo')!.onclick = () => { kit.undo(); redraw() }
 app.querySelector<HTMLButtonElement>('#redo')!.onclick = () => { kit.redo(); redraw() }
@@ -76,6 +93,22 @@ app.querySelector<HTMLButtonElement>('#copy')!.onclick = () => { kit.copy() }
 app.querySelector<HTMLButtonElement>('#paste')!.onclick = () => { kit.paste(); redraw() }
 app.querySelector<HTMLButtonElement>('#duplicate')!.onclick = () => { kit.duplicate(); redraw() }
 app.querySelector<HTMLButtonElement>('#export')!.onclick = () => { json.value = exportScene(kit.getScene()); status.textContent = 'Scene exported.' }
+app.querySelector<HTMLButtonElement>('#export-svg')!.onclick = () => {
+  try {
+    exportPreview.value = renderSVG(kit.getScene())
+    status.textContent = 'SVG exported.'
+  } catch {
+    status.textContent = 'SVG export failed.'
+  }
+}
+app.querySelector<HTMLButtonElement>('#export-png')!.onclick = () => {
+  try {
+    exportPreview.value = exportPNG(canvasElement)
+    status.textContent = 'PNG exported.'
+  } catch {
+    status.textContent = 'PNG export failed.'
+  }
+}
 app.querySelector<HTMLButtonElement>('#import')!.onclick = () => {
   try {
     const scene = importScene(json.value)

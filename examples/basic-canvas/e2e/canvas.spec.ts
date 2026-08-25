@@ -65,9 +65,9 @@ test('clears history after importing a different version 2 scene', async ({ page
   expect(await exportScene(page)).toEqual(importedScene)
 })
 
-test('edits and exports the Phase 4 workflow', async ({ page }) => {
+test('edits and exports the Phase 5 workflow', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByText('CanvasKit Phase 4 — Durable editing')).toBeVisible()
+  await expect(page.getByText('CanvasKit Phase 5 — Extensible export')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Connect selected' })).toBeVisible()
   await page.getByRole('button', { name: 'Add circle' }).click()
   await page.getByRole('button', { name: 'Export scene' }).click()
@@ -106,4 +106,29 @@ test('shows import errors without changing the scene', async ({ page }) => {
   await expect(page.getByRole('status')).toHaveText(/Import failed:/)
   await page.getByRole('button', { name: 'Export scene' }).click()
   await expect(page.getByTestId('scene-json')).toHaveValue(before)
+})
+
+test('exports escaped SVG and PNG data through accessible export controls', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('checkbox', { name: 'Show grid' })).toBeChecked()
+  await expect(page.getByRole('checkbox', { name: 'Snap to grid' })).toBeChecked()
+
+  const sceneWithMarkupText = {
+    version: 2,
+    nodes: [{ id: 'label', type: 'text', position: { x: 20, y: 30 }, text: '<script>alert(1)</script>', fontSize: 20, fill: '#F4F6F8' }],
+    edges: [],
+    groups: [],
+    viewport: { x: 0, y: 0, zoom: 1 },
+    metadata: {},
+  }
+  await page.getByTestId('scene-json').fill(JSON.stringify(sceneWithMarkupText))
+  await page.getByRole('button', { name: 'Import scene' }).click()
+
+  await page.getByRole('button', { name: 'Export SVG' }).click()
+  await expect(page.getByTestId('export-preview')).toHaveValue(/&lt;script&gt;alert\(1\)&lt;\/script&gt;/)
+  await expect(page.getByRole('status')).toHaveText('SVG exported.')
+
+  await page.getByRole('button', { name: 'Export PNG' }).click()
+  await expect(page.getByTestId('export-preview')).toHaveValue(/^data:image\/png;base64,/)
+  await expect(page.getByRole('status')).toHaveText('PNG exported.')
 })

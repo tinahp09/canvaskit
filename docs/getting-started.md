@@ -4,16 +4,29 @@ Install the core and Canvas renderer packages, create a scene, then mount a rend
 
 ```ts
 import { CanvasKit, addRectangle, createScene, attachPointerInput } from '@canvaskit/core'
-import { CanvasRenderer } from '@canvaskit/renderer-canvas'
+import { CanvasRenderer, exportPNG } from '@canvaskit/renderer-canvas'
+import { renderSVG } from '@canvaskit/renderer-svg'
+import { createGridPlugin, createSnapPlugin } from '@canvaskit/plugins'
 
 const scene = addRectangle(createScene(), {
   id: 'welcome', position: { x: 120, y: 80 }, size: { width: 240, height: 120 }, fill: '#7C7FF2',
 })
 const canvas = new CanvasKit({ scene })
+const grid = createGridPlugin({ size: 20 })
+const snap = createSnapPlugin({ gridSize: 20 })
+canvas.use(grid)
+canvas.use(snap)
 const renderer = new CanvasRenderer(document.querySelector('canvas')!)
 renderer.render(canvas.getScene())
 attachPointerInput(document.querySelector('canvas')!, canvas)
+
+const svg = renderSVG(canvas.getScene())
+const pngDataUrl = exportPNG(document.querySelector('canvas')!)
 ```
+
+`renderSVG()` returns a serialized SVG string and `exportPNG()` returns a PNG data URL; neither function initiates a browser download. Display these values as text or use your own download flow. The example uses a read-only text area so SVG is never inserted into the page as HTML.
+
+The Grid and Snap plugins are opt-in factories. `grid.config` provides the display configuration for your renderer or UI, while `snap.snap(point)` applies the configured grid size. See [Plugins](plugins.md) for lifecycle and trust-boundary guidance.
 
 ## Durable editing and persistence
 

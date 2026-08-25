@@ -29,9 +29,15 @@ importers:
       '@canvaskit/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@canvaskit/plugins':
+        specifier: workspace:*
+        version: link:../../packages/plugins
       '@canvaskit/renderer-canvas':
         specifier: workspace:*
         version: link:../../packages/renderer-canvas
+      '@canvaskit/renderer-svg':
+        specifier: workspace:*
+        version: link:../../packages/renderer-svg
 
   packages/core:
     dependencies:

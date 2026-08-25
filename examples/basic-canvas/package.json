@@ -5,6 +5,8 @@
   "scripts": { "dev": "vite", "build": "vite build" },
   "dependencies": {
     "@canvaskit/core": "workspace:*",
-    "@canvaskit/renderer-canvas": "workspace:*"
+    "@canvaskit/plugins": "workspace:*",
+    "@canvaskit/renderer-canvas": "workspace:*",
+    "@canvaskit/renderer-svg": "workspace:*"
   }
 }
