@@ -63,6 +63,9 @@ it('clears redo history when panning after undo without recording navigation', (
   kit.undo()
   kit.viewport.panBy({ x: 12, y: 24 })
 
+  expect(kit.undo().nodes).toEqual([])
+  expect(kit.getScene().viewport).toEqual({ x: 12, y: 24, zoom: 1 })
+
   expect(kit.redo().nodes).toEqual([])
   expect(kit.getScene().viewport).toEqual({ x: 12, y: 24, zoom: 1 })
 })
@@ -77,6 +80,9 @@ it('clears redo history when zooming after undo without recording navigation', (
   })
   kit.undo()
   kit.viewport.zoomAt({ x: 100, y: 50 }, 2)
+
+  expect(kit.undo().nodes).toEqual([])
+  expect(kit.getScene().viewport).toEqual({ x: -100, y: -50, zoom: 2 })
 
   expect(kit.redo().nodes).toEqual([])
   expect(kit.getScene().viewport).toEqual({ x: -100, y: -50, zoom: 2 })
