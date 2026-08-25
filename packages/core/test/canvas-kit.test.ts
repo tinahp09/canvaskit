@@ -38,6 +38,34 @@ it('undoes then redoes an executed scene command', () => {
   expect(kit.redo().nodes).toHaveLength(1)
 })
 
+it('clears undo and redo history after importing a scene', () => {
+  const kit = new CanvasKit()
+  const before = kit.getScene()
+
+  kit.execute({
+    label: 'add',
+    execute: (scene) => addRectangle(scene, {
+      id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+    }),
+    undo: () => before,
+  })
+  kit.clearHistory()
+
+  expect(kit.undo()).toEqual(kit.getScene())
+
+  kit.execute({
+    label: 'add again',
+    execute: (scene) => addRectangle(scene, {
+      id: 'b', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+    }),
+    undo: () => before,
+  })
+  kit.undo()
+  kit.clearHistory()
+
+  expect(kit.redo()).toEqual(kit.getScene())
+})
+
 it('undoes a transaction as one history entry', () => {
   const kit = new CanvasKit()
   const before = kit.getScene()

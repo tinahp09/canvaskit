@@ -57,6 +57,10 @@ export class CanvasKit {
     return this.getScene()
   }
 
+  clearHistory(): void {
+    this.history.clear()
+  }
+
   beginTransaction(label: string): void {
     this.history.beginTransaction(label)
   }

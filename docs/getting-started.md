@@ -15,4 +15,23 @@ renderer.render(canvas.getScene())
 attachPointerInput(document.querySelector('canvas')!, canvas)
 ```
 
-Use `canvas.toJSON()` to persist a scene and `canvas.load(json)` to restore it. Current support includes rectangle, circle, and text nodes; viewport navigation; selection; keyboard deletion; grid snapping; graph groups; and line, arrow, or Bezier edges. In the workflow example, select a node and drag from its white connection handle to another node to create an arrow. History and plugins arrive in later phases.
+## Durable editing and persistence
+
+The editing APIs work independently of keyboard input, so toolbars and other accessible controls can offer the same workflow:
+
+```ts
+import { exportScene, importScene } from '@canvaskit/core'
+
+canvas.copy()
+canvas.paste()
+canvas.duplicate()
+canvas.undo()
+canvas.redo()
+
+const json = exportScene(canvas.getScene())
+const restored = importScene(json)
+```
+
+`exportScene()` creates the current version 2 JSON payload. `importScene(json)` validates it before returning the scene, and automatically migrates version 1 payloads by adding empty `edges` and `groups` collections. Invalid or unsupported payloads throw an error; keep the current scene until import succeeds, then call `canvas.setScene(restored)` and `canvas.clearHistory()` so undo and redo cannot cross the import boundary.
+
+Current support includes rectangle, circle, and text nodes; viewport navigation; selection; keyboard deletion; grid snapping; graph groups; and line, arrow, or Bezier edges. In the workflow example, select a node and drag from its white connection handle to another node to create an arrow.

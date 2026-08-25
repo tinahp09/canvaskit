@@ -65,7 +65,13 @@ export class HistoryController {
     this.undoStack.push(createCompositeCommand(transaction))
   }
 
-  private ensureNoActiveTransaction(operation: 'undo' | 'redo'): void {
+  clear(): void {
+    this.ensureNoActiveTransaction('clear history for')
+    this.undoStack.length = 0
+    this.redoStack.length = 0
+  }
+
+  private ensureNoActiveTransaction(operation: string): void {
     if (this.transaction) throw new Error(`Cannot ${operation} while a history transaction is active.`)
   }
 }

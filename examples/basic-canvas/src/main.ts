@@ -1,9 +1,9 @@
-import { CanvasKit, addCircle, addRectangle, addText, attachKeyboardInput, attachPointerInput, connectNodes, createScene, hitTestNode, moveNodes, nodesInRect, snapPointToGrid } from '@canvaskit/core'
+import { CanvasKit, addCircle, addRectangle, addText, attachKeyboardInput, attachPointerInput, connectNodes, createScene, exportScene, hitTestNode, importScene, moveNodes, nodesInRect, snapPointToGrid } from '@canvaskit/core'
 import { CanvasRenderer } from '@canvaskit/renderer-canvas'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<header><strong>CanvasKit Phase 3 — Workflow</strong><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="save">Save scene</button><button id="load">Load scene</button></header><canvas aria-label="CanvasKit example" tabindex="0"></canvas><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea>`
+app.innerHTML = `<header><strong>CanvasKit Phase 4 — Durable editing</strong><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><button id="export">Export scene</button><button id="import">Import scene</button></header><canvas aria-label="CanvasKit example" tabindex="0"></canvas><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><p id="scene-status" role="status" aria-live="polite"></p>`
 const canvasElement = app.querySelector('canvas')!
 canvasElement.width = 1200
 canvasElement.height = 720
@@ -63,8 +63,25 @@ canvasElement.addEventListener('pointerup', (event) => {
 })
 redraw()
 const json = app.querySelector<HTMLTextAreaElement>('[data-testid="scene-json"]')!
-app.querySelector<HTMLButtonElement>('#save')!.onclick = () => { json.value = kit.toJSON() }
-app.querySelector<HTMLButtonElement>('#load')!.onclick = () => { kit.load(json.value); redraw() }
+const status = app.querySelector<HTMLParagraphElement>('#scene-status')!
+app.querySelector<HTMLButtonElement>('#undo')!.onclick = () => { kit.undo(); redraw() }
+app.querySelector<HTMLButtonElement>('#redo')!.onclick = () => { kit.redo(); redraw() }
+app.querySelector<HTMLButtonElement>('#copy')!.onclick = () => { kit.copy() }
+app.querySelector<HTMLButtonElement>('#paste')!.onclick = () => { kit.paste(); redraw() }
+app.querySelector<HTMLButtonElement>('#duplicate')!.onclick = () => { kit.duplicate(); redraw() }
+app.querySelector<HTMLButtonElement>('#export')!.onclick = () => { json.value = exportScene(kit.getScene()); status.textContent = 'Scene exported.' }
+app.querySelector<HTMLButtonElement>('#import')!.onclick = () => {
+  try {
+    const scene = importScene(json.value)
+    kit.setScene(scene)
+    kit.clearHistory()
+    kit.selection.clear()
+    status.textContent = 'Scene imported.'
+    redraw()
+  } catch (error) {
+    status.textContent = `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+  }
+}
 app.querySelector<HTMLButtonElement>('#circle')!.onclick = () => { kit.setScene(addCircle(kit.getScene(), { id: crypto.randomUUID(), position: { x: 440, y: 240 }, radius: 44, fill: '#34D399' })); redraw() }
 app.querySelector<HTMLButtonElement>('#text')!.onclick = () => { kit.setScene(addText(kit.getScene(), { id: crypto.randomUUID(), position: { x: 200, y: 360 }, text: 'Editable text', fontSize: 20, fill: '#F4F6F8' })); redraw() }
 app.querySelector<HTMLButtonElement>('#connect')!.onclick = () => { const ids = kit.selection.get(); if (ids.length === 2) { kit.setScene(connectNodes(kit.getScene(), ids[0]!, ids[1]!)); redraw() } }

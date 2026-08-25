@@ -1,13 +1,79 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
-test('edits, saves, and loads the Phase 3 workflow', async ({ page }) => {
+async function selectWorkflowNode(page: Page) {
+  const canvas = page.locator('canvas')
+  await canvas.evaluate((element: HTMLCanvasElement) => {
+    const bounds = element.getBoundingClientRect()
+    const toClient = (point: { x: number; y: number }) => ({
+      clientX: bounds.left + point.x * bounds.width / element.width,
+      clientY: bounds.top + point.y * bounds.height / element.height,
+    })
+    const point = toClient({ x: 195, y: 215 })
+    element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, buttons: 1, ...point }))
+    element.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, ...point }))
+  })
+}
+
+async function exportScene(page: Page) {
+  await page.getByRole('button', { name: 'Export scene' }).click()
+  return JSON.parse(await page.getByTestId('scene-json').inputValue())
+}
+
+test('duplicates, copies, pastes, undoes, and redoes a selected workflow node', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByText('CanvasKit Phase 3 — Workflow')).toBeVisible()
+  await selectWorkflowNode(page)
+
+  await page.getByRole('button', { name: 'Duplicate' }).click()
+  const duplicated = await exportScene(page)
+  expect(duplicated.nodes.map((node: { id: string }) => node.id)).toEqual(['webhook', 'request', 'database', 'webhook-copy'])
+
+  await page.getByRole('button', { name: 'Copy' }).click()
+  await page.getByRole('button', { name: 'Paste' }).click()
+  const pasted = await exportScene(page)
+  expect(pasted.nodes.map((node: { id: string }) => node.id)).toEqual(['webhook', 'request', 'database', 'webhook-copy', 'webhook-copy-copy'])
+
+  await page.getByRole('button', { name: 'Undo' }).click()
+  expect((await exportScene(page)).nodes.map((node: { id: string }) => node.id)).toEqual(duplicated.nodes.map((node: { id: string }) => node.id))
+
+  await page.getByRole('button', { name: 'Redo' }).click()
+  expect((await exportScene(page)).nodes.map((node: { id: string }) => node.id)).toEqual(pasted.nodes.map((node: { id: string }) => node.id))
+})
+
+test('clears history after importing a different version 2 scene', async ({ page }) => {
+  await page.goto('/')
+  await selectWorkflowNode(page)
+  await page.getByRole('button', { name: 'Duplicate' }).click()
+  expect((await exportScene(page)).nodes).toHaveLength(4)
+
+  const importedScene = {
+    version: 2,
+    nodes: [{ id: 'imported-node', type: 'rectangle', position: { x: 20, y: 30 }, size: { width: 160, height: 80 }, fill: '#F97316' }],
+    edges: [],
+    groups: [],
+    viewport: { x: 0, y: 0, zoom: 1 },
+    metadata: { source: 'durable-editing-test' },
+  }
+  await page.getByTestId('scene-json').fill(JSON.stringify(importedScene))
+  await page.getByRole('button', { name: 'Import scene' }).click()
+  await expect(page.getByRole('status')).toHaveText('Scene imported.')
+  expect(await exportScene(page)).toEqual(importedScene)
+
+  await page.getByRole('button', { name: 'Undo' }).click()
+  expect(await exportScene(page)).toEqual(importedScene)
+
+  await page.getByRole('button', { name: 'Redo' }).click()
+  expect(await exportScene(page)).toEqual(importedScene)
+})
+
+test('edits and exports the Phase 4 workflow', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByText('CanvasKit Phase 4 — Durable editing')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Connect selected' })).toBeVisible()
   await page.getByRole('button', { name: 'Add circle' }).click()
-  await page.getByRole('button', { name: 'Save scene' }).click()
+  await page.getByRole('button', { name: 'Export scene' }).click()
   await expect(page.getByTestId('scene-json')).toHaveValue(/circle/)
-  await page.getByRole('button', { name: 'Load scene' }).click()
+  await page.getByRole('button', { name: 'Import scene' }).click()
+  await expect(page.getByRole('status')).toHaveText('Scene imported.')
 })
 
 test('connects nodes by dragging from a connection handle', async ({ page }) => {
@@ -27,6 +93,17 @@ test('connects nodes by dragging from a connection handle', async ({ page }) => 
     canvasElement.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, ...toClient({ x: 475, y: 215 }) }))
   })
 
-  await page.getByRole('button', { name: 'Save scene' }).click()
+  await page.getByRole('button', { name: 'Export scene' }).click()
   await expect(page.getByTestId('scene-json')).toHaveValue(/\"id\":\"edge-3\"/)
+})
+
+test('shows import errors without changing the scene', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Export scene' }).click()
+  const before = await page.getByTestId('scene-json').inputValue()
+  await page.getByTestId('scene-json').fill('{')
+  await page.getByRole('button', { name: 'Import scene' }).click()
+  await expect(page.getByRole('status')).toHaveText(/Import failed:/)
+  await page.getByRole('button', { name: 'Export scene' }).click()
+  await expect(page.getByTestId('scene-json')).toHaveValue(before)
 })
