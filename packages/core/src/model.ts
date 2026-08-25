@@ -1,5 +1,7 @@
 import type { Point, Size, ViewportTransform } from '@canvaskit/geometry'
 
+export const SCENE_VERSION = 2 as const
+
 export interface RectangleNode {
   id: string
   type: 'rectangle'
@@ -14,7 +16,7 @@ export interface CanvasEdge { id: string; type: 'line' | 'arrow' | 'bezier'; sou
 export interface CanvasGroup { id: string; nodeIds: string[] }
 
 export interface CanvasScene {
-  version: 1
+  version: typeof SCENE_VERSION
   nodes: CanvasNode[]
   edges: CanvasEdge[]
   groups: CanvasGroup[]

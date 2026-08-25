@@ -1,9 +1,11 @@
 export const PACKAGE_NAME = '@canvaskit/core'
 
+export { SCENE_VERSION } from './model.js'
 export type { CanvasEdge, CanvasGroup, CanvasNode, CanvasScene, CircleNode, CreateCircleInput, CreateEdgeInput, CreateGroupInput, CreateRectangleInput, CreateTextInput, RectangleNode, TextNode } from './model.js'
 export { addCircle, addEdge, addGroup, addRectangle, addText, connectNodes, createScene, removeEdge } from './scene.js'
 export { hitTestEdge, nodeCenter } from './graph-interaction.js'
-export { loadScene, serializeScene, UnsupportedSceneVersionError } from './serialization.js'
+export { exportScene, importScene, InvalidSceneError, loadScene, serializeScene, UnsupportedSceneVersionError } from './serialization.js'
+export { migrateScene } from './migrations.js'
 export { ViewportController } from './viewport.js'
 export { CanvasKit } from './canvas-kit.js'
 export type { CanvasKitOptions, CanvasPointerEvent, CanvasPointerEventType } from './canvas-kit.js'

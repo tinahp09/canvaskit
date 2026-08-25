@@ -1,8 +1,8 @@
-import type { CanvasNode, CanvasScene, CreateCircleInput, CreateEdgeInput, CreateGroupInput, CreateRectangleInput, CreateTextInput } from './model.js'
+import { SCENE_VERSION, type CanvasNode, type CanvasScene, type CreateCircleInput, type CreateEdgeInput, type CreateGroupInput, type CreateRectangleInput, type CreateTextInput } from './model.js'
 
 export function createScene(): CanvasScene {
   return {
-    version: 1,
+    version: SCENE_VERSION,
     nodes: [],
     edges: [],
     groups: [],
