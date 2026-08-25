@@ -38,6 +38,20 @@ it('undoes then redoes an executed scene command', () => {
   expect(kit.redo().nodes).toHaveLength(1)
 })
 
+it('clears redo history when a direct scene replacement creates a newer state', () => {
+  const kit = new CanvasKit()
+  const before = kit.getScene()
+  kit.execute({
+    label: 'add a',
+    execute: (scene) => addRectangle(scene, { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' }),
+    undo: () => before,
+  })
+  kit.undo()
+  kit.setScene(addRectangle(kit.getScene(), { id: 'newer', position: { x: 10, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' }))
+
+  expect(kit.redo().nodes.map((node) => node.id)).toEqual(['newer'])
+})
+
 it('clears undo and redo history after importing a scene', () => {
   const kit = new CanvasKit()
   const before = kit.getScene()

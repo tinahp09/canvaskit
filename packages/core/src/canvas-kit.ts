@@ -38,22 +38,28 @@ export class CanvasKit {
   }
 
   setScene(scene: CanvasScene): void {
+    this.applyScene(scene)
+    this.clearHistory()
+  }
+
+  private applyScene(scene: CanvasScene): void {
     this.scene = scene
     this.viewport = new ViewportController(scene.viewport)
+    this.selection.retainExisting()
   }
 
   execute(command: SceneCommand): CanvasScene {
-    this.setScene(this.history.execute(this.getScene(), command))
+    this.applyScene(this.history.execute(this.getScene(), command))
     return this.getScene()
   }
 
   undo(): CanvasScene {
-    this.setScene(this.history.undo(this.getScene()))
+    this.applyScene(this.history.undo(this.getScene()))
     return this.getScene()
   }
 
   redo(): CanvasScene {
-    this.setScene(this.history.redo(this.getScene()))
+    this.applyScene(this.history.redo(this.getScene()))
     return this.getScene()
   }
 
@@ -100,7 +106,10 @@ export class CanvasKit {
 
   deleteSelection(): void {
     const ids = new Set(this.selection.get())
-    this.scene = { ...this.scene, nodes: this.scene.nodes.filter((node) => !ids.has(node.id)) }
+    if (ids.size === 0) return
+    const before = this.getScene()
+    const after = { ...before, nodes: before.nodes.filter((node) => !ids.has(node.id)) }
+    this.execute({ label: 'delete selection', execute: () => after, undo: () => before })
     this.selection.clear()
   }
 

@@ -21,6 +21,11 @@ export class SelectionController {
 
   selectAll(): void { this.ids = new Set(this.getScene().nodes.map((node) => node.id)) }
 
+  retainExisting(): void {
+    const nodeIds = new Set(this.getScene().nodes.map((node) => node.id))
+    this.ids = new Set([...this.ids].filter((id) => nodeIds.has(id)))
+  }
+
   private assertNode(id: string): void {
     if (!this.getScene().nodes.some((node) => node.id === id)) throw new Error(`Unknown node id: ${id}.`)
   }

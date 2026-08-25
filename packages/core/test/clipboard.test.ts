@@ -114,6 +114,19 @@ it('pastes through CanvasKit as one undoable command and selects inserted nodes'
   expect(kit.undo().nodes.map((node) => node.id)).toEqual(['a'])
 })
 
+it('keeps the selection consistent with the scene after paste undo and redo', () => {
+  const kit = new CanvasKit({ scene: addRectangle(createScene(), rectangle) })
+  kit.selection.select('a')
+  kit.copy()
+  kit.paste({ x: 20, y: 20 })
+
+  kit.undo()
+  expect(kit.selection.get().every((id) => kit.getScene().nodes.some((node) => node.id === id))).toBe(true)
+
+  kit.redo()
+  expect(kit.selection.get().every((id) => kit.getScene().nodes.some((node) => node.id === id))).toBe(true)
+})
+
 it('duplicates the selection at a twenty-pixel offset', () => {
   const kit = new CanvasKit({ scene: addRectangle(createScene(), rectangle) })
   kit.selection.select('a')

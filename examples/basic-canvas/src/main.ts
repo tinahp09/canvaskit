@@ -43,7 +43,9 @@ canvasElement.addEventListener('pointermove', (event) => {
   if (!dragStart || event.buttons !== 1) return
   const point = worldPoint(event)
   const snapped = snapPointToGrid(point, 20)
-  kit.setScene(moveNodes(kit.getScene(), kit.selection.get(), { x: snapped.x - dragStart.x, y: snapped.y - dragStart.y }))
+  const before = kit.getScene()
+  const after = moveNodes(before, kit.selection.get(), { x: snapped.x - dragStart.x, y: snapped.y - dragStart.y })
+  kit.execute({ label: 'move selection', execute: () => after, undo: () => before })
   dragStart = snapped
   redraw()
 })
@@ -51,7 +53,11 @@ canvasElement.addEventListener('pointerup', (event) => {
   const point = worldPoint(event)
   if (connectionSource) {
     const target = hitTestNode(kit.getScene(), point)
-    if (target && target.id !== connectionSource) kit.setScene(connectNodes(kit.getScene(), connectionSource, target.id))
+    if (target && target.id !== connectionSource) {
+      const before = kit.getScene()
+      const after = connectNodes(before, connectionSource, target.id)
+      kit.execute({ label: 'connect nodes', execute: () => after, undo: () => before })
+    }
     connectionSource = undefined
   }
   if (marqueeStart) {
@@ -82,6 +88,6 @@ app.querySelector<HTMLButtonElement>('#import')!.onclick = () => {
     status.textContent = `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`
   }
 }
-app.querySelector<HTMLButtonElement>('#circle')!.onclick = () => { kit.setScene(addCircle(kit.getScene(), { id: crypto.randomUUID(), position: { x: 440, y: 240 }, radius: 44, fill: '#34D399' })); redraw() }
-app.querySelector<HTMLButtonElement>('#text')!.onclick = () => { kit.setScene(addText(kit.getScene(), { id: crypto.randomUUID(), position: { x: 200, y: 360 }, text: 'Editable text', fontSize: 20, fill: '#F4F6F8' })); redraw() }
-app.querySelector<HTMLButtonElement>('#connect')!.onclick = () => { const ids = kit.selection.get(); if (ids.length === 2) { kit.setScene(connectNodes(kit.getScene(), ids[0]!, ids[1]!)); redraw() } }
+app.querySelector<HTMLButtonElement>('#circle')!.onclick = () => { const before = kit.getScene(); const after = addCircle(before, { id: crypto.randomUUID(), position: { x: 440, y: 240 }, radius: 44, fill: '#34D399' }); kit.execute({ label: 'add circle', execute: () => after, undo: () => before }); redraw() }
+app.querySelector<HTMLButtonElement>('#text')!.onclick = () => { const before = kit.getScene(); const after = addText(before, { id: crypto.randomUUID(), position: { x: 200, y: 360 }, text: 'Editable text', fontSize: 20, fill: '#F4F6F8' }); kit.execute({ label: 'add text', execute: () => after, undo: () => before }); redraw() }
+app.querySelector<HTMLButtonElement>('#connect')!.onclick = () => { const ids = kit.selection.get(); if (ids.length === 2) { const before = kit.getScene(); const after = connectNodes(before, ids[0]!, ids[1]!); kit.execute({ label: 'connect nodes', execute: () => after, undo: () => before }); redraw() } }
