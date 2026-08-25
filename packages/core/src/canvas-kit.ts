@@ -4,6 +4,7 @@ import { createScene } from './scene.js'
 import { loadScene, serializeScene } from './serialization.js'
 import { ViewportController } from './viewport.js'
 import { SelectionController } from './selection.js'
+import { HistoryController, type SceneCommand } from './history.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup'
 
@@ -20,6 +21,7 @@ export interface CanvasKitOptions {
 export class CanvasKit {
   private scene: CanvasScene
   private readonly listeners = new Set<(event: CanvasPointerEvent) => void>()
+  private readonly history = new HistoryController()
   viewport: ViewportController
   readonly selection: SelectionController
 
@@ -36,6 +38,29 @@ export class CanvasKit {
   setScene(scene: CanvasScene): void {
     this.scene = scene
     this.viewport = new ViewportController(scene.viewport)
+  }
+
+  execute(command: SceneCommand): CanvasScene {
+    this.setScene(this.history.execute(this.getScene(), command))
+    return this.getScene()
+  }
+
+  undo(): CanvasScene {
+    this.setScene(this.history.undo(this.getScene()))
+    return this.getScene()
+  }
+
+  redo(): CanvasScene {
+    this.setScene(this.history.redo(this.getScene()))
+    return this.getScene()
+  }
+
+  beginTransaction(label: string): void {
+    this.history.beginTransaction(label)
+  }
+
+  commitTransaction(): void {
+    this.history.commitTransaction()
   }
 
   toJSON(): string { return serializeScene(this.getScene()) }

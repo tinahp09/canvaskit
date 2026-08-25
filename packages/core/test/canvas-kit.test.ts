@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { CanvasKit } from '../src/index.js'
+import { addRectangle, CanvasKit, type CanvasScene } from '../src/index.js'
 
 it('reports pointer coordinates in screen and world space', () => {
   const canvas = new CanvasKit()
@@ -20,4 +20,39 @@ it('reflects viewport navigation in the scene snapshot', () => {
   const canvas = new CanvasKit()
   canvas.viewport.panBy({ x: 10, y: 20 })
   expect(canvas.getScene().viewport).toEqual({ x: 10, y: 20, zoom: 1 })
+})
+
+it('undoes then redoes an executed scene command', () => {
+  const kit = new CanvasKit()
+  const before = kit.getScene()
+
+  kit.execute({
+    label: 'add',
+    execute: (scene) => addRectangle(scene, {
+      id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+    }),
+    undo: () => before,
+  })
+
+  expect(kit.undo().nodes).toEqual([])
+  expect(kit.redo().nodes).toHaveLength(1)
+})
+
+it('undoes a transaction as one history entry', () => {
+  const kit = new CanvasKit()
+  const before = kit.getScene()
+  const add = (id: string) => ({
+    label: `add ${id}`,
+    execute: (scene: CanvasScene) => addRectangle(scene, {
+      id, position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+    }),
+    undo: () => before,
+  })
+
+  kit.beginTransaction('build workflow')
+  kit.execute(add('a'))
+  kit.execute(add('b'))
+  kit.commitTransaction()
+
+  expect(kit.undo().nodes).toEqual([])
 })
