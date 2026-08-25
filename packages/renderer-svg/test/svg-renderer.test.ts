@@ -29,7 +29,7 @@ it('serializes transformed primitives and all edge types into fixed logical SVG'
   expect(svg).toContain('<line id="line" x1="55" y1="86" x2="105" y2="126" stroke="#737B88" stroke-width="1.5"/>')
   expect(svg).toContain('<line id="arrow" x1="105" y1="126" x2="277" y2="154" stroke="#737B88" stroke-width="1.5" marker-end="url(#arrowhead)"/>')
   expect(svg).toContain('<path id="bezier" d="M 55 86 C 166 86, 166 154, 277 154" fill="none" stroke="#737B88" stroke-width="1.5"/>')
-  expect(svg).toContain('<marker id="arrowhead"')
+  expect(svg).toContain('<marker id="arrowhead" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse">')
 })
 
 it('escapes every XML special character in node ids and attributes', () => {

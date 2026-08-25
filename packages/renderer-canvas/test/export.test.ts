@@ -18,3 +18,9 @@ it('throws a clear error when the canvas cannot be exported', () => {
 
   expect(() => exportPNG(canvas)).toThrow('Unable to export canvas as PNG.')
 })
+
+it('throws when the canvas returns its non-exportable data URL sentinel', () => {
+  const canvas = { toDataURL: vi.fn(() => 'data:,') } as unknown as HTMLCanvasElement
+
+  expect(() => exportPNG(canvas)).toThrow('Unable to export canvas as PNG.')
+})

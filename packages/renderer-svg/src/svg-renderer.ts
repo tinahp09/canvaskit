@@ -34,7 +34,7 @@ export function renderSVG(scene: CanvasScene): string {
   const y = (value: number) => transform(value, viewport.y, viewport.zoom)
   const scale = (value: number) => value * viewport.zoom
   const elements: string[] = [
-    '<defs><marker id="arrowhead" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 8 4 L 0 8 z" fill="#737B88"/></marker></defs>',
+    '<defs><marker id="arrowhead" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 8 4 L 0 8 z" fill="#737B88"/></marker></defs>',
   ]
 
   for (const edge of scene.edges) {
