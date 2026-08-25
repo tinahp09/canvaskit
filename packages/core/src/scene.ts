@@ -1,4 +1,5 @@
 import { SCENE_VERSION, type CanvasNode, type CanvasScene, type CreateCircleInput, type CreateEdgeInput, type CreateGroupInput, type CreateRectangleInput, type CreateTextInput } from './model.js'
+import type { Point } from '@canvaskit/geometry'
 
 export function createScene(): CanvasScene {
   return {
@@ -43,4 +44,12 @@ export function addGroup(scene: CanvasScene, input: CreateGroupInput): CanvasSce
 export function connectNodes(scene: CanvasScene, sourceId: string, targetId: string, type: CreateEdgeInput['type'] = 'arrow'): CanvasScene {
   const id = `edge-${scene.edges.length + 1}`
   return addEdge(scene, { id, sourceId, targetId, type })
+}
+
+export function translateNode(node: CanvasNode, id: string, offset: Point): CanvasNode {
+  return {
+    ...node,
+    id,
+    position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
+  }
 }

@@ -5,6 +5,7 @@ import { loadScene, serializeScene } from './serialization.js'
 import { ViewportController } from './viewport.js'
 import { SelectionController } from './selection.js'
 import { HistoryController, type SceneCommand } from './history.js'
+import { copySelection, pasteSelection, type SceneClipboard } from './clipboard.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup'
 
@@ -22,6 +23,7 @@ export class CanvasKit {
   private scene: CanvasScene
   private readonly listeners = new Set<(event: CanvasPointerEvent) => void>()
   private readonly history = new HistoryController()
+  private clipboard: SceneClipboard = { nodes: [], edges: [], groups: [] }
   viewport: ViewportController
   readonly selection: SelectionController
 
@@ -61,6 +63,31 @@ export class CanvasKit {
 
   commitTransaction(): void {
     this.history.commitTransaction()
+  }
+
+  copy(): SceneClipboard {
+    this.clipboard = copySelection(this.getScene(), this.selection.get())
+    return this.clipboard
+  }
+
+  paste(offset: Point = { x: 20, y: 20 }): string[] {
+    const before = this.getScene()
+    const result = pasteSelection(before, this.clipboard, offset)
+    if (result.ids.length === 0) return []
+
+    this.execute({
+      label: 'paste selection',
+      execute: () => result.scene,
+      undo: () => before,
+    })
+    this.selection.clear()
+    this.selection.selectMultiple(result.ids)
+    return result.ids
+  }
+
+  duplicate(): string[] {
+    this.copy()
+    return this.paste({ x: 20, y: 20 })
   }
 
   toJSON(): string { return serializeScene(this.getScene()) }
