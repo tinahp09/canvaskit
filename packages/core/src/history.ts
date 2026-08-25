@@ -30,19 +30,25 @@ export class HistoryController {
   }
 
   undo(scene: CanvasScene): CanvasScene {
-    const command = this.undoStack.pop()
+    this.ensureNoActiveTransaction('undo')
+    const command = this.undoStack.at(-1)
     if (!command) return scene
 
+    const nextScene = command.undo(scene)
+    this.undoStack.pop()
     this.redoStack.push(command)
-    return command.undo(scene)
+    return nextScene
   }
 
   redo(scene: CanvasScene): CanvasScene {
-    const command = this.redoStack.pop()
+    this.ensureNoActiveTransaction('redo')
+    const command = this.redoStack.at(-1)
     if (!command) return scene
 
+    const nextScene = command.execute(scene)
+    this.redoStack.pop()
     this.undoStack.push(command)
-    return command.execute(scene)
+    return nextScene
   }
 
   beginTransaction(label: string): void {
@@ -57,6 +63,10 @@ export class HistoryController {
     this.transaction = undefined
     if (transaction.commands.length === 0) return
     this.undoStack.push(createCompositeCommand(transaction))
+  }
+
+  private ensureNoActiveTransaction(operation: 'undo' | 'redo'): void {
+    if (this.transaction) throw new Error(`Cannot ${operation} while a history transaction is active.`)
   }
 }
 
