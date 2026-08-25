@@ -47,6 +47,12 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/renderer-svg:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:*
+        version: link:../core
+
 packages:
 
   '@esbuild/aix-ppc64@0.28.2':
