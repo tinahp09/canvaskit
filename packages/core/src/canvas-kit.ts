@@ -6,6 +6,8 @@ import { ViewportController } from './viewport.js'
 import { SelectionController } from './selection.js'
 import { HistoryController, type SceneCommand } from './history.js'
 import { copySelection, pasteSelection, type SceneClipboard } from './clipboard.js'
+import type { CanvasPlugin } from './plugin.js'
+import { EdgeRegistry, NodeRegistry } from './registry.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup'
 
@@ -24,8 +26,12 @@ export class CanvasKit {
   private readonly listeners = new Set<(event: CanvasPointerEvent) => void>()
   private readonly history = new HistoryController()
   private clipboard: SceneClipboard = { nodes: [], edges: [], groups: [] }
+  private readonly pluginIds = new Set<string>()
+  private readonly pluginCleanups: Array<() => void> = []
   viewport: ViewportController
   readonly selection: SelectionController
+  readonly nodes = new NodeRegistry()
+  readonly edges = new EdgeRegistry()
 
   constructor(options: CanvasKitOptions = {}) {
     this.scene = options.scene ?? createScene()
@@ -102,6 +108,26 @@ export class CanvasKit {
   duplicate(): string[] {
     this.copy()
     return this.paste({ x: 20, y: 20 })
+  }
+
+  use(plugin: CanvasPlugin): void {
+    if (this.pluginIds.has(plugin.id)) {
+      throw new Error(`Plugin "${plugin.id}" is already installed.`)
+    }
+    this.pluginIds.add(plugin.id)
+    try {
+      const cleanup = plugin.install(this)
+      if (cleanup) this.pluginCleanups.push(cleanup)
+    } catch (error) {
+      this.pluginIds.delete(plugin.id)
+      throw error
+    }
+  }
+
+  dispose(): void {
+    while (this.pluginCleanups.length > 0) {
+      this.pluginCleanups.pop()?.()
+    }
   }
 
   toJSON(): string { return serializeScene(this.getScene()) }
