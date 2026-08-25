@@ -71,6 +71,10 @@ export class HistoryController {
     this.redoStack.length = 0
   }
 
+  clearRedo(): void {
+    this.redoStack.length = 0
+  }
+
   private ensureNoActiveTransaction(operation: string): void {
     if (this.transaction) throw new Error(`Cannot ${operation} while a history transaction is active.`)
   }

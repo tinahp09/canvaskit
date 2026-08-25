@@ -36,4 +36,6 @@ const restored = importScene(json)
 
 `setScene(scene)` is a direct replacement and clears undo/redo history. For user edits that should participate in history, call `canvas.execute({ label, execute, undo })`; use `beginTransaction(label)` and `commitTransaction()` to make several commands undo together.
 
+Viewport navigation remains outside undo history, but panning or zooming after an undo clears redo so it cannot replace the newer viewport state.
+
 Current support includes rectangle, circle, and text nodes; viewport navigation; selection; keyboard deletion; grid snapping; graph groups; and line, arrow, or Bezier edges. In the workflow example, select a node and drag from its white connection handle to another node to create an arrow.

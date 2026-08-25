@@ -29,7 +29,7 @@ export class CanvasKit {
 
   constructor(options: CanvasKitOptions = {}) {
     this.scene = options.scene ?? createScene()
-    this.viewport = new ViewportController(this.scene.viewport)
+    this.viewport = this.createViewport(this.scene)
     this.selection = new SelectionController(() => this.getScene())
   }
 
@@ -38,13 +38,17 @@ export class CanvasKit {
   }
 
   setScene(scene: CanvasScene): void {
-    this.applyScene(scene)
     this.clearHistory()
+    this.applyScene(scene)
+  }
+
+  private createViewport(scene: CanvasScene): ViewportController {
+    return new ViewportController(scene.viewport, () => this.history.clearRedo())
   }
 
   private applyScene(scene: CanvasScene): void {
     this.scene = scene
-    this.viewport = new ViewportController(scene.viewport)
+    this.viewport = this.createViewport(scene)
     this.selection.retainExisting()
   }
 

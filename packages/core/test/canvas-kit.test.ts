@@ -52,6 +52,54 @@ it('clears redo history when a direct scene replacement creates a newer state', 
   expect(kit.redo().nodes.map((node) => node.id)).toEqual(['newer'])
 })
 
+it('clears redo history when panning after undo without recording navigation', () => {
+  const kit = new CanvasKit()
+  const before = kit.getScene()
+  kit.execute({
+    label: 'add a',
+    execute: (scene) => addRectangle(scene, { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' }),
+    undo: () => before,
+  })
+  kit.undo()
+  kit.viewport.panBy({ x: 12, y: 24 })
+
+  expect(kit.redo().nodes).toEqual([])
+  expect(kit.getScene().viewport).toEqual({ x: 12, y: 24, zoom: 1 })
+})
+
+it('clears redo history when zooming after undo without recording navigation', () => {
+  const kit = new CanvasKit()
+  const before = kit.getScene()
+  kit.execute({
+    label: 'add a',
+    execute: (scene) => addRectangle(scene, { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' }),
+    undo: () => before,
+  })
+  kit.undo()
+  kit.viewport.zoomAt({ x: 100, y: 50 }, 2)
+
+  expect(kit.redo().nodes).toEqual([])
+  expect(kit.getScene().viewport).toEqual({ x: -100, y: -50, zoom: 2 })
+})
+
+it('rejects setScene during an active transaction without replacing the scene or history', () => {
+  const kit = new CanvasKit()
+  const initial = kit.getScene()
+  kit.execute({
+    label: 'add a',
+    execute: (scene) => addRectangle(scene, { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' }),
+    undo: () => initial,
+  })
+  const beforeReplacement = kit.getScene()
+  kit.beginTransaction('active')
+
+  expect(() => kit.setScene(addRectangle(beforeReplacement, { id: 'b', position: { x: 10, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' }))).toThrow('Cannot clear history for while a history transaction is active.')
+  expect(kit.getScene()).toEqual(beforeReplacement)
+
+  kit.commitTransaction()
+  expect(kit.undo()).toEqual(initial)
+})
+
 it('clears undo and redo history after importing a scene', () => {
   const kit = new CanvasKit()
   const before = kit.getScene()
