@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@canvaskit/core": ["../core/dist/index.d.ts"],
+      "@canvaskit/geometry": ["../geometry/dist/index.d.ts"],
+      "@canvaskit/renderer-canvas": ["../renderer-canvas/dist/index.d.ts"]
+    }
+  },
+  "include": ["src"]
+}

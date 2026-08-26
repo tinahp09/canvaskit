@@ -110,6 +110,18 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/vue:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:^0.6.0
+        version: link:../core
+      '@canvaskit/renderer-canvas':
+        specifier: workspace:^0.6.0
+        version: link:../renderer-canvas
+      vue:
+        specifier: '>=3'
+        version: 3.5.41(typescript@5.9.3)
+
 packages:
 
   '@asamuzakjp/css-color@3.2.0':
