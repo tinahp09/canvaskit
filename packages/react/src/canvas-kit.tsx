@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useRef, type ReactNode } from 'react'
 import { CanvasKit } from '@canvaskit/core'
 import { CanvasKitContext } from './context.js'
 
@@ -8,10 +8,13 @@ export interface CanvasKitProviderProps {
 }
 
 export function CanvasKitProvider({ canvas, children }: CanvasKitProviderProps): JSX.Element {
-  const [ownedCanvas] = useState(() => canvas === undefined ? new CanvasKit() : undefined)
-  const instance = canvas ?? ownedCanvas
+  const ownedCanvasRef = useRef<CanvasKit | undefined>(undefined)
+  if (canvas === undefined && ownedCanvasRef.current === undefined) {
+    ownedCanvasRef.current = new CanvasKit()
+  }
+  const instance = canvas ?? ownedCanvasRef.current
 
-  useEffect(() => () => ownedCanvas?.dispose(), [ownedCanvas])
+  useEffect(() => () => ownedCanvasRef.current?.dispose(), [])
 
   return <CanvasKitContext.Provider value={instance}>{children}</CanvasKitContext.Provider>
 }

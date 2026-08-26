@@ -58,7 +58,28 @@ it('returns the provider CanvasKit instance', () => {
     </CanvasKitProvider>,
   )
 
-  expect(view.getByText('available')).toBeTruthy()
+  expect(view.container.textContent).toBe('available')
+})
+
+it('creates an owned CanvasKit when a supplied instance is removed', () => {
+  const view = render(
+    <CanvasKitProvider canvas={new CanvasKit()}>
+      <CanvasIdentity />
+    </CanvasKitProvider>,
+  )
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+  try {
+    expect(() => view.rerender(
+      <CanvasKitProvider>
+        <CanvasIdentity />
+      </CanvasKitProvider>,
+    )).not.toThrow()
+  } finally {
+    consoleError.mockRestore()
+  }
+
+  expect(view.container.textContent).toBe('available')
 })
 
 it('throws a clear error when useCanvasKit is called outside a provider', () => {
