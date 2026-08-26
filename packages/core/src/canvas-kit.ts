@@ -8,6 +8,7 @@ import { HistoryController, type SceneCommand } from './history.js'
 import { copySelection, pasteSelection, type SceneClipboard } from './clipboard.js'
 import type { CanvasPlugin } from './plugin.js'
 import { EdgeRegistry, NodeRegistry } from './registry.js'
+import { SceneSubscription, type SceneListener } from './scene-subscription.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup'
 
@@ -24,6 +25,7 @@ export interface CanvasKitOptions {
 export class CanvasKit {
   private scene: CanvasScene
   private readonly listeners = new Set<(event: CanvasPointerEvent) => void>()
+  private readonly sceneSubscription = new SceneSubscription()
   private readonly history = new HistoryController()
   private clipboard: SceneClipboard = { nodes: [], edges: [], groups: [] }
   private readonly pluginIds = new Set<string>()
@@ -46,10 +48,14 @@ export class CanvasKit {
   setScene(scene: CanvasScene): void {
     this.clearHistory()
     this.applyScene(scene)
+    this.notifyScene()
   }
 
   private createViewport(scene: CanvasScene): ViewportController {
-    return new ViewportController(scene.viewport, () => this.history.clearRedo())
+    return new ViewportController(scene.viewport, () => {
+      this.history.clearRedo()
+      this.notifyScene()
+    })
   }
 
   private applyScene(scene: CanvasScene): void {
@@ -60,16 +66,19 @@ export class CanvasKit {
 
   execute(command: SceneCommand): CanvasScene {
     this.applyScene(this.history.execute(this.getScene(), command))
+    this.notifyScene()
     return this.getScene()
   }
 
   undo(): CanvasScene {
     this.applyScene(this.history.undo(this.getScene()))
+    this.notifyScene()
     return this.getScene()
   }
 
   redo(): CanvasScene {
     this.applyScene(this.history.redo(this.getScene()))
+    this.notifyScene()
     return this.getScene()
   }
 
@@ -146,6 +155,14 @@ export class CanvasKit {
   onPointer(listener: (event: CanvasPointerEvent) => void): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
+  }
+
+  subscribe(listener: SceneListener): () => void {
+    return this.sceneSubscription.subscribe(listener)
+  }
+
+  private notifyScene(): void {
+    this.sceneSubscription.notify(this.getScene())
   }
 
   createPointerEvent(screen: Point, type: CanvasPointerEventType): CanvasPointerEvent {
