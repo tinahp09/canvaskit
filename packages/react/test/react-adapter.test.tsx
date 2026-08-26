@@ -33,6 +33,12 @@ function CanvasIdentity() {
   return <output>{useCanvasKit() instanceof CanvasKit ? 'available' : 'missing'}</output>
 }
 
+function CanvasCapture({ onCanvas }: { onCanvas: (canvas: CanvasKit) => void }) {
+  const canvas = useCanvasKit()
+  onCanvas(canvas)
+  return <output>available</output>
+}
+
 it('updates useCanvasScene after a Core mutation and removes its subscription on unmount', () => {
   const kit = new ObservableCanvasKit()
   const view = render(
@@ -62,24 +68,44 @@ it('returns the provider CanvasKit instance', () => {
 })
 
 it('creates an owned CanvasKit when a supplied instance is removed', () => {
+  const supplied = new CanvasKit()
+  let suppliedCleanups = 0
+  let ownedCleanups = 0
+  let current: CanvasKit | undefined
+  supplied.use({
+    id: 'supplied-cleanup-tracker',
+    install: () => () => { suppliedCleanups += 1 },
+  })
+
   const view = render(
-    <CanvasKitProvider canvas={new CanvasKit()}>
-      <CanvasIdentity />
+    <CanvasKitProvider canvas={supplied}>
+      <CanvasCapture onCanvas={(canvas) => { current = canvas }} />
     </CanvasKitProvider>,
   )
+  expect(current).toBe(supplied)
   const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
   try {
     expect(() => view.rerender(
       <CanvasKitProvider>
-        <CanvasIdentity />
+        <CanvasCapture onCanvas={(canvas) => { current = canvas }} />
       </CanvasKitProvider>,
     )).not.toThrow()
   } finally {
     consoleError.mockRestore()
   }
 
-  expect(view.container.textContent).toBe('available')
+  expect(current).toBeInstanceOf(CanvasKit)
+  expect(current).not.toBe(supplied)
+  current?.use({
+    id: 'owned-cleanup-tracker',
+    install: () => () => { ownedCleanups += 1 },
+  })
+
+  view.unmount()
+
+  expect(suppliedCleanups).toBe(0)
+  expect(ownedCleanups).toBe(1)
 })
 
 it('throws a clear error when useCanvasKit is called outside a provider', () => {
