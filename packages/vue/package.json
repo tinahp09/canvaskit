@@ -7,6 +7,6 @@
   "peerDependencies": {
     "@canvaskit/core": "workspace:^0.6.0",
     "@canvaskit/renderer-canvas": "workspace:^0.6.0",
-    "vue": ">=3"
+    "vue": ">=3.3"
   }
 }

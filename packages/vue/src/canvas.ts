@@ -1,6 +1,6 @@
 import { attachPointerInput, type CanvasKit } from '@canvaskit/core'
 import { CanvasRenderer } from '@canvaskit/renderer-canvas'
-import { defineComponent, h, inject, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
+import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, ref, watch, type PropType } from 'vue'
 import { CanvasKitContext } from './context.js'
 
 export interface CanvasKitCanvasProps {
@@ -19,30 +19,51 @@ export const CanvasKitCanvas = defineComponent({
     ariaLabel: { type: String, default: 'CanvasKit canvas' },
   },
   setup(props) {
-    const contextualCanvas = inject(CanvasKitContext)
-    const canvas = props.canvas ?? contextualCanvas
+    const contextualCanvas = inject(CanvasKitContext, undefined)
+    const canvas = computed(() => props.canvas ?? contextualCanvas?.value)
     const element = ref<HTMLCanvasElement | null>(null)
     let cleanup: (() => void) | undefined
+    let stopWatching: (() => void) | undefined
 
-    if (!canvas) throw new Error('CanvasKitCanvas must receive a canvas or be used within a CanvasKitProvider.')
+    if (!canvas.value) throw new Error('CanvasKitCanvas must receive a canvas or be used within a CanvasKitProvider.')
 
-    onMounted(() => {
+    const removeBinding = () => {
+      const currentCleanup = cleanup
+      cleanup = undefined
+      currentCleanup?.()
+    }
+
+    const bind = (nextCanvas: CanvasKit) => {
+      removeBinding()
       const target = element.value
       if (!target) return
 
       const renderer = new CanvasRenderer(target)
-      const render = () => renderer.render(canvas.getScene(), canvas.selection.get())
-      const detachPointerInput = attachPointerInput(target, canvas)
-      const unsubscribe = canvas.subscribe(render)
+      const render = () => renderer.render(nextCanvas.getScene(), nextCanvas.selection.get())
+      const detachPointerInput = attachPointerInput(target, nextCanvas)
+      const unsubscribe = nextCanvas.subscribe(render)
+      let cleaned = false
 
       render()
       cleanup = () => {
+        if (cleaned) return
+        cleaned = true
         detachPointerInput()
         unsubscribe()
       }
+    }
+
+    onMounted(() => {
+      stopWatching = watch(canvas, (nextCanvas) => {
+        if (nextCanvas) bind(nextCanvas)
+        else removeBinding()
+      }, { immediate: true })
     })
 
-    onBeforeUnmount(() => cleanup?.())
+    onBeforeUnmount(() => {
+      stopWatching?.()
+      removeBinding()
+    })
 
     return () => h('canvas', {
       ref: element,

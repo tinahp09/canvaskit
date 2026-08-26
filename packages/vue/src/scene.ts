@@ -1,13 +1,19 @@
 import type { CanvasScene } from '@canvaskit/core'
-import { onScopeDispose, readonly, shallowRef, type ShallowRef } from 'vue'
-import { useCanvasKit } from './canvas-kit.js'
+import { onScopeDispose, readonly, shallowRef, watch, type ShallowRef } from 'vue'
+import { useCanvasKitRef } from './canvas-kit.js'
 
 export function useCanvasScene(): Readonly<ShallowRef<CanvasScene>> {
-  const canvas = useCanvasKit()
-  const scene = shallowRef<CanvasScene>(canvas.getScene())
-  const unsubscribe = canvas.subscribe((nextScene) => { scene.value = nextScene })
+  const canvas = useCanvasKitRef()
+  const scene = shallowRef<CanvasScene>(canvas.value.getScene())
+  let unsubscribe: (() => void) | undefined
 
-  onScopeDispose(unsubscribe)
+  watch(canvas, (nextCanvas) => {
+    unsubscribe?.()
+    scene.value = nextCanvas.getScene()
+    unsubscribe = nextCanvas.subscribe((nextScene) => { scene.value = nextScene })
+  }, { immediate: true })
+
+  onScopeDispose(() => unsubscribe?.())
 
   return readonly(scene) as Readonly<ShallowRef<CanvasScene>>
 }

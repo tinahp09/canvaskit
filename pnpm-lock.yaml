@@ -119,7 +119,7 @@ importers:
         specifier: workspace:^0.6.0
         version: link:../renderer-canvas
       vue:
-        specifier: '>=3'
+        specifier: '>=3.3'
         version: 3.5.41(typescript@5.9.3)
 
 packages:

@@ -1,4 +1,4 @@
 import type { CanvasKit } from '@canvaskit/core'
-import type { InjectionKey } from 'vue'
+import type { InjectionKey, ShallowRef } from 'vue'
 
-export const CanvasKitContext: InjectionKey<CanvasKit> = Symbol('CanvasKitContext')
+export const CanvasKitContext: InjectionKey<ShallowRef<CanvasKit>> = Symbol('CanvasKitContext')

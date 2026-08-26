@@ -1,5 +1,5 @@
 import { CanvasKit } from '@canvaskit/core'
-import { defineComponent, inject, onScopeDispose, provide, shallowRef, type PropType } from 'vue'
+import { defineComponent, inject, onScopeDispose, provide, shallowRef, watch, type PropType, type ShallowRef } from 'vue'
 import { CanvasKitContext } from './context.js'
 
 export interface CanvasKitProviderProps {
@@ -12,10 +12,13 @@ export const CanvasKitProvider = defineComponent({
     canvas: Object as PropType<CanvasKit | undefined>,
   },
   setup(props, { slots }) {
-    const ownedCanvas = shallowRef<CanvasKit | undefined>(props.canvas === undefined ? new CanvasKit() : undefined)
-    const canvas = props.canvas ?? ownedCanvas.value
+    const ownedCanvas = shallowRef<CanvasKit>()
+    const createOwnedCanvas = () => ownedCanvas.value ?? (ownedCanvas.value = new CanvasKit())
+    const canvas = shallowRef<CanvasKit>(props.canvas ?? createOwnedCanvas())
 
-    if (!canvas) throw new Error('CanvasKitProvider could not create a CanvasKit instance.')
+    watch(() => props.canvas, (suppliedCanvas) => {
+      canvas.value = suppliedCanvas ?? createOwnedCanvas()
+    })
 
     provide(CanvasKitContext, canvas)
     onScopeDispose(() => ownedCanvas.value?.dispose())
@@ -25,11 +28,11 @@ export const CanvasKitProvider = defineComponent({
 })
 
 export function useCanvasKit(): CanvasKit {
-  const canvas = injectCanvasKit()
-  if (!canvas) throw new Error('useCanvasKit must be used within a CanvasKitProvider.')
-  return canvas
+  return useCanvasKitRef().value
 }
 
-function injectCanvasKit(): CanvasKit | undefined {
-  return inject(CanvasKitContext, undefined)
+export function useCanvasKitRef(): ShallowRef<CanvasKit> {
+  const canvas = inject(CanvasKitContext, undefined)
+  if (!canvas) throw new Error('useCanvasKit must be used within a CanvasKitProvider.')
+  return canvas
 }
