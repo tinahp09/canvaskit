@@ -1,0 +1,13 @@
+{
+  "name": "@canvaskit/vue-canvas",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": {
+    "@canvaskit/core": "workspace:*",
+    "@canvaskit/renderer-canvas": "workspace:*",
+    "@canvaskit/renderer-svg": "workspace:*",
+    "@canvaskit/vue": "workspace:*",
+    "vue": "^3.5.41"
+  }
+}

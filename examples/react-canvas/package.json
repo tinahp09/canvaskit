@@ -1,0 +1,14 @@
+{
+  "name": "@canvaskit/react-canvas",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": {
+    "@canvaskit/core": "workspace:*",
+    "@canvaskit/react": "workspace:*",
+    "@canvaskit/renderer-canvas": "workspace:*",
+    "@canvaskit/renderer-svg": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

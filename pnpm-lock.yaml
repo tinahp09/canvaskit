@@ -69,6 +69,45 @@ importers:
         specifier: workspace:*
         version: link:../../packages/renderer-svg
 
+  examples/react-canvas:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@canvaskit/react':
+        specifier: workspace:*
+        version: link:../../packages/react
+      '@canvaskit/renderer-canvas':
+        specifier: workspace:*
+        version: link:../../packages/renderer-canvas
+      '@canvaskit/renderer-svg':
+        specifier: workspace:*
+        version: link:../../packages/renderer-svg
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+
+  examples/vue-canvas:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@canvaskit/renderer-canvas':
+        specifier: workspace:*
+        version: link:../../packages/renderer-canvas
+      '@canvaskit/renderer-svg':
+        specifier: workspace:*
+        version: link:../../packages/renderer-svg
+      '@canvaskit/vue':
+        specifier: workspace:*
+        version: link:../../packages/vue
+      vue:
+        specifier: ^3.5.41
+        version: 3.5.41(typescript@5.9.3)
+
   packages/core:
     dependencies:
       '@canvaskit/geometry':
