@@ -52,3 +52,77 @@ const restored = importScene(json)
 Viewport navigation remains outside undo history, but panning or zooming after an undo clears redo so it cannot replace the newer viewport state.
 
 Current support includes rectangle, circle, and text nodes; viewport navigation; selection; keyboard deletion; grid snapping; graph groups; and line, arrow, or Bezier edges. In the workflow example, select a node and drag from its white connection handle to another node to create an arrow.
+
+## React and Vue
+
+The framework adapters keep `CanvasKit` as the source of truth while connecting it to framework lifecycle and reactive UI updates. Install the adapter with Core and the Canvas renderer:
+
+```sh
+# React 18+
+pnpm add @canvaskit/core @canvaskit/renderer-canvas @canvaskit/react react react-dom
+
+# Vue 3.3+
+pnpm add @canvaskit/core @canvaskit/renderer-canvas @canvaskit/vue vue
+```
+
+In React, provide an instance and render the canvas host. `useCanvasScene()` redraws surrounding UI when Core publishes a new scene snapshot, and `CanvasKitCanvas` attaches and removes pointer listeners with the component lifecycle.
+
+```tsx
+import { useState } from 'react'
+import { CanvasKit, addRectangle, createScene } from '@canvaskit/core'
+import { CanvasKitCanvas, CanvasKitProvider, useCanvasScene } from '@canvaskit/react'
+
+function Editor() {
+  const scene = useCanvasScene()
+  return <>
+    <p>Nodes: {scene.nodes.length}</p>
+    <CanvasKitCanvas width={960} height={540} />
+  </>
+}
+
+export function App() {
+  const [canvas] = useState(() => new CanvasKit({
+    scene: addRectangle(createScene(), {
+      id: 'welcome', position: { x: 120, y: 80 }, size: { width: 240, height: 120 }, fill: '#7C7FF2',
+    }),
+  }))
+  return <CanvasKitProvider canvas={canvas}><Editor /></CanvasKitProvider>
+}
+```
+
+Vue uses the same public concepts. `useCanvasScene()` returns a readonly shallow ref, so read its value in script or let Vue unwrap it in a template.
+
+```vue
+<script setup lang="ts">
+import { CanvasKit, addRectangle, createScene } from '@canvaskit/core'
+import { CanvasKitCanvas, CanvasKitProvider, useCanvasScene } from '@canvaskit/vue'
+
+const canvas = new CanvasKit({
+  scene: addRectangle(createScene(), {
+    id: 'welcome', position: { x: 120, y: 80 }, size: { width: 240, height: 120 }, fill: '#7C7FF2',
+  }),
+})
+</script>
+
+<template>
+  <CanvasKitProvider :canvas="canvas">
+    <Editor />
+  </CanvasKitProvider>
+</template>
+```
+
+```vue
+<!-- Editor.vue -->
+<script setup lang="ts">
+import { CanvasKitCanvas, useCanvasScene } from '@canvaskit/vue'
+
+const scene = useCanvasScene()
+</script>
+
+<template>
+  <p>Nodes: {{ scene.nodes.length }}</p>
+  <CanvasKitCanvas :width="960" :height="540" />
+</template>
+```
+
+Both hosts clean up their adapter subscriptions and DOM input listeners when unmounted. A provider disposes only an instance that it created itself; callers retain ownership of an instance passed through `canvas`. See the runnable [React example](../examples/react-canvas) and [Vue example](../examples/vue-canvas). For Nuxt, keep the canvas host client-only; see [Nuxt and SSR](nuxt.md).
