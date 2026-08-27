@@ -179,6 +179,47 @@ it('batches CanvasKitCanvas redraws from scene subscriptions into an animation f
   }
 })
 
+it('does not render a queued frame after CanvasKitCanvas is unmounted', () => {
+  const clearRect = vi.fn()
+  const context = {
+    clearRect,
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    bezierCurveTo: vi.fn(),
+    stroke: vi.fn(),
+    fill: vi.fn(),
+    fillRect: vi.fn(),
+    arc: vi.fn(),
+    fillText: vi.fn(),
+  } as unknown as CanvasRenderingContext2D
+  const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context)
+  const frames: FrameRequestCallback[] = []
+  vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
+    frames.push(callback)
+    return frames.length
+  }))
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const kit = new CanvasKit()
+
+  try {
+    const view = render(defineComponent({
+      setup: () => () => h(CanvasKitCanvas, { canvas: kit }),
+    }))
+    kit.setScene(addRectangle(kit.getScene(), rectangle))
+    expect(frames).toHaveLength(1)
+
+    view.unmount()
+    expect(clearRect).toHaveBeenCalledTimes(1)
+
+    frames[0]?.(0)
+    expect(clearRect).toHaveBeenCalledTimes(1)
+  } finally {
+    getContext.mockRestore()
+    vi.unstubAllGlobals()
+  }
+})
+
 it('rebinds CanvasKitCanvas pointer input and subscriptions when its canvas changes', async () => {
   const first = new ObservableCanvasKit()
   const second = new ObservableCanvasKit()

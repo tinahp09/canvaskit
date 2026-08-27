@@ -19,3 +19,9 @@ All exited successfully.
 ```
 
 `pnpm --filter … typecheck` could not run because pnpm attempted a registry fetch and then aborted an interactive modules-directory purge. The direct local TypeScript checks above were used instead.
+
+## Review follow-up
+
+- Added React coverage that captures a scheduled callback, rebinds to a new `CanvasKit`, and verifies the old callback cannot trigger another draw.
+- Added Vue coverage that captures a scheduled callback, unmounts the host, and verifies the old callback cannot trigger another draw.
+- `RenderScheduler.dispose()` now tolerates runtimes that implement `requestAnimationFrame` without `cancelAnimationFrame`.

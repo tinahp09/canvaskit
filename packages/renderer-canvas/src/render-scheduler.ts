@@ -18,7 +18,9 @@ export class RenderScheduler {
 
   dispose(): void {
     this.disposed = true
-    if (this.frame !== undefined) globalThis.cancelAnimationFrame(this.frame)
+    if (this.frame !== undefined && typeof globalThis.cancelAnimationFrame === 'function') {
+      globalThis.cancelAnimationFrame(this.frame)
+    }
     this.frame = undefined
     this.latestRender = undefined
   }

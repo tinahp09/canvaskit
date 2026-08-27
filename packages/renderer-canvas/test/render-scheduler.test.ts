@@ -66,3 +66,24 @@ it('renders synchronously when animation frames are unavailable', () => {
     vi.unstubAllGlobals()
   }
 })
+
+it('disposes without cancelAnimationFrame when animation frames are available', () => {
+  let frame: FrameRequestCallback | undefined
+  vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
+    frame = callback
+    return 10
+  }))
+  vi.stubGlobal('cancelAnimationFrame', undefined)
+  const render = vi.fn()
+
+  try {
+    const scheduler = new RenderScheduler()
+    scheduler.schedule(render)
+
+    expect(() => scheduler.dispose()).not.toThrow()
+    frame?.(0)
+    expect(render).not.toHaveBeenCalled()
+  } finally {
+    vi.unstubAllGlobals()
+  }
+})

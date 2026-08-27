@@ -112,6 +112,47 @@ it('batches CanvasKitCanvas redraws from scene subscriptions into an animation f
   }
 })
 
+it('does not render a queued frame from the previous CanvasKit after rebinding', () => {
+  const clearRect = vi.fn()
+  const context = {
+    clearRect,
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    bezierCurveTo: vi.fn(),
+    stroke: vi.fn(),
+    fill: vi.fn(),
+    fillRect: vi.fn(),
+    arc: vi.fn(),
+    fillText: vi.fn(),
+  } as unknown as CanvasRenderingContext2D
+  const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context)
+  const frames: FrameRequestCallback[] = []
+  vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
+    frames.push(callback)
+    return frames.length
+  }))
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const first = new CanvasKit()
+  const second = new CanvasKit()
+
+  try {
+    const view = render(<CanvasKitCanvas canvas={first} />)
+    first.setScene(addRectangle(first.getScene(), rectangle))
+    expect(frames).toHaveLength(1)
+
+    act(() => view.rerender(<CanvasKitCanvas canvas={second} />))
+    expect(clearRect).toHaveBeenCalledTimes(2)
+
+    act(() => frames[0]?.(0))
+    expect(clearRect).toHaveBeenCalledTimes(2)
+    view.unmount()
+  } finally {
+    getContext.mockRestore()
+    vi.unstubAllGlobals()
+  }
+})
+
 it('creates an owned CanvasKit when a supplied instance is removed', () => {
   const supplied = new CanvasKit()
   let suppliedCleanups = 0
