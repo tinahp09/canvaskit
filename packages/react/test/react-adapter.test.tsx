@@ -3,7 +3,7 @@
 import { addRectangle, CanvasKit, type CanvasScene } from '@canvaskit/core'
 import { act, render } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
-import { CanvasKitProvider, useCanvasKit, useCanvasScene } from '../src/index.js'
+import { CanvasKitCanvas, CanvasKitProvider, useCanvasKit, useCanvasScene } from '../src/index.js'
 
 const rectangle = {
   id: 'rectangle',
@@ -65,6 +65,51 @@ it('returns the provider CanvasKit instance', () => {
   )
 
   expect(view.container.textContent).toBe('available')
+})
+
+it('batches CanvasKitCanvas redraws from scene subscriptions into an animation frame', () => {
+  const clearRect = vi.fn()
+  const context = {
+    clearRect,
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    bezierCurveTo: vi.fn(),
+    stroke: vi.fn(),
+    fill: vi.fn(),
+    fillRect: vi.fn(),
+    arc: vi.fn(),
+    fillText: vi.fn(),
+  } as unknown as CanvasRenderingContext2D
+  const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context)
+  let frame: FrameRequestCallback | undefined
+  const request = vi.fn((callback: FrameRequestCallback) => {
+    frame = callback
+    return 4
+  })
+  vi.stubGlobal('requestAnimationFrame', request)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const kit = new CanvasKit()
+
+  try {
+    const view = render(<CanvasKitCanvas canvas={kit} />)
+    expect(clearRect).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      kit.setScene(addRectangle(kit.getScene(), rectangle))
+      kit.setScene(addRectangle(kit.getScene(), { ...rectangle, id: 'rectangle-2' }))
+    })
+
+    expect(request).toHaveBeenCalledExactlyOnceWith(expect.any(Function))
+    expect(clearRect).toHaveBeenCalledTimes(1)
+
+    act(() => frame?.(0))
+    expect(clearRect).toHaveBeenCalledTimes(2)
+    view.unmount()
+  } finally {
+    getContext.mockRestore()
+    vi.unstubAllGlobals()
+  }
 })
 
 it('creates an owned CanvasKit when a supplied instance is removed', () => {

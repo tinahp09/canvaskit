@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef } from 'react'
 import type { CanvasKit } from '@canvaskit/core'
 import { attachPointerInput } from '@canvaskit/core'
-import { CanvasRenderer } from '@canvaskit/renderer-canvas'
+import { CanvasRenderer, RenderScheduler } from '@canvaskit/renderer-canvas'
 import { CanvasKitContext } from './context.js'
 
 export interface CanvasKitCanvasProps {
@@ -29,14 +29,16 @@ export function CanvasKitCanvas({
 
     const renderer = new CanvasRenderer(element)
     const render = () => renderer.render(instance.getScene(), instance.selection.get())
+    const scheduler = new RenderScheduler()
     const detachPointerInput = attachPointerInput(element, instance)
-    const unsubscribe = instance.subscribe(render)
+    const unsubscribe = instance.subscribe(() => scheduler.schedule(render))
 
     render()
 
     return () => {
       detachPointerInput()
       unsubscribe()
+      scheduler.dispose()
     }
   }, [instance])
 

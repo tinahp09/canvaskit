@@ -134,6 +134,51 @@ it('switches to a retained owned fallback as supplied CanvasKit props are remove
   expect(ownedCleanups).toBe(1)
 })
 
+it('batches CanvasKitCanvas redraws from scene subscriptions into an animation frame', () => {
+  const clearRect = vi.fn()
+  const context = {
+    clearRect,
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    bezierCurveTo: vi.fn(),
+    stroke: vi.fn(),
+    fill: vi.fn(),
+    fillRect: vi.fn(),
+    arc: vi.fn(),
+    fillText: vi.fn(),
+  } as unknown as CanvasRenderingContext2D
+  const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context)
+  let frame: FrameRequestCallback | undefined
+  const request = vi.fn((callback: FrameRequestCallback) => {
+    frame = callback
+    return 5
+  })
+  vi.stubGlobal('requestAnimationFrame', request)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const kit = new CanvasKit()
+
+  try {
+    const view = render(defineComponent({
+      setup: () => () => h(CanvasKitCanvas, { canvas: kit }),
+    }))
+    expect(clearRect).toHaveBeenCalledTimes(1)
+
+    kit.setScene(addRectangle(kit.getScene(), rectangle))
+    kit.setScene(addRectangle(kit.getScene(), { ...rectangle, id: 'rectangle-2' }))
+
+    expect(request).toHaveBeenCalledExactlyOnceWith(expect.any(Function))
+    expect(clearRect).toHaveBeenCalledTimes(1)
+
+    frame?.(0)
+    expect(clearRect).toHaveBeenCalledTimes(2)
+    view.unmount()
+  } finally {
+    getContext.mockRestore()
+    vi.unstubAllGlobals()
+  }
+})
+
 it('rebinds CanvasKitCanvas pointer input and subscriptions when its canvas changes', async () => {
   const first = new ObservableCanvasKit()
   const second = new ObservableCanvasKit()

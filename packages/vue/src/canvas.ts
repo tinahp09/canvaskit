@@ -1,5 +1,5 @@
 import { attachPointerInput, type CanvasKit } from '@canvaskit/core'
-import { CanvasRenderer } from '@canvaskit/renderer-canvas'
+import { CanvasRenderer, RenderScheduler } from '@canvaskit/renderer-canvas'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, ref, watch, type PropType } from 'vue'
 import { CanvasKitContext } from './context.js'
 
@@ -40,8 +40,9 @@ export const CanvasKitCanvas = defineComponent({
 
       const renderer = new CanvasRenderer(target)
       const render = () => renderer.render(nextCanvas.getScene(), nextCanvas.selection.get())
+      const scheduler = new RenderScheduler()
       const detachPointerInput = attachPointerInput(target, nextCanvas)
-      const unsubscribe = nextCanvas.subscribe(render)
+      const unsubscribe = nextCanvas.subscribe(() => scheduler.schedule(render))
       let cleaned = false
 
       render()
@@ -50,6 +51,7 @@ export const CanvasKitCanvas = defineComponent({
         cleaned = true
         detachPointerInput()
         unsubscribe()
+        scheduler.dispose()
       }
     }
 
