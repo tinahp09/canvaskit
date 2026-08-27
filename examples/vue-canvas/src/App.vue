@@ -16,11 +16,12 @@ canvas.setScene(addRectangle(createScene(), {
 const scene = useCanvasScene()
 const host = ref<HTMLElement | null>(null)
 const exportPreview = ref('')
+const status = ref(`Nodes: ${scene.value.nodes.length}`)
 
-const exportSvg = () => { exportPreview.value = renderSVG(scene.value) }
+const exportSvg = () => { exportPreview.value = renderSVG(scene.value); status.value = 'SVG exported.' }
 const exportPng = () => {
   const element = host.value?.querySelector('canvas')
-  if (element) exportPreview.value = exportPNG(element)
+  if (element) { exportPreview.value = exportPNG(element); status.value = 'PNG exported.' }
 }
 </script>
 
@@ -28,7 +29,7 @@ const exportPng = () => {
   <main ref="host">
     <header>
       <strong>CanvasKit Vue</strong>
-      <p role="status" aria-live="polite">Nodes: {{ scene.nodes.length }}</p>
+      <p role="status" aria-live="polite">{{ status }}</p>
       <div class="toolbar" aria-label="Export controls">
         <button type="button" @click="exportSvg">Export SVG</button>
         <button type="button" @click="exportPng">Export PNG</button>

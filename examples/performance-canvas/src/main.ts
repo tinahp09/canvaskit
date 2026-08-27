@@ -24,7 +24,7 @@ app.innerHTML = `
       <button id="zoom-out">Zoom out</button>
       <button id="reset">Reset view</button>
     </div>
-    <canvas aria-label="10,000 node canvas" tabindex="0"></canvas>
+    <canvas role="application" aria-label="10,000 node canvas" tabindex="0"></canvas>
     <p role="status">Drag with the middle mouse button, use the wheel to zoom, or use the controls.</p>
   </main>
 `

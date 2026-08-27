@@ -112,6 +112,23 @@ it('batches CanvasKitCanvas redraws from scene subscriptions into an animation f
   }
 })
 
+it('renders a labelled, keyboard-focusable canvas host', () => {
+  const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    clearRect: vi.fn(), beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), bezierCurveTo: vi.fn(),
+    stroke: vi.fn(), fill: vi.fn(), fillRect: vi.fn(), arc: vi.fn(), fillText: vi.fn(),
+  } as unknown as CanvasRenderingContext2D)
+
+  try {
+    const view = render(<CanvasKitCanvas canvas={new CanvasKit()} ariaLabel="Diagram workspace" />)
+    const canvas = view.getByLabelText('Diagram workspace')
+
+    expect(canvas.getAttribute('tabindex')).toBe('0')
+    expect(canvas.getAttribute('role')).toBe('application')
+  } finally {
+    getContext.mockRestore()
+  }
+})
+
 it('does not render a queued frame from the previous CanvasKit after rebinding', () => {
   const clearRect = vi.fn()
   const context = {

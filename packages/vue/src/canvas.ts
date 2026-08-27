@@ -1,4 +1,4 @@
-import { attachPointerInput, type CanvasKit } from '@canvaskit/core'
+import { attachKeyboardInput, attachPointerInput, type CanvasKit } from '@canvaskit/core'
 import { CanvasRenderer, RenderScheduler } from '@canvaskit/renderer-canvas'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, ref, watch, type PropType } from 'vue'
 import { CanvasKitContext } from './context.js'
@@ -42,6 +42,7 @@ export const CanvasKitCanvas = defineComponent({
       const render = () => renderer.render(nextCanvas.getScene(), nextCanvas.selection.get())
       const scheduler = new RenderScheduler()
       const detachPointerInput = attachPointerInput(target, nextCanvas)
+      const detachKeyboardInput = attachKeyboardInput(target, nextCanvas)
       const unsubscribe = nextCanvas.subscribe(() => scheduler.schedule(render))
       let cleaned = false
 
@@ -50,6 +51,7 @@ export const CanvasKitCanvas = defineComponent({
         if (cleaned) return
         cleaned = true
         detachPointerInput()
+        detachKeyboardInput()
         unsubscribe()
         scheduler.dispose()
       }
@@ -71,7 +73,10 @@ export const CanvasKitCanvas = defineComponent({
       ref: element,
       width: props.width,
       height: props.height,
+      role: 'application',
+      tabindex: 0,
       'aria-label': props.ariaLabel,
+      'aria-keyshortcuts': 'Control+A Meta+A Delete Backspace',
     })
   },
 })

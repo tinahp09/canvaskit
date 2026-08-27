@@ -3,7 +3,7 @@ import { CanvasRenderer } from '@canvaskit/renderer-canvas'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<main><header><div><h1>ERD editor</h1><p>Rectangle entities, text attributes, and directed relationship edges. Press Control/Command+A to select entities.</p></div><div class="toolbar" aria-label="ERD actions"><button id="entity">Add entity</button><button id="relationship">Connect selected entities</button><button id="export">Export ERD</button><button id="import">Import ERD</button></div></header><canvas role="img" aria-label="ERD canvas" tabindex="0"></canvas><section class="data" aria-label="ERD data"><label>ERD JSON<textarea id="json" aria-label="ERD JSON"></textarea></label><p id="status" role="status" aria-live="polite"></p></section></main>`
+app.innerHTML = `<main><header><div><h1>ERD editor</h1><p>Rectangle entities, text attributes, and directed relationship edges. Press Control/Command+A to select entities.</p></div><div class="toolbar" aria-label="ERD actions"><button id="entity">Add entity</button><button id="relationship">Connect selected entities</button><button id="export">Export ERD</button><button id="import">Import ERD</button></div></header><canvas role="application" aria-label="ERD canvas" aria-keyshortcuts="Control+A Meta+A Delete Backspace" tabindex="0"></canvas><section class="data" aria-label="ERD data"><label>ERD JSON<textarea id="json" aria-label="ERD JSON"></textarea></label><p id="status" role="status" aria-live="polite"></p></section></main>`
 
 const canvas = app.querySelector<HTMLCanvasElement>('canvas')!
 canvas.width = 1_160; canvas.height = 560

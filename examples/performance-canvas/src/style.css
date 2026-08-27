@@ -9,4 +9,5 @@ p { color: #cbd5e1; }
 .controls { margin: 20px 0; }
 button { border: 1px solid #475569; border-radius: 6px; padding: 8px 12px; color: inherit; background: #1e293b; cursor: pointer; }
 button:hover { background: #334155; }
+button:focus-visible, canvas:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
 canvas { display: block; width: 100%; height: auto; background: #0f172a; border: 1px solid #334155; touch-action: none; }

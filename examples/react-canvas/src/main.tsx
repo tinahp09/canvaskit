@@ -17,19 +17,23 @@ function CanvasExample() {
   const scene = useCanvasScene()
   const host = useRef<HTMLElement>(null)
   const [exportPreview, setExportPreview] = useState('')
+  const [status, setStatus] = useState(`Nodes: ${scene.nodes.length}`)
 
   const exportPng = () => {
     const element = host.current?.querySelector('canvas')
-    if (element) setExportPreview(exportPNG(element))
+    if (element) {
+      setExportPreview(exportPNG(element))
+      setStatus('PNG exported.')
+    }
   }
 
   return (
     <main ref={host}>
       <header>
         <strong>CanvasKit React</strong>
-        <p role="status" aria-live="polite">Nodes: {scene.nodes.length}</p>
+        <p role="status" aria-live="polite">{status}</p>
         <div className="toolbar" aria-label="Export controls">
-          <button type="button" onClick={() => setExportPreview(renderSVG(scene))}>Export SVG</button>
+          <button type="button" onClick={() => { setExportPreview(renderSVG(scene)); setStatus('SVG exported.') }}>Export SVG</button>
           <button type="button" onClick={exportPng}>Export PNG</button>
         </div>
       </header>

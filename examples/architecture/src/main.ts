@@ -3,7 +3,7 @@ import { CanvasRenderer } from '@canvaskit/renderer-canvas'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<main><header><div><h1>Service architecture</h1><p>Model service dependencies. Press Control/Command+A on the canvas to select services.</p></div><div class="toolbar" aria-label="Architecture actions"><button id="service">Add service</button><button id="dependency">Connect selected services</button><button id="export">Export architecture</button><button id="import">Import architecture</button></div></header><canvas role="img" aria-label="Architecture canvas" tabindex="0"></canvas><section class="data" aria-label="Architecture data"><label>Architecture JSON<textarea id="json" aria-label="Architecture JSON"></textarea></label><p id="status" role="status" aria-live="polite"></p></section></main>`
+app.innerHTML = `<main><header><div><h1>Service architecture</h1><p>Model service dependencies. Press Control/Command+A on the canvas to select services.</p></div><div class="toolbar" aria-label="Architecture actions"><button id="service">Add service</button><button id="dependency">Connect selected services</button><button id="export">Export architecture</button><button id="import">Import architecture</button></div></header><canvas role="application" aria-label="Architecture canvas" aria-keyshortcuts="Control+A Meta+A Delete Backspace" tabindex="0"></canvas><section class="data" aria-label="Architecture data"><label>Architecture JSON<textarea id="json" aria-label="Architecture JSON"></textarea></label><p id="status" role="status" aria-live="polite"></p></section></main>`
 
 const canvas = app.querySelector<HTMLCanvasElement>('canvas')!
 canvas.width = 1_160; canvas.height = 560

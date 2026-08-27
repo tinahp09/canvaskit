@@ -132,3 +132,20 @@ test('exports escaped SVG and PNG data through accessible export controls', asyn
   await expect(page.getByTestId('export-preview')).toHaveValue(/^data:image\/png;base64,/)
   await expect(page.getByRole('status')).toHaveText('PNG exported.')
 })
+
+test('supports keyboard focus and labelled navigation through the editor workflow', async ({ page }) => {
+  await page.goto('/')
+
+  const canvas = page.getByRole('application', { name: 'CanvasKit example' })
+  await canvas.focus()
+  await expect(canvas).toBeFocused()
+  await expect(canvas).toHaveCSS('outline-style', 'solid')
+
+  await page.keyboard.press('Control+A')
+  await page.keyboard.press('Tab')
+  await expect(page.getByLabel('Scene JSON')).toBeFocused()
+  await expect(page.getByLabel('Export preview')).toHaveAttribute('readonly', '')
+
+  await page.getByRole('button', { name: 'Export scene' }).click()
+  await expect(page.getByRole('status')).toHaveText('Scene exported.')
+})

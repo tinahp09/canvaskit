@@ -7,5 +7,6 @@ header p { margin: 0; }
 button, textarea { color: inherit; background: #101318; border: 1px solid #3a414d; border-radius: 6px; }
 button { padding: 7px 11px; cursor: pointer; }
 canvas { width: min(100%, 960px); height: auto; min-height: 480px; justify-self: center; align-self: center; background: #101318; }
+button:focus-visible, textarea:focus-visible, canvas:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
 .preview-label { display: grid; gap: 6px; padding: 12px 20px; }
 textarea { min-height: 96px; padding: 8px; resize: vertical; }
