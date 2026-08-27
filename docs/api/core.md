@@ -47,7 +47,7 @@ The instance exposes four public controllers: `viewport`, `selection`, `nodes`, 
 
 ## Controllers, history, and registries
 
-- `ViewportController` reads and changes the scene transform with `getTransform`, `setTransform`, `pan`, and `zoomAt`.
+- `ViewportController` reads and changes the scene transform with `getTransform`, `panBy`, `setZoom`, `zoomAt`, and `reset`.
 - `SelectionController` manages node IDs with `select`, `selectMultiple`, `clear`, `get`, and `selectAll`; selections are retained only for nodes that still exist.
 - `HistoryController` is the lower-level undo/redo implementation. `SceneCommand` supplies a label plus `execute` and `undo` scene transformations.
 - `NodeRegistry` and `EdgeRegistry` register named node and edge definitions. `NamedDefinition` is the minimum registry shape: an `id` string.
@@ -55,7 +55,7 @@ The instance exposes four public controllers: `viewport`, `selection`, `nodes`, 
 ## Clipboard and persistence
 
 - `copySelection(scene, ids)` returns a `SceneClipboard` containing copied nodes, edges, and groups.
-- `pasteSelection(scene, clipboard, offset?)` returns `PasteSelectionResult`, including the resulting scene and copied IDs.
+- `pasteSelection(scene, clipboard, offset)` returns `PasteSelectionResult`, including the resulting scene and copied IDs.
 - `exportScene` and its alias `serializeScene` convert a scene to versioned JSON.
 - `importScene` and its alias `loadScene` validate JSON and return a scene.
 - `migrateScene(value)` migrates supported older scene data.
