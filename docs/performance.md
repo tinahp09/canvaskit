@@ -14,9 +14,9 @@ example displays. A node that touches the viewport boundary is not considered
 visible unless its bounds overlap the viewport by a positive area.
 
 Edges are still considered independently. An edge is drawn when either endpoint
-is visible, or when its endpoint-to-endpoint screen-space segment spans the
-canvas bounds. This keeps connections crossing the current view available even
-when both nodes are off-screen.
+is visible, or when the screen-space bounds of its endpoint-to-endpoint segment
+overlap the canvas. This conservative bounds check keeps connections crossing
+the current view available even when both nodes are off-screen.
 
 ## Spatial index and interaction semantics
 
@@ -38,7 +38,7 @@ so no additional setup is required for rendering.
 The benchmark constructs deterministic rectangle-node scenes at 1,000, 5,000,
 and 10,000 nodes. For each size it performs 200 fixed viewport queries and 200
 fixed hit tests through both the linear and indexed paths, and throws if their
-results differ.
+aggregate match counts differ.
 
 From the repository root, build the workspace and run either command:
 
