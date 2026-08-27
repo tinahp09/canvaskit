@@ -7,6 +7,7 @@ comparing the public `SpatialIndex` path with the corresponding linear scan.
 Build the packages first, then run either command from the repository root:
 
 ```sh
+pnpm build
 node --experimental-strip-types benchmarks/spatial-index.ts
 pnpm benchmark:spatial-index
 ```

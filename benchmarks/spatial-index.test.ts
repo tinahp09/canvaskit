@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BENCHMARK_NODE_COUNTS, createSpatialIndexFixture } from './spatial-index.js'
+import { BENCHMARK_NODE_COUNTS, createSpatialIndexFixture, runSpatialIndexBenchmark } from './spatial-index.js'
 
 describe('createSpatialIndexFixture', () => {
   it('creates exactly 1,000, 5,000, and 10,000 deterministic nodes', () => {
@@ -21,4 +21,13 @@ describe('createSpatialIndexFixture', () => {
       expect(first.nodes.at(-1)?.id).toBe(`node-${count - 1}`)
     }
   })
+})
+
+it('records equal linear and indexed query and hit-test results', () => {
+  const result = runSpatialIndexBenchmark(1_000)
+
+  expect(result.query.linearMatches).toBe(2_128)
+  expect(result.query.linearMatches).toBe(result.query.indexedMatches)
+  expect(result.hitTest.linearMatches).toBe(200)
+  expect(result.hitTest.linearMatches).toBe(result.hitTest.indexedMatches)
 })

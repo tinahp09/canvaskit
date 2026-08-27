@@ -9,11 +9,11 @@ export class CanvasRenderer {
     this.context = context
   }
 
-  render(scene: CanvasScene, selectedNodeIds: readonly string[] = []): void {
+  render(scene: CanvasScene, selectedNodeIds: readonly string[] = []): { visibleNodeCount: number } {
     this.context.clearRect(0, 0, this.element.width, this.element.height)
     const { viewport } = scene
     const worldViewport = getWorldViewport(this.element, viewport)
-    if (!worldViewport) return
+    if (!worldViewport) return { visibleNodeCount: 0 }
     const visibleNodes = new SpatialIndex(scene.nodes).query(worldViewport)
     const visibleNodeIds = new Set(visibleNodes.map((node) => node.id))
     const nodesById = new Map(scene.nodes.map((node) => [node.id, node]))
@@ -62,6 +62,8 @@ export class CanvasRenderer {
       this.context.fillStyle = '#F4F6F8'
       this.context.fill()
     }
+
+    return { visibleNodeCount: visibleNodes.length }
   }
 
   private drawArrowhead(ax: number, ay: number, bx: number, by: number): void {

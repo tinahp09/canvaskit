@@ -31,7 +31,7 @@ it('culls off-screen nodes and edges without a visible endpoint', () => {
   } as unknown as CanvasRenderingContext2D
   const element = { getContext: () => context, width: 100, height: 100 } as unknown as HTMLCanvasElement
 
-  new CanvasRenderer(element).render({ version: 1, nodes: [
+  const result = new CanvasRenderer(element).render({ version: 1, nodes: [
     { id: 'visible', type: 'rectangle', position: { x: 20, y: 20 }, size: { width: 20, height: 20 }, fill: '#fff' },
     { id: 'offscreen', type: 'rectangle', position: { x: 200, y: 20 }, size: { width: 20, height: 20 }, fill: '#fff' },
     { id: 'also-offscreen', type: 'rectangle', position: { x: 300, y: 20 }, size: { width: 20, height: 20 }, fill: '#fff' },
@@ -41,6 +41,7 @@ it('culls off-screen nodes and edges without a visible endpoint', () => {
   ], groups: [], viewport: { x: 0, y: 0, zoom: 1 }, metadata: {} })
 
   expect(fillRect).toHaveBeenCalledExactlyOnceWith(20, 20, 20, 20)
+  expect(result.visibleNodeCount).toBe(1)
   expect(moveTo).toHaveBeenCalledTimes(1)
   expect(lineTo).toHaveBeenCalledTimes(1)
 })

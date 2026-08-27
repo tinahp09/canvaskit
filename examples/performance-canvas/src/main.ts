@@ -1,6 +1,6 @@
-import { CanvasKit, attachPointerInput, SpatialIndex } from '../../../packages/core/src/index.js'
-import { CanvasRenderer } from '../../../packages/renderer-canvas/src/index.js'
-import { createSpatialIndexFixture } from '../../../benchmarks/spatial-index.js'
+import { CanvasKit, attachPointerInput } from '@canvaskit/core'
+import { CanvasRenderer } from '@canvaskit/renderer-canvas'
+import { createSpatialIndexFixture } from '../../../benchmarks/spatial-index-fixture.js'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -14,6 +14,7 @@ app.innerHTML = `
       <div class="metrics" aria-live="polite">
         <span>Loaded: <strong data-testid="loaded-node-count">10,000</strong></span>
         <span>Visible: <strong data-testid="visible-node-count">0</strong></span>
+        <span>Renderer draw set: <strong data-testid="rendered-visible-node-count">0</strong></span>
       </div>
     </header>
     <div class="controls" aria-label="Canvas controls">
@@ -33,24 +34,14 @@ canvas.width = 1_200
 canvas.height = 720
 const kit = new CanvasKit({ scene: createSpatialIndexFixture(10_000) })
 const renderer = new CanvasRenderer(canvas)
-const index = new SpatialIndex(kit.getScene().nodes)
 const visibleNodeCount = app.querySelector<HTMLElement>('[data-testid="visible-node-count"]')!
+const renderedVisibleNodeCount = app.querySelector<HTMLElement>('[data-testid="rendered-visible-node-count"]')!
 
 function redraw(): void {
   const scene = kit.getScene()
-  renderer.render(scene)
-  visibleNodeCount.textContent = String(index.query(worldViewport(scene.viewport)).length)
-}
-
-function worldViewport(viewport: { x: number; y: number; zoom: number }): { x: number; y: number; width: number; height: number } {
-  const first = { x: -viewport.x / viewport.zoom, y: -viewport.y / viewport.zoom }
-  const second = { x: (canvas.width - viewport.x) / viewport.zoom, y: (canvas.height - viewport.y) / viewport.zoom }
-  return {
-    x: Math.min(first.x, second.x),
-    y: Math.min(first.y, second.y),
-    width: Math.abs(second.x - first.x),
-    height: Math.abs(second.y - first.y),
-  }
+  const result = renderer.render(scene)
+  visibleNodeCount.textContent = String(result.visibleNodeCount)
+  renderedVisibleNodeCount.textContent = String(result.visibleNodeCount)
 }
 
 attachPointerInput(canvas, kit)

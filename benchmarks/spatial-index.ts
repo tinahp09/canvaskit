@@ -1,34 +1,14 @@
-import { hitTestNode, nodeBounds, SpatialIndex, type CanvasNode, type CanvasScene } from '../packages/core/dist/index.js'
+import { hitTestNode, nodeBounds, SpatialIndex, type CanvasNode } from '../packages/core/dist/index.js'
+import { BENCHMARK_NODE_COUNTS, createSpatialIndexFixture, type BenchmarkNodeCount } from './spatial-index-fixture.ts'
 
-export const BENCHMARK_NODE_COUNTS = [1_000, 5_000, 10_000] as const
-
-export type BenchmarkNodeCount = typeof BENCHMARK_NODE_COUNTS[number]
+export { BENCHMARK_NODE_COUNTS, createSpatialIndexFixture, type BenchmarkNodeCount } from './spatial-index-fixture.ts'
 
 const NODE_WIDTH = 48
 const NODE_HEIGHT = 32
 const COLUMN_GAP = 80
 const ROW_GAP = 64
-const COLUMNS = 100
 const QUERY_COUNT = 200
-
-export function createSpatialIndexFixture(nodeCount: BenchmarkNodeCount): CanvasScene {
-  const nodes: CanvasNode[] = Array.from({ length: nodeCount }, (_, index) => ({
-    id: `node-${index}`,
-    type: 'rectangle',
-    position: { x: (index % COLUMNS) * COLUMN_GAP, y: Math.floor(index / COLUMNS) * ROW_GAP },
-    size: { width: NODE_WIDTH, height: NODE_HEIGHT },
-    fill: '#6366F1',
-  }))
-
-  return {
-    version: 2,
-    nodes,
-    edges: [],
-    groups: [],
-    viewport: { x: 0, y: 0, zoom: 1 },
-    metadata: { fixture: 'spatial-index' },
-  }
-}
+const COLUMNS = 100
 
 export function linearQuery(nodes: readonly CanvasNode[], rect: { x: number; y: number; width: number; height: number }): CanvasNode[] {
   return nodes.filter((node) => {
@@ -49,25 +29,30 @@ export function runSpatialIndexBenchmark(nodeCount: BenchmarkNodeCount): Spatial
   const linearHitTestResult = measure(() => points.reduce((total, point) => total + Number(hitTestNode(scene, point) !== undefined), 0))
   const indexedHitTestResult = measure(() => points.reduce((total, point) => total + Number(hitTestNode(scene, point, index) !== undefined), 0))
 
+  assertEquivalent('query', linearQueryResult.value, indexedQueryResult.value)
+  assertEquivalent('hit-test', linearHitTestResult.value, indexedHitTestResult.value)
+
   return {
     nodeCount,
     query: {
       linearMilliseconds: linearQueryResult.milliseconds,
       indexedMilliseconds: indexedQueryResult.milliseconds,
-      matches: indexedQueryResult.value,
+      linearMatches: linearQueryResult.value,
+      indexedMatches: indexedQueryResult.value,
     },
     hitTest: {
       linearMilliseconds: linearHitTestResult.milliseconds,
       indexedMilliseconds: indexedHitTestResult.milliseconds,
-      matches: indexedHitTestResult.value,
+      linearMatches: linearHitTestResult.value,
+      indexedMatches: indexedHitTestResult.value,
     },
   }
 }
 
 export interface SpatialIndexBenchmarkResult {
   nodeCount: BenchmarkNodeCount
-  query: { linearMilliseconds: number; indexedMilliseconds: number; matches: number }
-  hitTest: { linearMilliseconds: number; indexedMilliseconds: number; matches: number }
+  query: { linearMilliseconds: number; indexedMilliseconds: number; linearMatches: number; indexedMatches: number }
+  hitTest: { linearMilliseconds: number; indexedMilliseconds: number; linearMatches: number; indexedMatches: number }
 }
 
 function createQueries(nodeCount: number): Array<{ x: number; y: number; width: number; height: number }> {
@@ -84,6 +69,12 @@ function measure<T>(work: () => T): { milliseconds: number; value: T } {
   const startedAt = performance.now()
   const value = work()
   return { milliseconds: performance.now() - startedAt, value }
+}
+
+function assertEquivalent(operation: string, linearResult: number, indexedResult: number): void {
+  if (linearResult !== indexedResult) {
+    throw new Error(`${operation} benchmark result mismatch: linear ${linearResult}, indexed ${indexedResult}.`)
+  }
 }
 
 if (typeof process !== 'undefined' && import.meta.url === `file://${process.argv[1]}`) {
