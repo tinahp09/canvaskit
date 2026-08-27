@@ -6,7 +6,8 @@
     "build": "turbo run build",
     "test": "vitest run",
     "typecheck": "turbo run typecheck",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "benchmark:spatial-index": "node --experimental-strip-types benchmarks/spatial-index.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

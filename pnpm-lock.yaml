@@ -69,6 +69,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/renderer-svg
 
+  examples/performance-canvas:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@canvaskit/renderer-canvas':
+        specifier: workspace:*
+        version: link:../../packages/renderer-canvas
+
   examples/react-canvas:
     dependencies:
       '@canvaskit/core':

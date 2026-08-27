@@ -23,5 +23,10 @@ export default defineConfig({
       url: 'http://127.0.0.1:4175',
       reuseExistingServer: true,
     },
+    {
+      command: './node_modules/.bin/vite examples/performance-canvas --host 127.0.0.1 --port 4176',
+      url: 'http://127.0.0.1:4176',
+      reuseExistingServer: true,
+    },
   ],
 })
