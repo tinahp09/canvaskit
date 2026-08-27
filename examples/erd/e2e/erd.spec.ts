@@ -23,6 +23,24 @@ test('adds an entity and imports the ERD through accessible controls', async ({ 
   await expect(page.getByRole('status')).toHaveText('ERD imported.')
 })
 
+test('connects two entities selected with an additive pointer gesture', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4178')
+
+  const canvas = page.getByRole('application', { name: 'ERD canvas' })
+  const bounds = await canvas.boundingBox()
+  if (!bounds) throw new Error('Expected ERD canvas bounds.')
+  await page.mouse.click(bounds.x + bounds.width * 160 / 1160, bounds.y + bounds.height * 240 / 560)
+  await page.keyboard.down('Shift')
+  await page.mouse.click(bounds.x + bounds.width * 860 / 1160, bounds.y + bounds.height * 240 / 560)
+  await page.keyboard.up('Shift')
+  await page.getByRole('button', { name: 'Connect selected entities' }).click()
+  await expect(page.getByRole('status')).toHaveText('Relationship edge added.')
+
+  await page.getByRole('button', { name: 'Export ERD' }).click()
+  const scene = JSON.parse(await page.getByLabel('ERD JSON').inputValue())
+  expect(scene.edges).toContainEqual(expect.objectContaining({ sourceId: 'customers', targetId: 'order-items' }))
+})
+
 test('exposes focus-visible keyboard navigation and live ERD export feedback', async ({ page }) => {
   await page.goto('http://127.0.0.1:4178')
 

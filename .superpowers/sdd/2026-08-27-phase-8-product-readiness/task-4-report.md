@@ -39,6 +39,32 @@ Focused verification after the correction:
 
 The Storybook builds emitted their dependency's existing `eval` minification warning from `@storybook/core` but exited successfully. It is recorded for awareness and was not introduced by this task.
 
+## Final review corrections
+
+- Added additive Shift/Control/Command pointer selection to the ERD and Architecture editors, including text-label-to-rectangle selection so two-node connections are reachable without precision workarounds.
+- Added real E2E workflows that select two nodes, create a previously absent edge, export the scene, and assert the new relationship in both editors.
+- Added Architecture text nodes for Gateway, Catalog, Orders, and Database, plus an accessible service list referenced by the canvas. The Notifications action adds both its visible canvas label and accessible list item.
+- Made selection changes observable through `CanvasKit` scene subscriptions. React and Vue host tests prove Control+A schedules a renderer frame and executes that redraw, rather than checking focusability alone.
+- Set all seven published package versions to `0.9.0`, updated internal workspace and framework peer ranges to `workspace:^0.9.0`, updated the lockfile, and expanded the Phase 8 Changeset to cover the full published package suite.
+- Replaced the Core API page with a curated inventory of every package-root export, including clipboard, controllers, registries, pointer/history/plugin types, and the `CanvasKit` `clearHistory`, `toJSON`, `load`, and `createPointerEvent` methods.
+
+### Final review verification
+
+| Command | Result |
+| --- | --- |
+| `./node_modules/.bin/vitest run packages/react/test/react-adapter.test.tsx packages/vue/test/vue-adapter.test.ts` | RED: 2 new keyboard-selection redraw tests failed because no animation frame was requested. |
+| Same focused Vitest command after the Core selection notification change | GREEN: 18/18 tests passed. |
+| Focused ERD/Architecture Playwright suite before the implementation | RED: service description and both two-node connection workflows failed. |
+| Same focused E2E suite after the implementation | GREEN: 9/9 tests passed. |
+| `corepack pnpm@10.0.0 build` | Passed; final rerun completed 14/14 package builds in 5.838s. |
+| `corepack pnpm@10.0.0 typecheck` | Passed; final rerun completed 7/7 tasks in 3.562s. |
+| `corepack pnpm@10.0.0 test` | Passed; 27 files and 124 tests. |
+| `corepack pnpm@10.0.0 docs:build` | Passed; VitePress rendered all pages. |
+| `corepack pnpm@10.0.0 storybook:build` and `storybook:vue:build` | Passed; React and Vue static builds completed. |
+| `corepack pnpm@10.0.0 test:e2e -- --reporter=line` | Passed; final Playwright summary: 25 passed (14.4s). |
+
+The environment's fallback pnpm 11 initially attempted a non-interactive `node_modules` purge and aborted. Corepack supplied the repository-declared pnpm 10.0.0; the successful build's child commands verified the lockfile and completed normally.
+
 ## Staging scope
 
 Only Task 4 documentation, the two corrected framework E2E specs, the Phase 8 Changeset, and this evidence report are staged. Generated `.turbo`/`storybook-static` output, `.pnpm-store` state, and the untracked Phase 8 plan remain unstaged.

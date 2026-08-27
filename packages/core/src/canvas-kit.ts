@@ -38,7 +38,7 @@ export class CanvasKit {
   constructor(options: CanvasKitOptions = {}) {
     this.scene = options.scene ?? createScene()
     this.viewport = this.createViewport(this.scene)
-    this.selection = new SelectionController(() => this.getScene())
+    this.selection = new SelectionController(() => this.getScene(), () => this.notifyScene())
   }
 
   getScene(): CanvasScene {

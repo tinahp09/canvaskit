@@ -165,7 +165,7 @@ importers:
   packages/core:
     dependencies:
       '@canvaskit/geometry':
-        specifier: workspace:*
+        specifier: workspace:^0.9.0
         version: link:../geometry
 
   packages/geometry: {}
@@ -173,16 +173,16 @@ importers:
   packages/plugins:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:*
+        specifier: workspace:^0.9.0
         version: link:../core
 
   packages/react:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^0.9.0
         version: link:../core
       '@canvaskit/renderer-canvas':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^0.9.0
         version: link:../renderer-canvas
       react:
         specifier: '>=18'
@@ -192,28 +192,28 @@ importers:
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@canvaskit/plugins':
-        specifier: workspace:*
+        specifier: workspace:^0.9.0
         version: link:../plugins
 
   packages/renderer-canvas:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:*
+        specifier: workspace:^0.9.0
         version: link:../core
 
   packages/renderer-svg:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:*
+        specifier: workspace:^0.9.0
         version: link:../core
 
   packages/vue:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^0.9.0
         version: link:../core
       '@canvaskit/renderer-canvas':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^0.9.0
         version: link:../renderer-canvas
       vue:
         specifier: '>=3.3'

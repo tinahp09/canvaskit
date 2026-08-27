@@ -19,7 +19,18 @@ attachKeyboardInput(canvas, kit)
 
 let dragStart: { x: number; y: number } | undefined
 const worldPoint = (event: PointerEvent) => { const rect = canvas.getBoundingClientRect(); return kit.createPointerEvent({ x: (event.clientX - rect.left) * canvas.width / rect.width, y: (event.clientY - rect.top) * canvas.height / rect.height }, event.type as 'pointerdown' | 'pointermove' | 'pointerup').world }
-canvas.addEventListener('pointerdown', (event) => { if (event.button !== 0) return; const point = worldPoint(event); const node = hitTestNode(kit.getScene(), point); if (node) { kit.selection.select(node.id); dragStart = point } else kit.selection.clear(); redraw() })
+canvas.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return
+  const point = worldPoint(event)
+  const node = hitTestNode(kit.getScene(), point)
+  const id = node?.type === 'text' ? node.id.replace(/-label$/, '') : node?.id
+  if (id && kit.getScene().nodes.some((candidate) => candidate.id === id)) {
+    if (event.shiftKey || event.metaKey || event.ctrlKey) kit.selection.selectMultiple([id])
+    else kit.selection.select(id)
+    dragStart = point
+  } else kit.selection.clear()
+  redraw()
+})
 canvas.addEventListener('pointermove', (event) => { if (!dragStart || event.buttons !== 1) return; const point = worldPoint(event); const before = kit.getScene(); const after = moveNodes(before, kit.selection.get(), { x: point.x - dragStart.x, y: point.y - dragStart.y }); kit.execute({ label: 'move entity', execute: () => after, undo: () => before }); dragStart = point; redraw() })
 canvas.addEventListener('pointerup', () => { dragStart = undefined })
 

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { addRectangle, CanvasKit, type CanvasScene } from '@canvaskit/core'
-import { act, render } from '@testing-library/react'
+import { act, fireEvent, render } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
 import { CanvasKitCanvas, CanvasKitProvider, useCanvasKit, useCanvasScene } from '../src/index.js'
 
@@ -126,6 +126,39 @@ it('renders a labelled, keyboard-focusable canvas host', () => {
     expect(canvas.getAttribute('role')).toBe('application')
   } finally {
     getContext.mockRestore()
+  }
+})
+
+it('schedules a canvas redraw when keyboard selection changes', () => {
+  const clearRect = vi.fn()
+  const context = {
+    clearRect, beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), bezierCurveTo: vi.fn(),
+    stroke: vi.fn(), fill: vi.fn(), fillRect: vi.fn(), arc: vi.fn(), fillText: vi.fn(),
+  } as unknown as CanvasRenderingContext2D
+  const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context)
+  let frame: FrameRequestCallback | undefined
+  const request = vi.fn((callback: FrameRequestCallback) => {
+    frame = callback
+    return 6
+  })
+  vi.stubGlobal('requestAnimationFrame', request)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const kit = new CanvasKit({ scene: addRectangle(new CanvasKit().getScene(), rectangle) })
+
+  try {
+    const view = render(<CanvasKitCanvas canvas={kit} />)
+    const canvas = view.getByLabelText('CanvasKit canvas')
+
+    act(() => fireEvent.keyDown(canvas, { key: 'a', ctrlKey: true }))
+
+    expect(kit.selection.get()).toEqual(['rectangle'])
+    expect(request).toHaveBeenCalledExactlyOnceWith(expect.any(Function))
+    act(() => frame?.(0))
+    expect(clearRect).toHaveBeenCalledTimes(2)
+    view.unmount()
+  } finally {
+    getContext.mockRestore()
+    vi.unstubAllGlobals()
   }
 })
 
