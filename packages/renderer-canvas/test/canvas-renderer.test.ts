@@ -45,6 +45,34 @@ it('culls off-screen nodes and edges without a visible endpoint', () => {
   expect(lineTo).toHaveBeenCalledTimes(1)
 })
 
+it('retains edges that cross the viewport with both endpoints off-screen', () => {
+  const moveTo = vi.fn(); const lineTo = vi.fn()
+  const context = {
+    clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, stroke: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1,
+  } as unknown as CanvasRenderingContext2D
+  const element = { getContext: () => context, width: 100, height: 100 } as unknown as HTMLCanvasElement
+
+  new CanvasRenderer(element).render({ version: 1, nodes: [
+    { id: 'left', type: 'rectangle', position: { x: -40, y: 45 }, size: { width: 10, height: 10 }, fill: '#fff' },
+    { id: 'right', type: 'rectangle', position: { x: 130, y: 45 }, size: { width: 10, height: 10 }, fill: '#fff' },
+  ], edges: [{ id: 'crossing', type: 'line', sourceId: 'left', targetId: 'right' }], groups: [], viewport: { x: 0, y: 0, zoom: 1 }, metadata: {} })
+
+  expect(moveTo).toHaveBeenCalledWith(-35, 50)
+  expect(lineTo).toHaveBeenCalledWith(135, 50)
+})
+
+it('renders panned nodes with negative zoom', () => {
+  const fillRect = vi.fn()
+  const context = { clearRect: vi.fn(), fillRect, fillStyle: '' } as unknown as CanvasRenderingContext2D
+  const element = { getContext: () => context, width: 100, height: 100 } as unknown as HTMLCanvasElement
+
+  new CanvasRenderer(element).render({ version: 1, nodes: [
+    { id: 'visible', type: 'rectangle', position: { x: 10, y: 20 }, size: { width: 10, height: 10 }, fill: '#fff' },
+  ], edges: [], groups: [], viewport: { x: 80, y: 70, zoom: -2 }, metadata: {} })
+
+  expect(fillRect).toHaveBeenCalledWith(60, 30, -20, -20)
+})
+
 it('draws circle and text nodes', () => {
   const arc = vi.fn()
   const fillText = vi.fn()

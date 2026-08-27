@@ -12,22 +12,21 @@ export class CanvasRenderer {
   render(scene: CanvasScene, selectedNodeIds: readonly string[] = []): void {
     this.context.clearRect(0, 0, this.element.width, this.element.height)
     const { viewport } = scene
-    const visibleNodes = new SpatialIndex(scene.nodes).query({
-      x: -viewport.x / viewport.zoom,
-      y: -viewport.y / viewport.zoom,
-      width: this.element.width / viewport.zoom,
-      height: this.element.height / viewport.zoom,
-    })
+    const worldViewport = getWorldViewport(this.element, viewport)
+    if (!worldViewport) return
+    const visibleNodes = new SpatialIndex(scene.nodes).query(worldViewport)
     const visibleNodeIds = new Set(visibleNodes.map((node) => node.id))
     const nodesById = new Map(scene.nodes.map((node) => [node.id, node]))
 
     for (const edge of scene.edges ?? []) {
       const source = nodesById.get(edge.sourceId)
       const target = nodesById.get(edge.targetId)
-      if (!source || !target || (!visibleNodeIds.has(source.id) && !visibleNodeIds.has(target.id))) continue
+      if (!source || !target) continue
       const a = nodeCenter(source); const b = nodeCenter(target)
       const ax = a.x * viewport.zoom + viewport.x; const ay = a.y * viewport.zoom + viewport.y
       const bx = b.x * viewport.zoom + viewport.x; const by = b.y * viewport.zoom + viewport.y
+      const hasVisibleEndpoint = visibleNodeIds.has(source.id) || visibleNodeIds.has(target.id)
+      if (!hasVisibleEndpoint && !edgeMayCrossViewport(ax, ay, bx, by, this.element.width, this.element.height)) continue
       this.context.beginPath(); this.context.moveTo(ax, ay)
       if (edge.type === 'bezier') this.context.bezierCurveTo(ax + (bx - ax) / 2, ay, ax + (bx - ax) / 2, by, bx, by)
       else this.context.lineTo(bx, by)
@@ -72,4 +71,21 @@ export class CanvasRenderer {
     this.context.lineTo(bx - size * Math.cos(angle + Math.PI / 6), by - size * Math.sin(angle + Math.PI / 6))
     this.context.fill()
   }
+}
+
+function getWorldViewport(element: HTMLCanvasElement, viewport: CanvasScene['viewport']): { x: number; y: number; width: number; height: number } | undefined {
+  if (!Number.isFinite(viewport.zoom) || viewport.zoom === 0) return undefined
+  const first = { x: -viewport.x / viewport.zoom, y: -viewport.y / viewport.zoom }
+  const second = { x: (element.width - viewport.x) / viewport.zoom, y: (element.height - viewport.y) / viewport.zoom }
+  return {
+    x: Math.min(first.x, second.x),
+    y: Math.min(first.y, second.y),
+    width: Math.abs(second.x - first.x),
+    height: Math.abs(second.y - first.y),
+  }
+}
+
+function edgeMayCrossViewport(ax: number, ay: number, bx: number, by: number, width: number, height: number): boolean {
+  return Math.max(ax, bx) >= 0 && Math.min(ax, bx) <= width
+    && Math.max(ay, by) >= 0 && Math.min(ay, by) <= height
 }
