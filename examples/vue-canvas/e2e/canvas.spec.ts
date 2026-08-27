@@ -24,8 +24,9 @@ test('supports keyboard focus, labelled navigation, live export feedback, and sa
 
   await page.keyboard.press('Tab')
   await expect(page.getByLabel('Export preview')).toBeFocused()
+  const scriptCount = await page.locator('script').count()
   await page.getByRole('button', { name: 'Export SVG' }).click()
   await expect(page.getByRole('status')).toHaveText('SVG exported.')
   await expect(page.getByLabel('Export preview')).toHaveValue(/<svg/)
-  await expect(page.locator('script')).toHaveCount(0)
+  await expect(page.locator('script')).toHaveCount(scriptCount)
 })

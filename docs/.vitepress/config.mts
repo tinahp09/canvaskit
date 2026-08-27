@@ -41,6 +41,13 @@ export default defineConfig({
             { text: 'Migrations', link: '/migrations' },
           ],
         },
+        {
+          text: 'Release readiness',
+          items: [
+            { text: 'Release checklist', link: '/release-checklist' },
+            { text: 'RC feedback', link: '/rc-feedback' },
+          ],
+        },
       ],
     },
     search: { provider: 'local' },
