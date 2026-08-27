@@ -1,5 +1,5 @@
-import { addCircle, addRectangle, createScene, hitTestNode, moveNodes, nodesInRect } from '../src/index.js'
-import { expect, it } from 'vitest'
+import { addCircle, addRectangle, createScene, hitTestNode, moveNodes, nodesInRect, SpatialIndex } from '../src/index.js'
+import { expect, it, vi } from 'vitest'
 
 const scene = addCircle(addRectangle(createScene(), {
   id: 'rectangle', position: { x: 10, y: 10 }, size: { width: 40, height: 30 }, fill: '#fff',
@@ -10,8 +10,31 @@ it('hit-tests rectangle and circle nodes', () => {
   expect(hitTestNode(scene, { x: 110, y: 100 })?.id).toBe('circle')
 })
 
+it('uses an index without changing topmost hit-test selection', () => {
+  const overlapping = addRectangle(addRectangle(createScene(), {
+    id: 'bottom', position: { x: 10, y: 10 }, size: { width: 30, height: 30 }, fill: '#fff',
+  }), {
+    id: 'top', position: { x: 20, y: 20 }, size: { width: 30, height: 30 }, fill: '#fff',
+  })
+  const index = new SpatialIndex(overlapping.nodes)
+  const query = vi.spyOn(index, 'query')
+
+  expect(hitTestNode(overlapping, { x: 25, y: 25 }, index)).toEqual(hitTestNode(overlapping, { x: 25, y: 25 }))
+  expect(hitTestNode(overlapping, { x: 25, y: 25 }, index)?.id).toBe('top')
+  expect(query).toHaveBeenCalled()
+})
+
 it('selects nodes fully contained by a marquee rectangle', () => {
   expect(nodesInRect(scene, { x: 0, y: 0, width: 60, height: 60 })).toEqual(['rectangle'])
+})
+
+it('uses an index without changing fully-contained marquee selection', () => {
+  const index = new SpatialIndex(scene.nodes)
+  const query = vi.spyOn(index, 'query')
+  const marquee = { x: 0, y: 0, width: 60, height: 60 }
+
+  expect(nodesInRect(scene, marquee, index)).toEqual(nodesInRect(scene, marquee))
+  expect(query).toHaveBeenCalled()
 })
 
 it('moves named nodes immutably in world coordinates', () => {

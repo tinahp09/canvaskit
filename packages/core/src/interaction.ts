@@ -1,8 +1,11 @@
 import { rectContainsPoint, type Point, type Rect } from '@canvaskit/geometry'
+import { nodeBounds } from './bounds.js'
 import type { CanvasNode, CanvasScene } from './model.js'
+import { SpatialIndex } from './spatial-index.js'
 
-export function hitTestNode(scene: CanvasScene, point: Point): CanvasNode | undefined {
-  return [...scene.nodes].reverse().find((node) => {
+export function hitTestNode(scene: CanvasScene, point: Point, index?: SpatialIndex): CanvasNode | undefined {
+  const candidates = index?.query({ x: point.x - 0.5, y: point.y - 0.5, width: 1, height: 1 }) ?? scene.nodes
+  return [...candidates].reverse().find((node) => {
     if (node.type === 'rectangle') return rectContainsPoint({ ...node.position, ...node.size }, point)
     if (node.type === 'circle') return Math.hypot(point.x - node.position.x, point.y - node.position.y) <= node.radius
     return point.x >= node.position.x && point.x <= node.position.x + node.text.length * node.fontSize
@@ -10,13 +13,10 @@ export function hitTestNode(scene: CanvasScene, point: Point): CanvasNode | unde
   })
 }
 
-export function nodesInRect(scene: CanvasScene, rect: Rect): string[] {
-  return scene.nodes.filter((node) => {
-    const bounds = node.type === 'rectangle'
-      ? { ...node.position, ...node.size }
-      : node.type === 'circle'
-        ? { x: node.position.x - node.radius, y: node.position.y - node.radius, width: node.radius * 2, height: node.radius * 2 }
-        : { x: node.position.x, y: node.position.y - node.fontSize, width: node.text.length * node.fontSize, height: node.fontSize }
+export function nodesInRect(scene: CanvasScene, rect: Rect, index?: SpatialIndex): string[] {
+  const candidates = index?.query(rect) ?? scene.nodes
+  return candidates.filter((node) => {
+    const bounds = nodeBounds(node)
     return bounds.x >= rect.x && bounds.y >= rect.y && bounds.x + bounds.width <= rect.x + rect.width && bounds.y + bounds.height <= rect.y + rect.height
   }).map((node) => node.id)
 }

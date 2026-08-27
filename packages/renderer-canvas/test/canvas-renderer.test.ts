@@ -24,6 +24,27 @@ it('draws rectangles in transformed world coordinates', () => {
   expect(fillRect).toHaveBeenCalledWith(25, 46, 60, 80)
 })
 
+it('culls off-screen nodes and edges without a visible endpoint', () => {
+  const fillRect = vi.fn(); const moveTo = vi.fn(); const lineTo = vi.fn()
+  const context = {
+    clearRect: vi.fn(), fillRect, beginPath: vi.fn(), moveTo, lineTo, stroke: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1,
+  } as unknown as CanvasRenderingContext2D
+  const element = { getContext: () => context, width: 100, height: 100 } as unknown as HTMLCanvasElement
+
+  new CanvasRenderer(element).render({ version: 1, nodes: [
+    { id: 'visible', type: 'rectangle', position: { x: 20, y: 20 }, size: { width: 20, height: 20 }, fill: '#fff' },
+    { id: 'offscreen', type: 'rectangle', position: { x: 200, y: 20 }, size: { width: 20, height: 20 }, fill: '#fff' },
+    { id: 'also-offscreen', type: 'rectangle', position: { x: 300, y: 20 }, size: { width: 20, height: 20 }, fill: '#fff' },
+  ], edges: [
+    { id: 'visible-edge', type: 'line', sourceId: 'visible', targetId: 'offscreen' },
+    { id: 'offscreen-edge', type: 'line', sourceId: 'offscreen', targetId: 'also-offscreen' },
+  ], groups: [], viewport: { x: 0, y: 0, zoom: 1 }, metadata: {} })
+
+  expect(fillRect).toHaveBeenCalledExactlyOnceWith(20, 20, 20, 20)
+  expect(moveTo).toHaveBeenCalledTimes(1)
+  expect(lineTo).toHaveBeenCalledTimes(1)
+})
+
 it('draws circle and text nodes', () => {
   const arc = vi.fn()
   const fillText = vi.fn()

@@ -1,4 +1,4 @@
-import { nodeCenter, type CanvasScene } from '@canvaskit/core'
+import { nodeCenter, SpatialIndex, type CanvasScene } from '@canvaskit/core'
 
 export class CanvasRenderer {
   private readonly context: CanvasRenderingContext2D
@@ -11,12 +11,21 @@ export class CanvasRenderer {
 
   render(scene: CanvasScene, selectedNodeIds: readonly string[] = []): void {
     this.context.clearRect(0, 0, this.element.width, this.element.height)
+    const { viewport } = scene
+    const visibleNodes = new SpatialIndex(scene.nodes).query({
+      x: -viewport.x / viewport.zoom,
+      y: -viewport.y / viewport.zoom,
+      width: this.element.width / viewport.zoom,
+      height: this.element.height / viewport.zoom,
+    })
+    const visibleNodeIds = new Set(visibleNodes.map((node) => node.id))
+    const nodesById = new Map(scene.nodes.map((node) => [node.id, node]))
 
     for (const edge of scene.edges ?? []) {
-      const source = scene.nodes.find((node) => node.id === edge.sourceId)
-      const target = scene.nodes.find((node) => node.id === edge.targetId)
-      if (!source || !target) continue
-      const a = nodeCenter(source); const b = nodeCenter(target); const { viewport } = scene
+      const source = nodesById.get(edge.sourceId)
+      const target = nodesById.get(edge.targetId)
+      if (!source || !target || (!visibleNodeIds.has(source.id) && !visibleNodeIds.has(target.id))) continue
+      const a = nodeCenter(source); const b = nodeCenter(target)
       const ax = a.x * viewport.zoom + viewport.x; const ay = a.y * viewport.zoom + viewport.y
       const bx = b.x * viewport.zoom + viewport.x; const by = b.y * viewport.zoom + viewport.y
       this.context.beginPath(); this.context.moveTo(ax, ay)
@@ -26,8 +35,7 @@ export class CanvasRenderer {
       if (edge.type === 'arrow') this.drawArrowhead(ax, ay, bx, by)
     }
 
-    for (const node of scene.nodes) {
-      const { viewport } = scene
+    for (const node of visibleNodes) {
       this.context.fillStyle = node.fill
       const x = node.position.x * viewport.zoom + viewport.x
       const y = node.position.y * viewport.zoom + viewport.y
@@ -43,9 +51,8 @@ export class CanvasRenderer {
       }
     }
 
-    for (const node of scene.nodes) {
+    for (const node of visibleNodes) {
       if (!selectedNodeIds.includes(node.id)) continue
-      const { viewport } = scene
       const point = node.type === 'rectangle'
         ? { x: node.position.x + node.size.width, y: node.position.y + node.size.height / 2 }
         : node.type === 'circle'
