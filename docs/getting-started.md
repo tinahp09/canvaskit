@@ -53,6 +53,34 @@ Viewport navigation remains outside undo history, but panning or zooming after a
 
 Current support includes rectangle, circle, and text nodes; viewport navigation; selection; keyboard deletion; grid snapping; graph groups; and line, arrow, or Bezier edges. In the workflow example, select a node and drag from its white connection handle to another node to create an arrow.
 
+## Large Canvas scenes
+
+`CanvasRenderer` applies viewport culling automatically: during each render it
+draws only nodes whose world bounds intersect the current canvas viewport. The
+render result includes `visibleNodeCount` if surrounding UI needs to display the
+current draw-set size:
+
+```ts
+const result = renderer.render(canvas.getScene())
+console.log(result.visibleNodeCount)
+```
+
+For repeated application-side spatial queries, create a `SpatialIndex` from the
+current scene nodes and pass it to `hitTestNode` or `nodesInRect`. The index is a
+snapshot, so create a new one when node bounds change. Queries preserve scene
+order, including topmost hit-test selection.
+
+```ts
+import { SpatialIndex, hitTestNode } from '@canvaskit/core'
+
+const scene = canvas.getScene()
+const index = new SpatialIndex(scene.nodes)
+const node = hitTestNode(scene, { x: 180, y: 120 }, index)
+```
+
+See [Performance at scale](performance.md) for culling and edge semantics,
+benchmark reproduction, and the runnable 10,000-node example.
+
 ## React and Vue
 
 The framework adapters keep `CanvasKit` as the source of truth while connecting it to framework lifecycle and reactive UI updates. Install the adapter with Core and the Canvas renderer:
