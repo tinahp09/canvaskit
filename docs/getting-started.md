@@ -153,4 +153,4 @@ const scene = useCanvasScene()
 </template>
 ```
 
-Both hosts clean up their adapter subscriptions and DOM input listeners when unmounted. A provider disposes only an instance that it created itself; callers retain ownership of an instance passed through `canvas`. See the runnable [React example](../examples/react-canvas) and [Vue example](../examples/vue-canvas). For Nuxt, keep the canvas host client-only; see [Nuxt and SSR](nuxt.md).
+Both hosts clean up their adapter subscriptions and DOM input listeners when unmounted. A provider disposes only an instance that it created itself; callers retain ownership of an instance passed through `canvas`. See the runnable framework examples in the [examples guide](/examples). For Nuxt, keep the canvas host client-only; see [Nuxt and SSR](/nuxt).

@@ -52,7 +52,7 @@ node --experimental-strip-types benchmarks/spatial-index.ts
 
 Treat the elapsed times as same-machine comparisons, not a CI threshold:
 hardware, Node version, and concurrent activity affect the result. The recorded
-baseline and fixture details live in [the benchmark README](../benchmarks/README.md).
+baseline and fixture details live in `benchmarks/README.md` at the repository root.
 When changing the index algorithm or benchmark workload, rerun it and update
 that recorded baseline together with the change.
 
