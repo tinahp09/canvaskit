@@ -1,0 +1,10 @@
+{
+  "name": "@canvaskit/architecture",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": {
+    "@canvaskit/core": "workspace:*",
+    "@canvaskit/renderer-canvas": "workspace:*"
+  }
+}

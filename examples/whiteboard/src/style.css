@@ -1,0 +1,12 @@
+:root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #10111a; color: #f9fafb; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { min-height: 100vh; display: grid; grid-template-rows: auto minmax(440px, 1fr) auto auto; }
+header, .data { padding: 16px clamp(16px, 4vw, 48px); }
+header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; background: #17192a; border-bottom: 1px solid #303653; }
+h1 { margin: 0; font-size: 1.25rem; } p { margin: 4px 0 0; color: #b8bfd6; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; } button, textarea { font: inherit; border: 1px solid #49517a; border-radius: 8px; color: inherit; background: #232842; }
+button { padding: 8px 12px; cursor: pointer; } button:hover, button:focus-visible { background: #3b4677; outline: 2px solid #b8c5ff; outline-offset: 2px; }
+canvas { width: min(1160px, calc(100% - 32px)); height: 100%; min-height: 440px; place-self: center; background: radial-gradient(#343a5a 1px, transparent 1px) 0 0 / 20px 20px, #151827; border-radius: 12px; outline: none; }
+canvas:focus-visible { outline: 3px solid #b8c5ff; outline-offset: 3px; }
+.data { display: grid; grid-template-columns: 1fr; gap: 8px; } textarea { min-height: 104px; width: 100%; padding: 10px; } #status { min-height: 1.4em; }

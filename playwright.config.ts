@@ -28,5 +28,20 @@ export default defineConfig({
       url: 'http://127.0.0.1:4176',
       reuseExistingServer: true,
     },
+    {
+      command: './node_modules/.bin/vite examples/whiteboard --host 127.0.0.1 --port 4177',
+      url: 'http://127.0.0.1:4177',
+      reuseExistingServer: true,
+    },
+    {
+      command: './node_modules/.bin/vite examples/erd --host 127.0.0.1 --port 4178',
+      url: 'http://127.0.0.1:4178',
+      reuseExistingServer: true,
+    },
+    {
+      command: './node_modules/.bin/vite examples/architecture --host 127.0.0.1 --port 4179',
+      url: 'http://127.0.0.1:4179',
+      reuseExistingServer: true,
+    },
   ],
 })
