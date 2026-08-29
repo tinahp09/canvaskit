@@ -25,6 +25,9 @@ export interface TransformOverlay {
   rotation: number
 }
 
+export type AlignmentAxis = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom'
+export type DistributionAxis = 'horizontal' | 'vertical'
+
 export class UnsupportedPersistentRotationError extends Error {
   constructor() {
     super('Persistent rotation is not supported in the current scene model.')
@@ -75,6 +78,73 @@ export class TransformController {
         ? resizeNode(node, sourceBounds, targetBounds, scaleX, scaleY, handle)
         : node),
     }
+  }
+
+  align(scene: CanvasScene, ids: readonly string[], axis: AlignmentAxis): CanvasScene {
+    const nodes = selectedNodes(scene, ids)
+    if (!nodes) return scene
+
+    const selectionBounds = unionBounds(nodes)
+    const selectionRight = selectionBounds.x + selectionBounds.width
+    const selectionBottom = selectionBounds.y + selectionBounds.height
+    const selectionCenterX = selectionBounds.x + selectionBounds.width / 2
+    const selectionCenterY = selectionBounds.y + selectionBounds.height / 2
+    const moves = new Map(nodes.map((node) => {
+      const bounds = normalizeRect(nodeBounds(node))
+      const right = bounds.x + bounds.width
+      const bottom = bounds.y + bounds.height
+      const centerX = bounds.x + bounds.width / 2
+      const centerY = bounds.y + bounds.height / 2
+      switch (axis) {
+        case 'left': return [node.id, { x: selectionBounds.x - bounds.x, y: 0 }]
+        case 'center': return [node.id, { x: selectionCenterX - centerX, y: 0 }]
+        case 'right': return [node.id, { x: selectionRight - right, y: 0 }]
+        case 'top': return [node.id, { x: 0, y: selectionBounds.y - bounds.y }]
+        case 'middle': return [node.id, { x: 0, y: selectionCenterY - centerY }]
+        case 'bottom': return [node.id, { x: 0, y: selectionBottom - bottom }]
+      }
+    }))
+    return translateSelectedNodes(scene, moves)
+  }
+
+  distribute(scene: CanvasScene, ids: readonly string[], axis: DistributionAxis): CanvasScene {
+    const nodes = selectedNodes(scene, ids)
+    if (!nodes || nodes.length < 2) return scene
+
+    const ordered = nodes
+      .map((node, index) => ({ node, index, bounds: normalizeRect(nodeBounds(node)) }))
+      .sort((first, second) => {
+        const firstPosition = axis === 'horizontal' ? first.bounds.x : first.bounds.y
+        const secondPosition = axis === 'horizontal' ? second.bounds.x : second.bounds.y
+        return firstPosition - secondPosition || first.index - second.index
+      })
+    const first = ordered[0].bounds
+    const last = ordered.at(-1)!.bounds
+    const start = axis === 'horizontal' ? first.x : first.y
+    const end = axis === 'horizontal' ? last.x + last.width : last.y + last.height
+    const totalSize = ordered.reduce((total, item) => total + (axis === 'horizontal' ? item.bounds.width : item.bounds.height), 0)
+    const gap = (end - start - totalSize) / (ordered.length - 1)
+    let cursor = start
+    const moves = new Map<string, Point>()
+
+    for (const { node, bounds } of ordered) {
+      const position = axis === 'horizontal' ? bounds.x : bounds.y
+      moves.set(node.id, axis === 'horizontal' ? { x: cursor - position, y: 0 } : { x: 0, y: cursor - position })
+      cursor += (axis === 'horizontal' ? bounds.width : bounds.height) + gap
+    }
+
+    return translateSelectedNodes(scene, moves)
+  }
+}
+
+function translateSelectedNodes(scene: CanvasScene, moves: ReadonlyMap<string, Point>): CanvasScene {
+  if (![...moves.values()].some(({ x, y }) => x !== 0 || y !== 0)) return scene
+  return {
+    ...scene,
+    nodes: scene.nodes.map((node) => {
+      const move = moves.get(node.id)
+      return move ? { ...node, position: { x: node.position.x + move.x, y: node.position.y + move.y } } : node
+    }),
   }
 }
 

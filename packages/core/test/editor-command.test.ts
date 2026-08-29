@@ -21,3 +21,31 @@ it('dispatches every command and reports whether clipboard work changed observab
   expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['a', 'a-copy'])
   expect(kit.executeCommand('cut')).toBe(false)
 })
+
+it('dispatches transform alignment and distribution commands through the selected nodes', () => {
+  const commands: EditorCommand[] = [
+    'align-left', 'align-center', 'align-right', 'align-top', 'align-middle', 'align-bottom',
+    'distribute-horizontal', 'distribute-vertical',
+  ]
+
+  const results = commands.map((command) => {
+    let scene = addRectangle(createScene(), rectangle)
+    scene = addRectangle(scene, { id: 'b', position: { x: 40, y: 30 }, size: { width: 20, height: 10 }, fill: '#000' })
+    scene = addRectangle(scene, { id: 'c', position: { x: 100, y: 80 }, size: { width: 10, height: 20 }, fill: '#123' })
+    const kit = new CanvasKit({ scene })
+    kit.selection.set(['a', 'b', 'c'])
+    return kit.executeCommand(command)
+  })
+
+  expect(results).toEqual([true, true, true, true, true, true, true, true])
+})
+
+it('does not report a transform command as handled when selection cannot change the scene', () => {
+  const kit = new CanvasKit({ scene: addRectangle(createScene(), rectangle) })
+
+  expect(kit.executeCommand('align-left')).toBe(false)
+  expect(kit.executeCommand('distribute-horizontal')).toBe(false)
+  kit.selection.select('a')
+  expect(kit.executeCommand('align-left')).toBe(false)
+  expect(kit.executeCommand('distribute-horizontal')).toBe(false)
+})

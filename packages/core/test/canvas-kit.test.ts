@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { addEdge, addGroup, addRectangle, CanvasKit, createScene, importScene, type CanvasScene } from '../src/index.js'
+import { addEdge, addGroup, addRectangle, CanvasKit, createScene, importScene, UnsupportedPersistentRotationError, type CanvasScene } from '../src/index.js'
 
 it('reports pointer coordinates in screen and world space', () => {
   const canvas = new CanvasKit()
@@ -183,4 +183,120 @@ it('undoes a transaction as one history entry', () => {
   kit.commitTransaction()
 
   expect(kit.undo().nodes).toEqual([])
+})
+
+it('resizes the current selection as one undoable history command', () => {
+  const scene = addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
+  })
+  const kit = new CanvasKit({ scene })
+  kit.selection.select('rectangle')
+
+  expect(kit.resizeSelection('east', { x: 70, y: 40 })).toBe(true)
+  expect(kit.getScene().nodes[0]).toMatchObject({ position: { x: 10, y: 20 }, size: { width: 60, height: 40 } })
+  expect(kit.undo()).toEqual(scene)
+  expect(kit.redo().nodes[0]).toMatchObject({ position: { x: 10, y: 20 }, size: { width: 60, height: 40 } })
+  expect(kit.undo()).toEqual(scene)
+  expect(kit.undo()).toEqual(scene)
+})
+
+it('returns false when resize selection cannot alter the scene', () => {
+  const scene = addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
+  })
+  const kit = new CanvasKit({ scene })
+
+  expect(kit.resizeSelection('east', { x: 40, y: 40 })).toBe(false)
+  kit.selection.select('rectangle')
+  expect(kit.resizeSelection('east', { x: 40, y: 40 })).toBe(false)
+  expect(kit.undo()).toEqual(scene)
+})
+
+it('preserves the controller typed rotation error without recording history', () => {
+  const scene = addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
+  })
+  const kit = new CanvasKit({ scene })
+  kit.selection.select('rectangle')
+
+  expect(() => kit.resizeSelection('rotate', { x: 25, y: 0 })).toThrow(UnsupportedPersistentRotationError)
+  expect(kit.getScene()).toEqual(scene)
+  expect(kit.undo()).toEqual(scene)
+})
+
+it('aligns the current selection without disturbing graph and group relationships', () => {
+  let scene = addRectangle(createScene(), {
+    id: 'left', position: { x: 0, y: 10 }, size: { width: 10, height: 10 }, fill: '#fff',
+  })
+  scene = addRectangle(scene, {
+    id: 'right', position: { x: 30, y: 20 }, size: { width: 20, height: 10 }, fill: '#000',
+  })
+  scene = addEdge(scene, { id: 'edge', sourceId: 'left', targetId: 'right', type: 'line' })
+  scene = addGroup(scene, { id: 'pair', nodeIds: ['left', 'right'] })
+  const kit = new CanvasKit({ scene })
+  kit.selection.set(['left', 'right'])
+
+  expect(kit.alignSelection('left')).toBe(true)
+  expect(kit.getScene().nodes.map((node) => node.position)).toEqual([{ x: 0, y: 10 }, { x: 0, y: 20 }])
+  expect(kit.getScene().edges).toEqual(scene.edges)
+  expect(kit.getScene().groups).toEqual(scene.groups)
+  expect(kit.undo()).toEqual(scene)
+  expect(kit.redo().nodes.map((node) => node.position)).toEqual([{ x: 0, y: 10 }, { x: 0, y: 20 }])
+  expect(kit.undo()).toEqual(scene)
+  expect(kit.undo()).toEqual(scene)
+})
+
+it('does not record history for an already aligned multi-selection', () => {
+  let scene = addRectangle(createScene(), {
+    id: 'first', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+  })
+  scene = addRectangle(scene, {
+    id: 'second', position: { x: 0, y: 20 }, size: { width: 10, height: 10 }, fill: '#000',
+  })
+  const kit = new CanvasKit({ scene })
+  kit.selection.selectAll()
+
+  expect(kit.alignSelection('left')).toBe(false)
+  expect(kit.undo()).toEqual(scene)
+})
+
+it('distributes the current selection and treats insufficient or unchanged selections as no-ops', () => {
+  let scene = addRectangle(createScene(), {
+    id: 'first', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+  })
+  scene = addRectangle(scene, {
+    id: 'middle', position: { x: 30, y: 0 }, size: { width: 10, height: 10 }, fill: '#000',
+  })
+  scene = addRectangle(scene, {
+    id: 'last', position: { x: 80, y: 0 }, size: { width: 10, height: 10 }, fill: '#123',
+  })
+  const kit = new CanvasKit({ scene })
+
+  expect(kit.distributeSelection('horizontal')).toBe(false)
+  kit.selection.select('first')
+  expect(kit.distributeSelection('horizontal')).toBe(false)
+  kit.selection.set(['first', 'middle', 'last'])
+  expect(kit.distributeSelection('horizontal')).toBe(true)
+  expect(kit.getScene().nodes.map((node) => node.position)).toEqual([{ x: 0, y: 0 }, { x: 40, y: 0 }, { x: 80, y: 0 }])
+  expect(kit.undo()).toEqual(scene)
+  expect(kit.redo().nodes.map((node) => node.position)).toEqual([{ x: 0, y: 0 }, { x: 40, y: 0 }, { x: 80, y: 0 }])
+  expect(kit.undo()).toEqual(scene)
+  expect(kit.undo()).toEqual(scene)
+})
+
+it('does not record history for an already distributed multi-selection', () => {
+  let scene = addRectangle(createScene(), {
+    id: 'first', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+  })
+  scene = addRectangle(scene, {
+    id: 'second', position: { x: 40, y: 0 }, size: { width: 10, height: 10 }, fill: '#000',
+  })
+  scene = addRectangle(scene, {
+    id: 'third', position: { x: 80, y: 0 }, size: { width: 10, height: 10 }, fill: '#123',
+  })
+  const kit = new CanvasKit({ scene })
+  kit.selection.selectAll()
+
+  expect(kit.distributeSelection('horizontal')).toBe(false)
+  expect(kit.undo()).toEqual(scene)
 })

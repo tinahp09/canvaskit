@@ -12,6 +12,7 @@ import type { EditorCommand } from './editor-command.js'
 import type { CanvasPlugin } from './plugin.js'
 import { EdgeRegistry, NodeRegistry } from './registry.js'
 import { SceneSubscription, type SceneListener } from './scene-subscription.js'
+import { TransformController, type AlignmentAxis, type DistributionAxis, type TransformConstraints, type TransformHandle } from './transform.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup'
 
@@ -49,6 +50,7 @@ export class CanvasKit {
   private readonly pluginCleanups: Array<() => void> = []
   viewport: ViewportController
   readonly selection: SelectionController
+  readonly transform = new TransformController()
   readonly nodes = new NodeRegistry()
   readonly edges = new EdgeRegistry()
 
@@ -152,6 +154,28 @@ export class CanvasKit {
     return this.paste({ x: 20, y: 20 })
   }
 
+  resizeSelection(handle: TransformHandle, point: Point, constraints?: TransformConstraints): boolean {
+    const ids = this.selection.get()
+    if (ids.length === 0) return false
+    const before = this.getScene()
+    const after = this.transform.resize(before, ids, handle, point, constraints)
+    return this.executeTransform('resize selection', before, after)
+  }
+
+  alignSelection(axis: AlignmentAxis): boolean {
+    const ids = this.selection.get()
+    if (ids.length < 2) return false
+    const before = this.getScene()
+    return this.executeTransform('align selection', before, this.transform.align(before, ids, axis))
+  }
+
+  distributeSelection(axis: DistributionAxis): boolean {
+    const ids = this.selection.get()
+    if (ids.length < 2) return false
+    const before = this.getScene()
+    return this.executeTransform('distribute selection', before, this.transform.distribute(before, ids, axis))
+  }
+
   selectInRect(rect: Rect, options: MarqueeSelectionOptions = {}): string[] {
     const ids = nodesInRect(this.getScene(), rect, options.mode ?? 'contain')
     switch (options.selection ?? 'replace') {
@@ -187,6 +211,14 @@ export class CanvasKit {
       case 'duplicate':
         if (this.selection.get().length === 0) return false
         return this.duplicate().length > 0
+      case 'align-left': return this.alignSelection('left')
+      case 'align-center': return this.alignSelection('center')
+      case 'align-right': return this.alignSelection('right')
+      case 'align-top': return this.alignSelection('top')
+      case 'align-middle': return this.alignSelection('middle')
+      case 'align-bottom': return this.alignSelection('bottom')
+      case 'distribute-horizontal': return this.distributeSelection('horizontal')
+      case 'distribute-vertical': return this.distributeSelection('vertical')
     }
   }
 
@@ -234,6 +266,12 @@ export class CanvasKit {
 
   private notifyScene(): void {
     this.sceneSubscription.notify(this.getScene())
+  }
+
+  private executeTransform(label: string, before: CanvasScene, after: CanvasScene): boolean {
+    if (JSON.stringify(before) === JSON.stringify(after)) return false
+    this.execute({ label, execute: () => after, undo: () => before })
+    return true
   }
 
   createPointerEvent(screen: Point, type: CanvasPointerEventType, modifiers?: CanvasPointerModifiers, button?: number, buttons?: number): CanvasPointerEvent {
