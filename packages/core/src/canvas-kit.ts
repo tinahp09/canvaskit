@@ -1,5 +1,5 @@
 import { screenToWorld, type Point, type Rect } from '@canvaskit/geometry'
-import type { CanvasScene } from './model.js'
+import type { CanvasLayer, CanvasScene } from './model.js'
 import { createScene } from './scene.js'
 import { loadScene, serializeScene } from './serialization.js'
 import { ViewportController } from './viewport.js'
@@ -13,6 +13,7 @@ import type { CanvasPlugin } from './plugin.js'
 import { EdgeRegistry, NodeRegistry } from './registry.js'
 import { SceneSubscription, type SceneListener } from './scene-subscription.js'
 import { TransformController, type AlignmentAxis, type DistributionAxis, type TransformConstraints, type TransformHandle } from './transform.js'
+import { addLayer, groupNodes, isNodeInteractive, moveNodesToLayer, reorderLayer as reorderLayers, reorderNodeInLayer, setLayerLocked, setLayerVisibility, ungroupNodes } from './document.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup'
 
@@ -57,11 +58,19 @@ export class CanvasKit {
   constructor(options: CanvasKitOptions = {}) {
     this.scene = options.scene ?? createScene()
     this.viewport = this.createViewport(this.scene)
-    this.selection = new SelectionController(() => this.getScene(), () => this.notifyScene())
+    this.selection = new SelectionController(
+      () => this.getScene(),
+      () => this.notifyScene(),
+      (id) => this.isNodeInteractive(id),
+    )
   }
 
   getScene(): CanvasScene {
     return { ...this.scene, viewport: this.viewport.getTransform() }
+  }
+
+  isNodeInteractive(id: string): boolean {
+    return isNodeInteractive(this.getScene(), id)
   }
 
   setScene(scene: CanvasScene): void {
@@ -174,6 +183,76 @@ export class CanvasKit {
     return this.executeTransform('distribute selection', before, this.transform.distribute(before, ids, axis))
   }
 
+  createLayer(layer: CanvasLayer): boolean {
+    return this.executeDocument('create layer', (scene) => addLayer(scene, layer))
+  }
+
+  moveSelectionToLayer(layerId: string): boolean {
+    const ids = this.selection.get()
+    if (ids.length === 0) return false
+    return this.executeDocument('move selection to layer', (scene) => moveNodesToLayer(scene, ids, layerId))
+  }
+
+  setLayerVisible(layerId: string, visible: boolean): boolean {
+    return this.setLayerVisibility(layerId, visible)
+  }
+
+  setLayerVisibility(layerId: string, visible: boolean): boolean {
+    return this.executeDocument('set layer visibility', (scene) => setLayerVisibility(scene, layerId, visible))
+  }
+
+  setLayerLocked(layerId: string, locked: boolean): boolean {
+    return this.executeDocument('set layer locked', (scene) => setLayerLocked(scene, layerId, locked))
+  }
+
+  reorderSelection(targetIndex: number): boolean {
+    const ids = this.selection.get()
+    if (ids.length === 0) return false
+    const before = this.getScene()
+    const selectedNodes = before.nodes.filter((node) => ids.includes(node.id))
+    const layerId = selectedNodes[0]?.layerId
+    if (!layerId || selectedNodes.some((node) => node.layerId !== layerId)) return false
+    const selectedIds = new Set(selectedNodes.map((node) => node.id))
+    const remainingIds = before.nodes.filter((node) => node.layerId === layerId && !selectedIds.has(node.id)).map((node) => node.id)
+    if (!Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex > remainingIds.length) {
+      throw new RangeError('Target index is out of bounds.')
+    }
+    const orderedIds = [
+      ...remainingIds.slice(0, targetIndex),
+      ...selectedNodes.map((node) => node.id),
+      ...remainingIds.slice(targetIndex),
+    ]
+    return this.executeDocument('reorder selection', (scene) => orderedIds.reduce(
+      (current, nodeId, index) => reorderNodeInLayer(current, nodeId, index),
+      scene,
+    ))
+  }
+
+  reorderLayer(layerId: string, targetIndex: number): boolean {
+    return this.executeDocument('reorder layer', (scene) => reorderLayers(scene, layerId, targetIndex))
+  }
+
+  groupSelection(): boolean {
+    const nodeIds = this.selection.get()
+    if (nodeIds.length === 0) return false
+    const before = this.getScene()
+    const groupId = this.nextGroupId(before)
+    const after = groupNodes(before, { id: groupId, nodeIds })
+    this.execute({ label: 'group selection', execute: () => after, undo: () => before })
+    return true
+  }
+
+  ungroupSelection(): boolean {
+    const selected = new Set(this.selection.get())
+    if (selected.size === 0) return false
+    const before = this.getScene()
+    const groups = before.groups.filter((group) => group.nodeIds.some((id) => selected.has(id)))
+    if (groups.length === 0) return false
+    const after = groups.reduce((scene, group) => ungroupNodes(scene, group.id), before)
+    this.execute({ label: 'ungroup selection', execute: () => after, undo: () => before })
+    return true
+  }
+
   selectInRect(rect: Rect, options: MarqueeSelectionOptions = {}): string[] {
     const ids = nodesInRect(this.getScene(), rect, options.mode ?? 'contain')
     switch (options.selection ?? 'replace') {
@@ -196,6 +275,8 @@ export class CanvasKit {
       case 'delete-selection':
         this.deleteSelection()
         return true
+      case 'group-selection': return this.groupSelection()
+      case 'ungroup-selection': return this.ungroupSelection()
       case 'copy':
         if (this.selection.get().length === 0) return false
         this.copy()
@@ -270,6 +351,21 @@ export class CanvasKit {
     if (JSON.stringify(before) === JSON.stringify(after)) return false
     this.execute({ label, execute: () => after, undo: () => before })
     return true
+  }
+
+  private executeDocument(label: string, operation: (scene: CanvasScene) => CanvasScene): boolean {
+    const before = this.getScene()
+    const after = operation(before)
+    if (JSON.stringify(before) === JSON.stringify(after)) return false
+    this.execute({ label, execute: () => after, undo: () => before })
+    return true
+  }
+
+  private nextGroupId(scene: CanvasScene): string {
+    const ids = new Set(scene.groups.map((group) => group.id))
+    let number = 1
+    while (ids.has(`group-${number}`)) number += 1
+    return `group-${number}`
   }
 
   createPointerEvent(screen: Point, type: CanvasPointerEventType, modifiers?: CanvasPointerModifiers, button?: number, buttons?: number): CanvasPointerEvent {

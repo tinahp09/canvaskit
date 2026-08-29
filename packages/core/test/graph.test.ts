@@ -1,4 +1,4 @@
-import { addEdge, addGroup, addRectangle, connectNodes, createScene, hitTestEdge, loadScene, removeEdge, serializeScene } from '../src/index.js'
+import { addEdge, addGroup, addLayer, addRectangle, connectNodes, createScene, hitTestEdge, loadScene, removeEdge, serializeScene } from '../src/index.js'
 import { expect, it } from 'vitest'
 
 it('adds a serializable arrow edge between existing nodes', () => {
@@ -13,6 +13,15 @@ it('hit-tests an edge near the line between node centers', () => {
   const scene = addRectangle(addRectangle(createScene(), { id: 'a', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff' }), { id: 'b', position: { x: 100, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff' })
   const graph = addEdge(scene, { id: 'edge', type: 'line', sourceId: 'a', targetId: 'b' })
   expect(hitTestEdge(graph, { x: 60, y: 12 })?.id).toBe('edge')
+})
+
+it('does not hit-test edges attached to hidden layers', () => {
+  let scene = addLayer(createScene(), { id: 'hidden', name: 'Hidden', visible: false, locked: false })
+  scene = addRectangle(scene, { id: 'a', layerId: 'hidden', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff' })
+  scene = addRectangle(scene, { id: 'b', layerId: 'hidden', position: { x: 100, y: 0 }, size: { width: 20, height: 20 }, fill: '#000' })
+  scene = addEdge(scene, { id: 'hidden-edge', sourceId: 'a', targetId: 'b', type: 'line' })
+
+  expect(hitTestEdge(scene, { x: 60, y: 10 })).toBeUndefined()
 })
 
 it('groups existing node ids', () => {

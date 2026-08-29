@@ -49,3 +49,19 @@ it('does not report a transform command as handled when selection cannot change 
   expect(kit.executeCommand('align-left')).toBe(false)
   expect(kit.executeCommand('distribute-horizontal')).toBe(false)
 })
+
+it('groups and ungroups the current selection through commands that need no arguments', () => {
+  let scene = addRectangle(createScene(), rectangle)
+  scene = addRectangle(scene, { id: 'b', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' })
+  const kit = new CanvasKit({ scene })
+
+  expect(kit.executeCommand('group-selection')).toBe(false)
+  kit.selection.set(['a', 'b'])
+  expect(kit.executeCommand('group-selection')).toBe(true)
+  expect(kit.getScene().groups).toEqual([{ id: 'group-1', nodeIds: ['a', 'b'] }])
+  expect(kit.undo().groups).toEqual([])
+  expect(kit.redo().groups).toEqual([{ id: 'group-1', nodeIds: ['a', 'b'] }])
+  expect(kit.executeCommand('ungroup-selection')).toBe(true)
+  expect(kit.getScene().groups).toEqual([])
+  expect(kit.undo().groups).toEqual([{ id: 'group-1', nodeIds: ['a', 'b'] }])
+})

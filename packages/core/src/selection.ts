@@ -1,4 +1,5 @@
 import type { CanvasScene } from './model.js'
+import { isNodeInteractive } from './document.js'
 
 export type SelectionMode = 'replace' | 'add' | 'remove' | 'toggle'
 
@@ -8,6 +9,7 @@ export class SelectionController {
   constructor(
     private readonly getScene: () => CanvasScene,
     private readonly onChange: () => void = () => undefined,
+    private readonly interactionPredicate?: (id: string) => boolean,
   ) {}
 
   select(id: string): void {
@@ -20,24 +22,24 @@ export class SelectionController {
 
   set(ids: readonly string[]): void {
     this.assertNodes(ids)
-    this.update(new Set(ids))
+    this.update(this.interactiveIds(ids))
   }
 
   add(ids: readonly string[]): void {
     this.assertNodes(ids)
-    this.update(new Set([...this.ids, ...ids]))
+    this.update(new Set([...this.ids, ...this.interactiveIds(ids)]))
   }
 
   remove(ids: readonly string[]): void {
     this.assertNodes(ids)
-    const removed = new Set(ids)
+    const removed = this.interactiveIds(ids)
     this.update(new Set([...this.ids].filter((id) => !removed.has(id))))
   }
 
   toggle(ids: readonly string[]): void {
     this.assertNodes(ids)
     const next = new Set(this.ids)
-    for (const id of new Set(ids)) {
+    for (const id of this.interactiveIds(ids)) {
       if (next.has(id)) next.delete(id)
       else next.add(id)
     }
@@ -50,15 +52,18 @@ export class SelectionController {
     this.onChange()
   }
 
-  get(): string[] { return this.getScene().nodes.filter((node) => this.ids.has(node.id)).map((node) => node.id) }
+  get(): string[] {
+    return this.getScene().nodes
+      .filter((node) => this.ids.has(node.id) && this.canSelect(node.id))
+      .map((node) => node.id)
+  }
 
   selectAll(): void {
     this.set(this.getScene().nodes.map((node) => node.id))
   }
 
   retainExisting(): void {
-    const nodeIds = new Set(this.getScene().nodes.map((node) => node.id))
-    this.ids = new Set([...this.ids].filter((id) => nodeIds.has(id)))
+    this.ids = this.interactiveIds(this.ids)
   }
 
   private update(ids: Set<string>): void {
@@ -69,6 +74,14 @@ export class SelectionController {
 
   private assertNodes(ids: readonly string[]): void {
     ids.forEach((id) => this.assertNode(id))
+  }
+
+  private interactiveIds(ids: Iterable<string>): Set<string> {
+    return new Set([...ids].filter((id) => this.canSelect(id)))
+  }
+
+  private canSelect(id: string): boolean {
+    return this.interactionPredicate?.(id) ?? isNodeInteractive(this.getScene(), id)
   }
 
   private assertNode(id: string): void {

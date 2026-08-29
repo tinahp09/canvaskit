@@ -2,6 +2,8 @@ export type EditorCommand =
   | 'select-all'
   | 'clear-selection'
   | 'delete-selection'
+  | 'group-selection'
+  | 'ungroup-selection'
   | 'copy'
   | 'cut'
   | 'paste'

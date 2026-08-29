@@ -1,4 +1,4 @@
-import { addCircle, addRectangle, createScene, hitTestNode, moveNodes, nodesInRect, SpatialIndex } from '../src/index.js'
+import { addCircle, addLayer, addRectangle, createScene, hitTestNode, isNodeInteractive, moveNodes, nodesInRect, SpatialIndex } from '../src/index.js'
 import { expect, it, vi } from 'vitest'
 
 const scene = addCircle(addRectangle(createScene(), {
@@ -8,6 +8,20 @@ const scene = addCircle(addRectangle(createScene(), {
 it('hit-tests rectangle and circle nodes', () => {
   expect(hitTestNode(scene, { x: 20, y: 20 })?.id).toBe('rectangle')
   expect(hitTestNode(scene, { x: 110, y: 100 })?.id).toBe('circle')
+})
+
+it('excludes hidden and locked nodes from interactive hit and marquee results', () => {
+  let layered = addLayer(createScene(), { id: 'locked', name: 'Locked', visible: true, locked: true })
+  layered = addLayer(layered, { id: 'hidden', name: 'Hidden', visible: false, locked: false })
+  layered = addRectangle(layered, { id: 'visible', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff' })
+  layered = addRectangle(layered, { id: 'locked-node', layerId: 'locked', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#000' })
+  layered = addRectangle(layered, { id: 'hidden-node', layerId: 'hidden', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#123' })
+
+  expect(isNodeInteractive(layered, 'visible')).toBe(true)
+  expect(isNodeInteractive(layered, 'locked-node')).toBe(false)
+  expect(isNodeInteractive(layered, 'hidden-node')).toBe(false)
+  expect(hitTestNode(layered, { x: 10, y: 10 })?.id).toBe('visible')
+  expect(nodesInRect(layered, { x: 0, y: 0, width: 20, height: 20 })).toEqual(['visible'])
 })
 
 it('uses an index without changing topmost hit-test selection', () => {

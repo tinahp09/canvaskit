@@ -20,6 +20,13 @@ export function implicitLayerId(scene: CanvasScene): string {
   return fallbackLayer.id
 }
 
+export function isNodeInteractive(scene: CanvasScene, nodeId: string): boolean {
+  const node = scene.nodes.find((candidate) => candidate.id === nodeId)
+  if (!node) return false
+  const layer = scene.layers.find((candidate) => candidate.id === node.layerId)
+  return layer?.visible === true && layer.locked === false
+}
+
 export function reorderLayer(scene: CanvasScene, layerId: string, targetIndex: number): CanvasScene {
   const sourceIndex = layerIndex(scene, layerId)
   if (sourceIndex < 0) throw new Error(`Unknown layer id: ${layerId}.`)

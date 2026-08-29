@@ -1,5 +1,15 @@
 import { expect, it } from 'vitest'
-import { addEdge, addGroup, addRectangle, CanvasKit, createScene, importScene, UnsupportedPersistentRotationError, type CanvasScene } from '../src/index.js'
+import { addEdge, addGroup, addRectangle, CanvasKit, createScene, importScene, UnsupportedPersistentRotationError, type CanvasLayer, type CanvasScene } from '../src/index.js'
+
+type DocumentCommands = {
+  createLayer(layer: CanvasLayer): boolean
+  moveSelectionToLayer(layerId: string): boolean
+  setLayerVisible(layerId: string, visible: boolean): boolean
+  setLayerVisibility(layerId: string, visible: boolean): boolean
+  setLayerLocked(layerId: string, locked: boolean): boolean
+  reorderSelection(targetIndex: number): boolean
+  reorderLayer(layerId: string, targetIndex: number): boolean
+}
 
 it('reports pointer coordinates in screen and world space', () => {
   const canvas = new CanvasKit()
@@ -39,6 +49,73 @@ it('deletes through the command without leaving dangling graph records and resto
   expect(kit.getScene().edges).toEqual([{ id: 'bc', sourceId: 'b', targetId: 'c', type: 'arrow' }])
   expect(kit.getScene().groups).toEqual([{ id: 'pair', nodeIds: ['b'] }])
   expect(importScene(kit.toJSON())).toEqual(kit.getScene())
+  expect(kit.undo()).toEqual(scene)
+})
+
+it('creates layers and moves the selection in separately undoable document commands', () => {
+  let scene = addRectangle(createScene(), { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
+  scene = addRectangle(scene, { id: 'b', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' })
+  const kit = new CanvasKit({ scene })
+  const document = kit as unknown as DocumentCommands
+
+  expect(typeof document.createLayer).toBe('function')
+  expect(document.createLayer({ id: 'foreground', name: 'Foreground', visible: true, locked: false })).toBe(true)
+  kit.selection.set(['a', 'b'])
+  expect(document.moveSelectionToLayer('foreground')).toBe(true)
+  expect(kit.getScene().nodes.map((node) => [node.id, node.layerId])).toEqual([
+    ['a', 'foreground'],
+    ['b', 'foreground'],
+  ])
+  expect(kit.selection.get()).toEqual(['a', 'b'])
+  expect(kit.undo().nodes.map((node) => node.layerId)).toEqual(['layer-default', 'layer-default'])
+  expect(kit.undo()).toEqual(scene)
+})
+
+it('retains selection only while its layer is visible and unlocked', () => {
+  const scene = addRectangle(createScene(), { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
+  const kit = new CanvasKit({ scene })
+  const document = kit as unknown as DocumentCommands
+  kit.selection.select('a')
+
+  expect(typeof document.setLayerVisibility).toBe('function')
+  expect(document.setLayerVisibility('layer-default', false)).toBe(true)
+  expect(kit.selection.get()).toEqual([])
+  expect(document.setLayerVisible('layer-default', true)).toBe(true)
+  kit.selection.select('a')
+  expect(document.setLayerLocked('layer-default', true)).toBe(true)
+  expect(kit.selection.get()).toEqual([])
+  expect(kit.resizeSelection('east', { x: 20, y: 5 })).toBe(false)
+})
+
+it('reorders the selected node and layers as individual undoable document commands', () => {
+  let scene = addRectangle(createScene(), { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
+  scene = addRectangle(scene, { id: 'b', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' })
+  const kit = new CanvasKit({ scene })
+  const document = kit as unknown as DocumentCommands
+  kit.selection.select('b')
+
+  expect(typeof document.reorderSelection).toBe('function')
+  expect(document.reorderSelection(0)).toBe(true)
+  expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['b', 'a'])
+  expect(kit.undo()).toEqual(scene)
+  expect(document.createLayer({ id: 'foreground', name: 'Foreground', visible: true, locked: false })).toBe(true)
+  expect(document.reorderLayer('foreground', 0)).toBe(true)
+  expect(kit.getScene().layers.map((layer) => layer.id)).toEqual(['foreground', 'layer-default'])
+  expect(kit.undo().layers.map((layer) => layer.id)).toEqual(['layer-default', 'foreground'])
+})
+
+it('reorders a same-layer multi-selection as a stable stack', () => {
+  let scene = addRectangle(createScene(), { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
+  scene = addRectangle(scene, { id: 'b', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' })
+  scene = addRectangle(scene, { id: 'c', position: { x: 40, y: 0 }, size: { width: 10, height: 10 }, fill: '#123' })
+  scene = addRectangle(scene, { id: 'd', position: { x: 60, y: 0 }, size: { width: 10, height: 10 }, fill: '#456' })
+  const kit = new CanvasKit({ scene })
+  const document = kit as unknown as DocumentCommands
+  kit.selection.set(['b', 'c'])
+
+  expect(document.reorderSelection(0)).toBe(true)
+  expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['b', 'c', 'a', 'd'])
+  expect(kit.selection.get()).toEqual(['b', 'c'])
   expect(kit.undo()).toEqual(scene)
 })
 
