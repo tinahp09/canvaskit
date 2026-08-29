@@ -62,7 +62,7 @@ export class ConnectorController {
     if (connector.routing === 'straight') return [source.position, target.position]
     if (source.direction === 'center' || target.direction === 'center') return [source.position, target.position]
     const route = orthogonalRoute(source.position, source.direction, target.position, target.direction)
-    return routeCrossesOpenInterior(route, source.bounds) || routeCrossesOpenInterior(route, target.bounds)
+    return hasImmediateReversal(route) || routeCrossesOpenInterior(route, source.bounds) || routeCrossesOpenInterior(route, target.bounds)
       ? exteriorNodeDetour(source.position, source.direction, source.bounds, target.position, target.direction, target.bounds)
       : route
   }

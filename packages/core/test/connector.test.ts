@@ -293,6 +293,41 @@ it('uses exterior detours for near-offset placements including every ±30 port p
   }
 })
 
+it('routes the 768-case practical grid, including ±60 axial placements, without reversals or interior crossings', () => {
+  const directions = ['north', 'east', 'south', 'west'] as const
+  const offsets = [-120, -60, -30, 0, 30, 60, 120]
+  const targetPositions = offsets.flatMap((x) => offsets.map((y) => ({ x, y }))).filter(({ x, y }) => x !== 0 || y !== 0)
+  const controller = new ConnectorController()
+
+  expect(targetPositions).toHaveLength(48)
+  for (const targetPosition of targetPositions) {
+    for (const sourcePortId of directions) {
+      for (const targetPortId of directions) {
+        let scene = addRectangle(createScene(), {
+          id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
+        })
+        scene = addRectangle(scene, {
+          id: 'target', position: targetPosition, size: { width: 20, height: 20 }, fill: '#000',
+        })
+        scene = controller.create(scene, {
+          id: 'route', sourceNodeId: 'source', sourcePortId, targetNodeId: 'target', targetPortId, routing: 'orthogonal',
+        })
+
+        const points = controller.route(scene, 'route')
+        const directionsAlongRoute = routeDirections(points)
+        expect(directionsAlongRoute[0]).toBe(sourcePortId)
+        expect(directionsAlongRoute.at(-1)).toBe(oppositeDirection(targetPortId))
+        expect(
+          directionsAlongRoute.every((direction, index) => index === 0 || direction !== oppositeDirection(directionsAlongRoute[index - 1]!)),
+          `${sourcePortId} -> ${targetPortId} at (${targetPosition.x}, ${targetPosition.y}): ${directionsAlongRoute.join(', ')}`,
+        ).toBe(true)
+        expect(routeAvoidsOpenInterior(points, { x: 0, y: 0, width: 20, height: 20 })).toBe(true)
+        expect(routeAvoidsOpenInterior(points, { ...targetPosition, width: 20, height: 20 })).toBe(true)
+      }
+    }
+  }
+})
+
 it('recomputes a connector route from moved node bounds without persisting route points', () => {
   let scene = addRectangle(createScene(), {
     id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
