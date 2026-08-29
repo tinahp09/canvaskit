@@ -1,5 +1,6 @@
 import { expect, it, vi } from 'vitest'
 import { CanvasRenderer } from '../src/index.js'
+import type { TransformOverlay } from '@canvaskit/core'
 
 it('draws rectangles in transformed world coordinates', () => {
   const fillRect = vi.fn()
@@ -126,4 +127,34 @@ it('draws a connection handle for a selected rectangle', () => {
   ], edges: [], groups: [], viewport: { x: 0, y: 0, zoom: 2 }, metadata: {} }, ['a'])
 
   expect(arc).toHaveBeenCalledWith(80, 80, 6, 0, Math.PI * 2)
+})
+
+it('draws a selected transform overlay in viewport coordinates', () => {
+  const strokeRect = vi.fn(); const fillRect = vi.fn(); const moveTo = vi.fn(); const lineTo = vi.fn(); const arc = vi.fn(); const setLineDash = vi.fn()
+  const context = {
+    clearRect: vi.fn(), fillRect, strokeRect, beginPath: vi.fn(), moveTo, lineTo, arc, fill: vi.fn(), stroke: vi.fn(), setLineDash,
+    fillStyle: '', strokeStyle: '', lineWidth: 1,
+  } as unknown as CanvasRenderingContext2D
+  const element = { getContext: () => context, width: 800, height: 600 } as unknown as HTMLCanvasElement
+  const overlay: TransformOverlay = {
+    bounds: { x: 10, y: 20, width: 30, height: 40 },
+    handles: {
+      'north-west': { x: 10, y: 20 }, north: { x: 25, y: 20 }, 'north-east': { x: 40, y: 20 }, east: { x: 40, y: 40 },
+      'south-east': { x: 40, y: 60 }, south: { x: 25, y: 60 }, 'south-west': { x: 10, y: 60 }, west: { x: 10, y: 40 },
+      rotate: { x: 25, y: -4 },
+    },
+    rotation: 0,
+  }
+
+  new CanvasRenderer(element).render({ version: 2, nodes: [], edges: [], groups: [], viewport: { x: 5, y: 6, zoom: 2 }, metadata: {} }, [], overlay)
+
+  expect(strokeRect).toHaveBeenCalledWith(25, 46, 60, 80)
+  expect(setLineDash).toHaveBeenCalledWith([4, 4])
+  expect(setLineDash).toHaveBeenLastCalledWith([])
+  expect(fillRect).toHaveBeenCalledTimes(8)
+  expect(fillRect).toHaveBeenCalledWith(21, 42, 8, 8)
+  expect(fillRect).toHaveBeenCalledWith(81, 122, 8, 8)
+  expect(moveTo).toHaveBeenCalledWith(55, 46)
+  expect(lineTo).toHaveBeenCalledWith(55, -2)
+  expect(arc).toHaveBeenCalledWith(55, -2, 5, 0, Math.PI * 2)
 })

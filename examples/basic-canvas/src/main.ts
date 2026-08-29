@@ -1,11 +1,11 @@
-import { CanvasKit, addCircle, addRectangle, addText, attachKeyboardInput, attachPointerInput, connectNodes, createScene, exportScene, hitTestNode, importScene, moveNodes, type MarqueeMode, type SelectionMode } from '@canvaskit/core'
+import { CanvasKit, addCircle, addRectangle, addText, attachKeyboardInput, attachPointerInput, connectNodes, createScene, exportScene, hitTestNode, importScene, moveNodes, type MarqueeMode, type SelectionMode, type TransformHandle } from '@canvaskit/core'
 import { CanvasRenderer, exportPNG } from '@canvaskit/renderer-canvas'
 import { renderSVG } from '@canvaskit/renderer-svg'
 import { createGridPlugin, createSnapPlugin } from '@canvaskit/plugins'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<header><strong>CanvasKit Phase 5 — Extensible export</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><span class="workflow-hint">Shift-click adds; Cmd/Ctrl-click toggles; drag empty space to marquee.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
+app.innerHTML = `<header><strong>CanvasKit Phase 5 — Extensible export</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><span class="toolbar-divider" aria-hidden="true"></span><button id="align-left">Align left</button><button id="align-center">Align center</button><button id="distribute-horizontal">Distribute horizontal</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><span class="workflow-hint">Shift-click adds; Cmd/Ctrl-click toggles; drag empty space to marquee. Drag selection handles to resize.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
 const canvasElement = app.querySelector('canvas')!
 canvasElement.width = 1200
 canvasElement.height = 720
@@ -16,7 +16,10 @@ const snapPlugin = createSnapPlugin({ gridSize: 20 })
 kit.use(gridPlugin)
 kit.use(snapPlugin)
 const renderer = new CanvasRenderer(canvasElement)
-const redraw = () => renderer.render(kit.getScene(), kit.selection.get())
+const redraw = () => {
+  const scene = kit.getScene()
+  renderer.render(scene, kit.selection.get(), kit.transform.getOverlay(scene, kit.selection.get()))
+}
 attachPointerInput(canvasElement, kit)
 attachKeyboardInput(canvasElement, kit)
 kit.subscribe(redraw)
@@ -33,6 +36,10 @@ updateGrid()
 let dragStart: { x: number; y: number } | undefined
 let marquee: { start: { x: number; y: number }; mode: MarqueeMode; selection: SelectionMode } | undefined
 let connectionSource: string | undefined
+let resizeHandle: Exclude<TransformHandle, 'rotate'> | undefined
+let resizePreservesAspect = false
+let resizeTransactionActive = false
+const status = app.querySelector<HTMLParagraphElement>('#scene-status')!
 const connectionSourceAt = (point: { x: number; y: number }) => kit.selection.get().map((id) => kit.getScene().nodes.find((node) => node.id === id)).find((node) => {
   if (!node) return false
   const handle = node.type === 'rectangle'
@@ -42,12 +49,33 @@ const connectionSourceAt = (point: { x: number; y: number }) => kit.selection.ge
       : { x: node.position.x + node.text.length * node.fontSize, y: node.position.y - node.fontSize / 2 }
   return Math.hypot(point.x - handle.x, point.y - handle.y) <= 8
 })
+const transformHandleAt = (point: { x: number; y: number }): TransformHandle | undefined => {
+  const scene = kit.getScene()
+  const overlay = kit.transform.getOverlay(scene, kit.selection.get())
+  if (!overlay) return undefined
+  return (Object.entries(overlay.handles) as Array<[TransformHandle, { x: number; y: number }]>).find(([, handle]) =>
+    Math.hypot(point.x - handle.x, point.y - handle.y) <= 8,
+  )?.[0]
+}
 kit.onPointer((event) => {
   const primaryModifier = event.modifiers?.metaKey || event.modifiers?.ctrlKey
   if (event.type === 'pointerdown') {
     if (event.button !== undefined && event.button !== 0) return
     const source = connectionSourceAt(event.world)
     if (source) { connectionSource = source.id; redraw(); return }
+    const transformHandle = transformHandleAt(event.world)
+    if (transformHandle === 'rotate') {
+      status.textContent = 'Persistent rotation is deferred in V2.0; the rotation handle is preview-only.'
+      redraw()
+      return
+    }
+    if (transformHandle) {
+      resizeHandle = transformHandle
+      resizePreservesAspect = Boolean(event.modifiers?.shiftKey)
+      kit.beginTransaction('resize selection')
+      resizeTransactionActive = true
+      return
+    }
     const node = hitTestNode(kit.getScene(), event.world)
     if (node) {
       if (primaryModifier) kit.selection.toggle([node.id])
@@ -61,6 +89,8 @@ kit.onPointer((event) => {
         selection: event.modifiers?.shiftKey ? 'add' : 'replace',
       }
     }
+  } else if (event.type === 'pointermove' && resizeHandle && (event.buttons === undefined || (event.buttons & 1) !== 0)) {
+    kit.resizeSelection(resizeHandle, event.world, { preserveAspectRatio: resizePreservesAspect })
   } else if (event.type === 'pointermove' && dragStart && (event.buttons === undefined || (event.buttons & 1) !== 0)) {
     const snapped = snapToGrid.checked ? snapPlugin.snap(event.world) : event.world
     const before = kit.getScene()
@@ -69,6 +99,12 @@ kit.onPointer((event) => {
     dragStart = snapped
   } else if (event.type === 'pointerup') {
     if (event.button !== undefined && event.button !== 0) return
+    if (resizeTransactionActive) {
+      kit.commitTransaction()
+      resizeTransactionActive = false
+    }
+    resizeHandle = undefined
+    resizePreservesAspect = false
     if (connectionSource) {
       const target = hitTestNode(kit.getScene(), event.world)
       if (target && target.id !== connectionSource) {
@@ -93,13 +129,15 @@ kit.onPointer((event) => {
 redraw()
 const json = app.querySelector<HTMLTextAreaElement>('[data-testid="scene-json"]')!
 const exportPreview = app.querySelector<HTMLTextAreaElement>('[data-testid="export-preview"]')!
-const status = app.querySelector<HTMLParagraphElement>('#scene-status')!
 app.querySelector<HTMLButtonElement>('#undo')!.onclick = () => { kit.undo(); redraw() }
 app.querySelector<HTMLButtonElement>('#redo')!.onclick = () => { kit.redo(); redraw() }
 app.querySelector<HTMLButtonElement>('#copy')!.onclick = () => { kit.executeCommand('copy') }
 app.querySelector<HTMLButtonElement>('#cut')!.onclick = () => { kit.executeCommand('cut'); redraw() }
 app.querySelector<HTMLButtonElement>('#paste')!.onclick = () => { kit.executeCommand('paste'); redraw() }
 app.querySelector<HTMLButtonElement>('#duplicate')!.onclick = () => { kit.executeCommand('duplicate'); redraw() }
+app.querySelector<HTMLButtonElement>('#align-left')!.onclick = () => { kit.executeCommand('align-left'); redraw() }
+app.querySelector<HTMLButtonElement>('#align-center')!.onclick = () => { kit.executeCommand('align-center'); redraw() }
+app.querySelector<HTMLButtonElement>('#distribute-horizontal')!.onclick = () => { kit.executeCommand('distribute-horizontal'); redraw() }
 app.querySelector<HTMLButtonElement>('#export')!.onclick = () => { json.value = exportScene(kit.getScene()); status.textContent = 'Scene exported.' }
 app.querySelector<HTMLButtonElement>('#export-svg')!.onclick = () => {
   try {

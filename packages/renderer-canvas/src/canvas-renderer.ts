@@ -1,4 +1,8 @@
-import { nodeCenter, SpatialIndex, type CanvasScene } from '@canvaskit/core'
+import { nodeCenter, SpatialIndex, type CanvasScene, type TransformOverlay } from '@canvaskit/core'
+
+const RESIZE_HANDLES = [
+  'north-west', 'north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west',
+] as const
 
 export class CanvasRenderer {
   private readonly context: CanvasRenderingContext2D
@@ -9,7 +13,11 @@ export class CanvasRenderer {
     this.context = context
   }
 
-  render(scene: CanvasScene, selectedNodeIds: readonly string[] = []): { visibleNodeCount: number } {
+  render(
+    scene: CanvasScene,
+    selectedNodeIds: readonly string[] = [],
+    transformOverlay?: TransformOverlay,
+  ): { visibleNodeCount: number } {
     this.context.clearRect(0, 0, this.element.width, this.element.height)
     const { viewport } = scene
     const worldViewport = getWorldViewport(this.element, viewport)
@@ -63,7 +71,44 @@ export class CanvasRenderer {
       this.context.fill()
     }
 
+    if (transformOverlay) this.drawTransformOverlay(transformOverlay, viewport)
+
     return { visibleNodeCount: visibleNodes.length }
+  }
+
+  private drawTransformOverlay(overlay: TransformOverlay, viewport: CanvasScene['viewport']): void {
+    const screenPoint = ({ x, y }: { x: number; y: number }) => ({
+      x: x * viewport.zoom + viewport.x,
+      y: y * viewport.zoom + viewport.y,
+    })
+    const bounds = screenPoint(overlay.bounds)
+    const width = overlay.bounds.width * viewport.zoom
+    const height = overlay.bounds.height * viewport.zoom
+
+    this.context.strokeStyle = '#93C5FD'
+    this.context.lineWidth = 1
+    this.context.setLineDash([4, 4])
+    this.context.strokeRect(bounds.x, bounds.y, width, height)
+    this.context.setLineDash([])
+
+    const north = screenPoint(overlay.handles.north)
+    const rotation = screenPoint(overlay.handles.rotate)
+    this.context.beginPath()
+    this.context.moveTo(north.x, north.y)
+    this.context.lineTo(rotation.x, rotation.y)
+    this.context.stroke()
+
+    this.context.fillStyle = '#F4F6F8'
+    this.context.strokeStyle = '#2563EB'
+    for (const handle of RESIZE_HANDLES) {
+      const point = screenPoint(overlay.handles[handle])
+      this.context.fillRect(point.x - 4, point.y - 4, 8, 8)
+      this.context.strokeRect(point.x - 4, point.y - 4, 8, 8)
+    }
+    this.context.beginPath()
+    this.context.arc(rotation.x, rotation.y, 5, 0, Math.PI * 2)
+    this.context.fill()
+    this.context.stroke()
   }
 
   private drawArrowhead(ax: number, ay: number, bx: number, by: number): void {
