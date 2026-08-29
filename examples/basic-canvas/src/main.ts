@@ -40,30 +40,39 @@ let resizeHandle: Exclude<TransformHandle, 'rotate'> | undefined
 let resizePreservesAspect = false
 let resizeTransactionActive = false
 const status = app.querySelector<HTMLParagraphElement>('#scene-status')!
-const connectionSourceAt = (point: { x: number; y: number }) => kit.selection.get().map((id) => kit.getScene().nodes.find((node) => node.id === id)).find((node) => {
+const CONNECTION_HANDLE_OFFSET = 16
+const TRANSFORM_HANDLE_HIT_RADIUS = 8
+const connectionSourceAt = (screen: { x: number; y: number }) => kit.selection.get().map((id) => kit.getScene().nodes.find((node) => node.id === id)).find((node) => {
   if (!node) return false
+  const { viewport } = kit.getScene()
   const handle = node.type === 'rectangle'
     ? { x: node.position.x + node.size.width, y: node.position.y + node.size.height / 2 }
     : node.type === 'circle'
       ? { x: node.position.x + node.radius, y: node.position.y }
       : { x: node.position.x + node.text.length * node.fontSize, y: node.position.y - node.fontSize / 2 }
-  return Math.hypot(point.x - handle.x, point.y - handle.y) <= 8
+  const handleScreen = { x: handle.x * viewport.zoom + viewport.x + CONNECTION_HANDLE_OFFSET, y: handle.y * viewport.zoom + viewport.y }
+  return Math.hypot(screen.x - handleScreen.x, screen.y - handleScreen.y) <= 8
 })
-const transformHandleAt = (point: { x: number; y: number }): TransformHandle | undefined => {
+const transformHandleAt = (screen: { x: number; y: number }): TransformHandle | undefined => {
   const scene = kit.getScene()
   const overlay = kit.transform.getOverlay(scene, kit.selection.get())
   if (!overlay) return undefined
-  return (Object.entries(overlay.handles) as Array<[TransformHandle, { x: number; y: number }]>).find(([, handle]) =>
-    Math.hypot(point.x - handle.x, point.y - handle.y) <= 8,
-  )?.[0]
+  const nearest = (Object.entries(overlay.handles) as Array<[TransformHandle, { x: number; y: number }]>).reduce<
+    { handle: TransformHandle; distance: number } | undefined
+  >((current, [handle, point]) => {
+    const distance = Math.hypot(
+      screen.x - (point.x * scene.viewport.zoom + scene.viewport.x),
+      screen.y - (point.y * scene.viewport.zoom + scene.viewport.y),
+    )
+    return !current || distance < current.distance ? { handle, distance } : current
+  }, undefined)
+  return nearest && nearest.distance <= TRANSFORM_HANDLE_HIT_RADIUS ? nearest.handle : undefined
 }
 kit.onPointer((event) => {
   const primaryModifier = event.modifiers?.metaKey || event.modifiers?.ctrlKey
   if (event.type === 'pointerdown') {
     if (event.button !== undefined && event.button !== 0) return
-    const source = connectionSourceAt(event.world)
-    if (source) { connectionSource = source.id; redraw(); return }
-    const transformHandle = transformHandleAt(event.world)
+    const transformHandle = transformHandleAt(event.screen)
     if (transformHandle === 'rotate') {
       status.textContent = 'Persistent rotation is deferred in V2.0; the rotation handle is preview-only.'
       redraw()
@@ -76,6 +85,8 @@ kit.onPointer((event) => {
       resizeTransactionActive = true
       return
     }
+    const source = connectionSourceAt(event.screen)
+    if (source) { connectionSource = source.id; redraw(); return }
     const node = hitTestNode(kit.getScene(), event.world)
     if (node) {
       if (primaryModifier) kit.selection.toggle([node.id])

@@ -89,7 +89,7 @@ test('connects nodes by dragging from a connection handle', async ({ page }) => 
     })
     canvasElement.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, ...toClient({ x: 195, y: 215 }) }))
     canvasElement.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, ...toClient({ x: 195, y: 215 }) }))
-    canvasElement.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, buttons: 1, ...toClient({ x: 270, y: 215 }) }))
+    canvasElement.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, buttons: 1, ...toClient({ x: 286, y: 215 }) }))
     canvasElement.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, ...toClient({ x: 475, y: 215 }) }))
   })
 

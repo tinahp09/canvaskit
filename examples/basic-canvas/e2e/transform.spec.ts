@@ -17,6 +17,26 @@ async function dragInWorldSpace(page: Page, start: { x: number; y: number }, end
   }, { start, end, shiftKey })
 }
 
+async function canvasClientPoint(page: Page, screen: { x: number; y: number }) {
+  const bounds = await page.locator('canvas').boundingBox()
+  if (!bounds) throw new Error('Canvas is not visible.')
+  return { x: bounds.x + screen.x * bounds.width / 1200, y: bounds.y + screen.y * bounds.height / 720 }
+}
+
+async function dragWithMouse(page: Page, start: { x: number; y: number }, end: { x: number; y: number }) {
+  const startPoint = await canvasClientPoint(page, start)
+  const endPoint = await canvasClientPoint(page, end)
+  await page.mouse.move(startPoint.x, startPoint.y)
+  await page.mouse.down()
+  await page.mouse.move(endPoint.x, endPoint.y)
+  await page.mouse.up()
+}
+
+async function clickWithMouse(page: Page, screen: { x: number; y: number }) {
+  const point = await canvasClientPoint(page, screen)
+  await page.mouse.click(point.x, point.y)
+}
+
 async function exportScene(page: Page) {
   await page.getByRole('button', { name: 'Export scene' }).click()
   return JSON.parse(await page.getByTestId('scene-json').inputValue()) as {
@@ -47,6 +67,54 @@ test('resizes the selected node only when dragging its overlay handle', async ({
     position: { x: 120, y: 180 }, size: { width: 210, height: 110 },
   })
   assertNoConsoleErrors()
+})
+
+test('uses the visible east resize handle instead of the separate connection handle', async ({ page }) => {
+  await page.goto('/')
+  await clickWithMouse(page, { x: 195, y: 215 })
+  await dragWithMouse(page, { x: 270, y: 215 }, { x: 330, y: 215 })
+
+  expect(node(await exportScene(page), 'webhook')).toMatchObject({
+    position: { x: 120, y: 180 }, size: { width: 210, height: 70 },
+  })
+})
+
+test('commits a captured resize released outside the canvas so undo restores the scene', async ({ page }) => {
+  await page.goto('/')
+  await clickWithMouse(page, { x: 195, y: 215 })
+  const canvas = page.locator('canvas')
+  const bounds = await canvas.boundingBox()
+  if (!bounds) throw new Error('Canvas is not visible.')
+  const start = await canvasClientPoint(page, { x: 270, y: 250 })
+  await page.mouse.move(start.x, start.y)
+  await page.mouse.down()
+  await page.mouse.move(bounds.x + bounds.width + 24, bounds.y + 250 * bounds.height / 720)
+  await page.mouse.up()
+  await page.getByRole('button', { name: 'Undo' }).click()
+
+  expect(node(await exportScene(page), 'webhook')).toMatchObject({
+    position: { x: 120, y: 180 }, size: { width: 150, height: 70 },
+  })
+})
+
+test('uses a fixed screen-space resize hit target at high zoom', async ({ page }) => {
+  await page.goto('/')
+  const highZoomScene = {
+    version: 2,
+    nodes: [{ id: 'zoomed', type: 'rectangle', position: { x: 80, y: 20 }, size: { width: 50, height: 30 }, fill: '#7C7FF2' }],
+    edges: [], groups: [], viewport: { x: 0, y: 0, zoom: 4 }, metadata: {},
+  }
+  await page.getByTestId('scene-json').fill(JSON.stringify(highZoomScene))
+  await page.getByRole('button', { name: 'Import scene' }).click()
+  await clickWithMouse(page, { x: 420, y: 140 })
+  await clickWithMouse(page, { x: 540, y: 200 })
+  expect(node(await exportScene(page), 'zoomed').size).toEqual({ width: 50, height: 30 })
+
+  await clickWithMouse(page, { x: 420, y: 140 })
+  await dragWithMouse(page, { x: 520, y: 140 }, { x: 560, y: 140 })
+  const resized = node(await exportScene(page), 'zoomed').size!
+  expect(resized.width).toBeCloseTo(60)
+  expect(resized.height).toBeCloseTo(30)
 })
 
 test('uses Shift at resize pointerdown to preserve the selected aspect ratio', async ({ page }) => {

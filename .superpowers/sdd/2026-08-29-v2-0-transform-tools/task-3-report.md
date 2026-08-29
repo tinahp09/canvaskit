@@ -8,7 +8,7 @@
 - Dragging an existing selected resize handle invokes `kit.resizeSelection` through a pointer-drag history transaction. Shift state from pointerdown is retained for `preserveAspectRatio`.
 - The visible **Align left**, **Align center**, and **Distribute horizontal** controls invoke the public `executeCommand` interface.
 - Selecting/dragging the rotation handle leaves the scene untouched and announces: persistent rotation is deferred in V2.0 and the handle is preview-only.
-- Existing connection-handle behavior remains intact. Its legacy east-midpoint target overlaps the east resize handle, so connection takes priority at that exact hit target; the other resize handles are unaffected.
+- Existing connection-handle behavior remains intact without masking transform input. When a transform overlay is visible, its connection affordance is rendered and hit-tested 16 viewport pixels to the east of the node anchor; transform handles, including east, take priority.
 
 ## TDD evidence
 
@@ -44,3 +44,28 @@ Passed after the final change:
 ```
 
 Playwright required the approved local-network permission to start its local Vite servers. Vitest emitted its pre-existing workspace-file deprecation warning; no test failures or browser console errors remained.
+
+## Review round 1 fixes
+
+- Transform handle hit-testing now maps Core overlay points into viewport space and chooses the nearest handle within an 8-pixel radius. The rendered square and actionable target therefore remain stable under pan and zoom.
+- Pointer input captures primary pointers, maps `pointercancel` to an input completion event, and releases capture after completion. Synthetic browser events that use an invalid capture id continue through the event pipeline without disrupting regular pointer input.
+- The example owns resize history in a transaction that is completed by the captured pointer-up event, including when the physical pointer is released outside the canvas.
+- New real-mouse E2E coverage verifies east-handle resize, release outside the canvas followed by undo, and high-zoom miss/hit behavior. The pre-existing connection E2E now targets the visually separate connection handle.
+
+Verification after review round 1:
+
+```text
+./node_modules/.bin/vitest run --project @canvaskit/renderer-canvas
+# 3 files, 16 tests passed
+
+./node_modules/.bin/vitest run packages/core/test/pointer-input.test.ts
+# 1 file, 6 tests passed
+
+./node_modules/.bin/tsc -p packages/core/tsconfig.json --noEmit
+./node_modules/.bin/tsc -p packages/renderer-canvas/tsconfig.json --noEmit
+./node_modules/.bin/vite build examples/basic-canvas
+# passed
+
+./node_modules/.bin/playwright test examples/basic-canvas/e2e
+# 20 tests passed
+```

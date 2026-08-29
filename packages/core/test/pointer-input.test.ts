@@ -3,9 +3,13 @@ import { attachPointerInput, CanvasKit } from '../src/index.js'
 
 class FakeElement {
   readonly handlers = new Map<string, EventListener>()
+  readonly capturedPointers: number[] = []
+  readonly releasedPointers: number[] = []
 
   addEventListener(type: string, listener: EventListener): void { this.handlers.set(type, listener) }
   removeEventListener(type: string): void { this.handlers.delete(type) }
+  setPointerCapture(pointerId: number): void { this.capturedPointers.push(pointerId) }
+  releasePointerCapture(pointerId: number): void { this.releasedPointers.push(pointerId) }
   getBoundingClientRect(): DOMRect { return { left: 10, top: 20 } as DOMRect }
   dispatch(type: string, event: Event): void { this.handlers.get(type)?.(event) }
 }
@@ -52,6 +56,21 @@ it('forwards pointer button state with pointer events', () => {
     type: 'pointerdown', screen: { x: 25, y: 45 }, world: { x: 25, y: 45 },
     button: 1, buttons: 4,
   })
+})
+
+it('captures a primary pointer and releases it after pointer cancellation', () => {
+  const element = new FakeElement()
+  const canvas = new CanvasKit()
+  const received: unknown[] = []
+  canvas.onPointer((event) => received.push(event))
+
+  attachPointerInput(element as unknown as HTMLElement, canvas)
+  element.dispatch('pointerdown', { button: 0, buttons: 1, pointerId: 7, clientX: 10, clientY: 20 } as PointerEvent)
+  element.dispatch('pointercancel', { button: 0, buttons: 0, pointerId: 7, clientX: 30, clientY: 40 } as PointerEvent)
+
+  expect(element.capturedPointers).toEqual([7])
+  expect(element.releasedPointers).toEqual([7])
+  expect(received).toContainEqual({ type: 'pointerup', screen: { x: 20, y: 20 }, world: { x: 20, y: 20 }, button: 0, buttons: 0 })
 })
 
 it('pans with a middle-button drag', () => {

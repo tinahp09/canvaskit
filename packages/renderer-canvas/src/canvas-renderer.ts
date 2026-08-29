@@ -3,6 +3,7 @@ import { nodeCenter, SpatialIndex, type CanvasScene, type TransformOverlay } fro
 const RESIZE_HANDLES = [
   'north-west', 'north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west',
 ] as const
+const CONNECTION_HANDLE_OFFSET = 16
 
 export class CanvasRenderer {
   private readonly context: CanvasRenderingContext2D
@@ -66,7 +67,13 @@ export class CanvasRenderer {
           ? { x: node.position.x + node.radius, y: node.position.y }
           : { x: node.position.x + node.text.length * node.fontSize, y: node.position.y - node.fontSize / 2 }
       this.context.beginPath()
-      this.context.arc(point.x * viewport.zoom + viewport.x, point.y * viewport.zoom + viewport.y, 6, 0, Math.PI * 2)
+      this.context.arc(
+        point.x * viewport.zoom + viewport.x + (transformOverlay ? CONNECTION_HANDLE_OFFSET : 0),
+        point.y * viewport.zoom + viewport.y,
+        6,
+        0,
+        Math.PI * 2,
+      )
       this.context.fillStyle = '#F4F6F8'
       this.context.fill()
     }
