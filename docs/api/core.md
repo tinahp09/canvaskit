@@ -11,10 +11,15 @@ This page is the curated inventory of every public export from the package root.
 ## Package identity and scene model
 
 - `PACKAGE_NAME` is the package identifier and `SCENE_VERSION` is the current scene-document version.
-- `CanvasScene` is a versioned document with `nodes`, `edges`, `groups`, `viewport`, and `metadata`.
+- `CanvasScene` is a versioned document with ordered `layers`, `nodes`, `edges`,
+  `groups`, `viewport`, and `metadata`. The current `SCENE_VERSION` is `3`.
 - `CanvasNode` is the union of `RectangleNode`, `CircleNode`, and `TextNode`.
-- `CanvasEdge` connects node IDs as a `line`, `arrow`, or `bezier`; `CanvasGroup` collects node IDs.
-- `CreateRectangleInput`, `CreateCircleInput`, `CreateTextInput`, `CreateEdgeInput`, and `CreateGroupInput` are the corresponding immutable-scene creation inputs.
+- Every `CanvasNode` has a `layerId`. `CanvasLayer` has `id`, `name`, `visible`,
+  and `locked`; `DEFAULT_LAYER_ID` is `'layer-default'` for Core-created scenes.
+- `CanvasEdge` connects node IDs as a `line`, `arrow`, or `bezier`; `CanvasGroup`
+  collects node IDs without becoming a nested transform container.
+- `CreateRectangleInput`, `CreateCircleInput`, `CreateTextInput`, `CreateEdgeInput`,
+  and `CreateGroupInput` are the corresponding immutable-scene creation inputs.
 
 Create and transform immutable scene values with:
 
@@ -40,6 +45,13 @@ Create and transform immutable scene values with:
   selection. `transform` is the shared `TransformController`; see the
   dedicated [transform tools API](/api/transform-tools) for handle positions,
   constraints, and the V2.0 preview-only rotation boundary.
+- `createLayer(layer)`, `moveSelectionToLayer(layerId)`,
+  `setLayerVisibility(layerId, visible)` (and the `setLayerVisible` alias),
+  `setLayerLocked(layerId, locked)`, `reorderLayer(layerId, targetIndex)`, and
+  `reorderSelection(targetIndex)` apply one undoable document mutation when
+  they change the scene. `groupSelection()` and `ungroupSelection()` are also
+  history-backed. See [Document & layers](/api/document-layers) for their
+  validation and interaction contracts.
 - `toJSON()` serializes the current scene and `load(json)` validates and replaces it.
 - `createPointerEvent(screen, type)` turns a screen point into a `CanvasPointerEvent`, including its world point, and delivers it to pointer listeners.
 - `onPointer(listener)` subscribes to `CanvasPointerEvent` values; `subscribe(listener)` receives each scene snapshot as a `SceneListener`. Both return cleanup functions.
@@ -72,6 +84,18 @@ The instance exposes five public controllers: `viewport`, `selection`,
 - `importScene` and its alias `loadScene` validate JSON and return a scene.
 - `migrateScene(value)` migrates supported older scene data.
 - `InvalidSceneError` describes invalid scene data. `UnsupportedSceneVersionError` extends it for unrecognised document versions.
+
+## Document helpers
+
+`addLayer`, `removeLayer`, `reorderLayer`, `moveNodesToLayer`,
+`reorderNodeInLayer`, `setLayerVisibility`, `setLayerLocked`, `groupNodes`, and
+`ungroupNodes` are immutable lower-level document operations. They validate
+layer and node references and preserve all relation invariants. Use
+`projectVisibleDocument(scene)` when a renderer needs the canonical layer paint
+order; it omits hidden-layer nodes and edges whose endpoints are not both
+visible. `interactiveNodesInRenderOrder(scene)` and
+`isNodeInteractive(scene, nodeId)` additionally exclude locked content for
+interaction paths.
 
 ## Input and interaction helpers
 

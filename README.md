@@ -11,6 +11,16 @@ The project is available under the [MIT License](LICENSE).
 
 CanvasKit provides rectangle, circle, and text scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
 
+## V2.2 document & layers
+
+V2.2 adds ordered document layers, durable metadata-only groups, layer
+visibility and locking, plus undoable document commands. Scene JSON now uses
+schema version 3: imported V1/V2 scenes are migrated losslessly into the
+always-present `layer-default` layer. Hidden nodes and their incomplete edges
+do not render; hidden or locked nodes cannot be selected or transformed through
+Core interaction APIs. See the [document & layers guide](docs/guides/document-layers.md),
+[API reference](docs/api/document-layers.md), and [migration notes](docs/migrations.md).
+
 ## V2.0 transform tools
 
 V2.0 adds a headless transform pipeline for selection bounds, eight resize
@@ -21,8 +31,8 @@ reference](docs/api/transform-tools.md). The overlay includes a rotation handle,
 but persistent rotation is deliberately **preview-only** in V2.0: the current
 scene schema and serializers do not store a rotation value, so asking Core to
 persist it throws `UnsupportedPersistentRotationError` without changing the
-scene. Persistent rotation is deferred to the transform-capable scene model in
-V2.2.
+scene. V2.2 introduces document layers but does not add a rotation field, so
+persistent rotation remains deferred to a later transform-capable scene model.
 
 ## V2.1 editor workflow
 

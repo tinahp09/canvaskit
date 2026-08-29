@@ -51,7 +51,9 @@ export function implicitLayerId(scene: CanvasScene): string {
 export function isNodeInteractive(scene: CanvasScene, nodeId: string): boolean {
   const node = scene.nodes.find((candidate) => candidate.id === nodeId)
   if (!node) return false
-  const layer = scene.layers.find((candidate) => candidate.id === node.layerId)
+  const layers = Array.isArray(scene.layers) ? scene.layers : []
+  if (layers.length === 0) return true
+  const layer = layers.find((candidate) => candidate.id === node.layerId)
   return layer?.visible === true && layer.locked === false
 }
 

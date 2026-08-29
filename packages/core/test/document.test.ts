@@ -9,6 +9,7 @@ import {
   groupNodes,
   importScene,
   InvalidSceneError,
+  isNodeInteractive,
   moveNodesToLayer,
   pasteSelection,
   removeLayer,
@@ -26,6 +27,15 @@ it('creates the default layer and assigns new nodes to it', () => {
 
   expect(scene.layers).toEqual([{ id: 'layer-default', name: 'Default', visible: true, locked: false }])
   expect(scene.nodes[0]?.layerId).toBe('layer-default')
+})
+
+it('treats a legacy flat scene node as interactive for compatibility helpers', () => {
+  const legacyScene = {
+    nodes: [{ id: 'legacy', type: 'rectangle' as const, position: { x: 0, y: 0 }, size: { width: 1, height: 1 }, fill: '#fff' }],
+    edges: [],
+  }
+
+  expect(isNodeInteractive(legacyScene as never, 'legacy')).toBe(true)
 })
 
 it('adds, reorders, and updates layer state without changing the source scene', () => {

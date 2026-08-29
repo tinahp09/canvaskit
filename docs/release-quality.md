@@ -20,7 +20,7 @@ unexpected output growth fail locally.
 
 | Package | Baseline runtime JavaScript | Budget |
 | --- | ---: | ---: |
-| `@canvaskit/core` | 50,962 B | 55,000 B |
+| `@canvaskit/core` | 64,433 B | 68,000 B |
 | `@canvaskit/geometry` | 852 B | 1,100 B |
 | `@canvaskit/plugins` | 1,900 B | 2,400 B |
 | `@canvaskit/react` | 7,197 B | 8,700 B |

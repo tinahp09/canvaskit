@@ -16,7 +16,7 @@ export const PUBLISHED_PACKAGES = [
 // They are deliberately rounded above the 2026-08-29 baseline to allow small,
 // intentional changes while catching accidental package growth.
 export const BUNDLE_BUDGETS = {
-  core: 55_000,
+  core: 68_000,
   geometry: 1_100,
   plugins: 2_400,
   react: 8_700,

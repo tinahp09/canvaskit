@@ -3,6 +3,16 @@
 Framework- and renderer-agnostic scene, editing, history, and interaction
 primitives for CanvasKit.
 
+## V2.2 document & layers
+
+Scenes now serialize as schema version 3. Every node has a `layerId`, and every
+scene has ordered `CanvasLayer` records with `id`, `name`, `visible`, and
+`locked` fields. `importScene` migrates V1/V2 scenes to one visible, unlocked
+`layer-default` layer without changing node, edge, group, viewport, or metadata
+content. The Core [document & layers guide](../../docs/guides/document-layers.md)
+and [API reference](../../docs/api/document-layers.md) cover the public
+immutable helpers and `CanvasKit` commands.
+
 ## V2.1 editor workflow
 
 `CanvasKit` provides ordered multi-selection, world-coordinate marquee

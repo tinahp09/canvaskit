@@ -32,3 +32,5 @@ Render layer order/visibility, honor locks in pointer paths, add layer controls 
 ### Task 4: V2.2 docs, release evidence, and full verification
 
 Document schema migration/API, update release artifacts/checklist, capture release evidence where approved, and run full gates. Commit `docs: document V2.2 document layers`.
+
+- [x] Complete: docs, release evidence manifest, verification, and candidate checklist recorded.
