@@ -48,7 +48,7 @@ it('resizes a circle from its east handle by updating its center and radius', ()
   const resized = controller.resize(scene, ['circle'], 'east', { x: 40, y: 30 })
 
   expect(resized.nodes[0]).toEqual({
-    id: 'circle', type: 'circle', position: { x: 20, y: 20 }, radius: 20, fill: '#000',
+    id: 'circle', layerId: 'layer-default', type: 'circle', position: { x: 20, y: 20 }, radius: 20, fill: '#000',
   })
 })
 
@@ -60,7 +60,7 @@ it('resizes text from its south handle with a uniform, centered cross-axis expan
   const resized = controller.resize(scene, ['text'], 'south', { x: 20, y: 40 })
 
   expect(resized.nodes[0]).toEqual({
-    id: 'text', type: 'text', position: { x: 0, y: 40 }, text: 'hi', fontSize: 20, fill: '#123',
+    id: 'text', layerId: 'layer-default', type: 'text', position: { x: 0, y: 40 }, text: 'hi', fontSize: 20, fill: '#123',
   })
   expect(controller.getOverlay(resized, ['text'])?.bounds).toEqual({ x: 0, y: 20, width: 40, height: 20 })
 })
@@ -95,7 +95,7 @@ it('projects a mixed rectangle and circle selection to one uniform corner transf
   const resized = controller.resize(scene, ['rectangle', 'circle'], 'south-east', { x: 100, y: 30 })
 
   expect(resized.nodes[1]).toEqual({
-    id: 'circle', type: 'circle', position: { x: 80, y: 20 }, radius: 20, fill: '#000',
+    id: 'circle', layerId: 'layer-default', type: 'circle', position: { x: 80, y: 20 }, radius: 20, fill: '#000',
   })
   expect(controller.getOverlay(resized, ['rectangle', 'circle'])?.bounds).toEqual({ x: 0, y: 0, width: 100, height: 40 })
   expect(controller.getOverlay(resized, ['rectangle', 'circle'])?.handles['south-east']).toEqual({ x: 100, y: 40 })
@@ -111,7 +111,7 @@ it('projects a mixed rectangle and text selection to one uniform corner transfor
   const resized = controller.resize(scene, ['rectangle', 'text'], 'south-east', { x: 100, y: 30 })
 
   expect(resized.nodes[1]).toEqual({
-    id: 'text', type: 'text', position: { x: 60, y: 20 }, text: 'hi', fontSize: 20, fill: '#123',
+    id: 'text', layerId: 'layer-default', type: 'text', position: { x: 60, y: 20 }, text: 'hi', fontSize: 20, fill: '#123',
   })
   expect(controller.getOverlay(resized, ['rectangle', 'text'])?.bounds).toEqual({ x: 0, y: 0, width: 100, height: 40 })
   expect(controller.getOverlay(resized, ['rectangle', 'text'])?.handles['south-east']).toEqual({ x: 100, y: 40 })

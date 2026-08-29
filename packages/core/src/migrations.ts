@@ -1,4 +1,4 @@
-import { SCENE_VERSION } from './model.js'
+import { DEFAULT_LAYER_ID, SCENE_VERSION } from './model.js'
 
 export class InvalidSceneError extends Error {
   constructor(message: string) {
@@ -16,18 +16,28 @@ export class UnsupportedSceneVersionError extends InvalidSceneError {
 
 export function migrateScene(value: unknown): unknown {
   if (!isRecord(value)) throw new InvalidSceneError('Scene must be an object.')
+  let scene = value
 
-  if (value.version === 1) {
-    return {
-      ...value,
-      version: SCENE_VERSION,
-      edges: value.edges === undefined ? [] : value.edges,
-      groups: value.groups === undefined ? [] : value.groups,
+  if (scene.version === 1) {
+    scene = {
+      ...scene,
+      version: 2,
+      edges: scene.edges === undefined ? [] : scene.edges,
+      groups: scene.groups === undefined ? [] : scene.groups,
     }
   }
 
-  if (value.version === SCENE_VERSION) return value
-  throw new UnsupportedSceneVersionError(value.version)
+  if (scene.version === 2) {
+    return {
+      ...scene,
+      version: SCENE_VERSION,
+      layers: [{ id: DEFAULT_LAYER_ID, name: 'Default', visible: true, locked: false }],
+      nodes: Array.isArray(scene.nodes) ? scene.nodes.map((node) => isRecord(node) ? { ...node, layerId: DEFAULT_LAYER_ID } : node) : scene.nodes,
+    }
+  }
+
+  if (scene.version === SCENE_VERSION) return scene
+  throw new UnsupportedSceneVersionError(scene.version)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,10 +1,10 @@
-import { SCENE_VERSION, type CanvasNode, type CanvasScene, type RectangleNode } from './model.js'
+import { SCENE_VERSION, type CanvasLayer, type CanvasNode, type CanvasScene, type RectangleNode } from './model.js'
 import { InvalidSceneError, migrateScene, UnsupportedSceneVersionError } from './migrations.js'
 
 export { InvalidSceneError, UnsupportedSceneVersionError } from './migrations.js'
 
 export function exportScene(scene: CanvasScene): string {
-  return JSON.stringify(scene)
+  return JSON.stringify(parseCanonicalScene(scene))
 }
 
 export function importScene(json: string): CanvasScene {
@@ -24,7 +24,7 @@ function parseCanonicalScene(value: unknown): CanvasScene {
   if (!isRecord(value)) throw new InvalidSceneError('Scene must be an object.')
   if (value.version !== SCENE_VERSION) throw new UnsupportedSceneVersionError(value.version)
   if (!Array.isArray(value.nodes)) throw new InvalidSceneError('Scene nodes must be an array.')
-  if (!Array.isArray(value.edges) || !Array.isArray(value.groups)) throw new InvalidSceneError('Scene graph state is invalid.')
+  if (!Array.isArray(value.edges) || !Array.isArray(value.groups) || !Array.isArray(value.layers)) throw new InvalidSceneError('Scene graph state is invalid.')
   if (!isTransform(value.viewport)) throw new InvalidSceneError('Scene viewport is invalid.')
   if (!isRecord(value.metadata)) throw new InvalidSceneError('Scene metadata must be an object.')
 
@@ -33,27 +33,29 @@ function parseCanonicalScene(value: unknown): CanvasScene {
     nodes: value.nodes.map(parseNode),
     edges: value.edges.map(parseEdge),
     groups: value.groups.map(parseGroup),
+    layers: value.layers.map(parseLayer),
     viewport: value.viewport,
     metadata: value.metadata,
   }
   assertCanonicalReferences(scene)
   return scene
 }
+function parseLayer(value: unknown): CanvasLayer { if (!isRecord(value) || typeof value.id !== 'string' || typeof value.name !== 'string' || typeof value.visible !== 'boolean' || typeof value.locked !== 'boolean') throw new InvalidSceneError('Scene contains an invalid layer.'); return { id: value.id, name: value.name, visible: value.visible, locked: value.locked } }
 function parseEdge(value: unknown) { if (!isRecord(value) || typeof value.id !== 'string' || !['line', 'arrow', 'bezier'].includes(String(value.type)) || typeof value.sourceId !== 'string' || typeof value.targetId !== 'string') throw new InvalidSceneError('Scene contains an invalid edge.'); return { id: value.id, type: value.type as 'line' | 'arrow' | 'bezier', sourceId: value.sourceId, targetId: value.targetId } }
 function parseGroup(value: unknown) { if (!isRecord(value) || typeof value.id !== 'string' || !Array.isArray(value.nodeIds) || !value.nodeIds.every((id) => typeof id === 'string')) throw new InvalidSceneError('Scene contains an invalid group.'); return { id: value.id, nodeIds: value.nodeIds as string[] } }
 function parseNode(value: unknown): CanvasNode {
-  if (isRecord(value) && value.type === 'circle' && typeof value.id === 'string' && isPoint(value.position) && typeof value.radius === 'number' && typeof value.fill === 'string') return { id: value.id, type: 'circle', position: value.position, radius: value.radius, fill: value.fill }
-  if (isRecord(value) && value.type === 'text' && typeof value.id === 'string' && isPoint(value.position) && typeof value.text === 'string' && typeof value.fill === 'string' && typeof value.fontSize === 'number') return { id: value.id, type: 'text', position: value.position, text: value.text, fill: value.fill, fontSize: value.fontSize }
+  if (isRecord(value) && value.type === 'circle' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.radius === 'number' && typeof value.fill === 'string') return { id: value.id, layerId: value.layerId, type: 'circle', position: value.position, radius: value.radius, fill: value.fill }
+  if (isRecord(value) && value.type === 'text' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.text === 'string' && typeof value.fill === 'string' && typeof value.fontSize === 'number') return { id: value.id, layerId: value.layerId, type: 'text', position: value.position, text: value.text, fill: value.fill, fontSize: value.fontSize }
   return parseRectangle(value)
 }
 
 function parseRectangle(value: unknown): RectangleNode {
-  if (!isRecord(value) || value.type !== 'rectangle' || typeof value.id !== 'string'
+  if (!isRecord(value) || value.type !== 'rectangle' || typeof value.id !== 'string' || typeof value.layerId !== 'string'
     || !isPoint(value.position) || !isSize(value.size) || typeof value.fill !== 'string') {
     throw new InvalidSceneError('Scene contains an invalid rectangle node.')
   }
 
-  return { id: value.id, type: 'rectangle', position: value.position, size: value.size, fill: value.fill }
+  return { id: value.id, layerId: value.layerId, type: 'rectangle', position: value.position, size: value.size, fill: value.fill }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -79,6 +81,9 @@ function assertCanonicalReferences(scene: CanvasScene): void {
   const nodeIds = uniqueIds(scene.nodes, 'node')
   uniqueIds(scene.edges, 'edge')
   uniqueIds(scene.groups, 'group')
+  const layerIds = uniqueIds(scene.layers, 'layer')
+  if (layerIds.size === 0) throw new InvalidSceneError('Scene must contain at least one layer.')
+  if (scene.nodes.some((node) => !layerIds.has(node.layerId))) throw new InvalidSceneError('Scene nodes must reference existing layers.')
 
   for (const edge of scene.edges) {
     if (!nodeIds.has(edge.sourceId) || !nodeIds.has(edge.targetId)) {

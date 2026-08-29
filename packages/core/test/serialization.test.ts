@@ -9,22 +9,22 @@ it('restores a serialized rectangle scene', () => {
   expect(loadScene(serializeScene(scene))).toEqual(scene)
 })
 
-it('migrates a Phase 3 version 1 scene into version 2', () => {
+it('migrates a version 1 scene into version 3', () => {
   expect(importScene('{"version":1,"nodes":[],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}'))
-    .toMatchObject({ version: 2, edges: [], groups: [] })
+    .toMatchObject({ version: 3, edges: [], groups: [], layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }] })
 })
 
-it('preserves version 1 graph records while migrating to version 2', () => {
+it('preserves version 1 graph records while migrating to version 3', () => {
   const version1 = '{"version":1,"nodes":[{"id":"a","type":"rectangle","position":{"x":0,"y":0},"size":{"width":10,"height":10},"fill":"#fff"},{"id":"b","type":"rectangle","position":{"x":20,"y":0},"size":{"width":10,"height":10},"fill":"#000"}],"edges":[{"id":"link","type":"arrow","sourceId":"a","targetId":"b"}],"groups":[{"id":"pair","nodeIds":["a","b"]}],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}'
 
   expect(importScene(version1)).toMatchObject({
-    version: 2,
+    version: 3,
     edges: [{ id: 'link', type: 'arrow', sourceId: 'a', targetId: 'b' }],
     groups: [{ id: 'pair', nodeIds: ['a', 'b'] }],
   })
 })
 
-it('exports and imports canonical version 2 scenes', () => {
+it('exports and imports canonical version 3 scenes', () => {
   const scene = addRectangle(createScene(), {
     id: 'welcome', position: { x: -20, y: 40 }, size: { width: 180, height: 80 }, fill: '#7C7FF2',
   })
@@ -41,7 +41,7 @@ it('rejects invalid JSON syntax with a typed error', () => {
 })
 
 it('rejects unsupported scene versions with the unsupported-version subtype', () => {
-  expect(() => importScene('{"version":3,"nodes":[],"edges":[],"groups":[],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}'))
+  expect(() => importScene('{"version":4,"nodes":[],"edges":[],"groups":[],"layers":[],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}'))
     .toThrow(UnsupportedSceneVersionError)
 })
 

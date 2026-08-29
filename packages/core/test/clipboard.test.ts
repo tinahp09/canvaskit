@@ -83,7 +83,7 @@ it('preserves node subtype fields and remaps copied group members', () => {
 
   const result = pasteSelection(scene, copySelection(scene, ['a', 'b']), { x: 5, y: 8 })
 
-  expect(result.scene.nodes[3]).toEqual({ id: 'b-copy', type: 'circle', position: { x: 35, y: 8 }, radius: 12, fill: '#123' })
+  expect(result.scene.nodes[3]).toEqual({ id: 'b-copy', layerId: 'layer-default', type: 'circle', position: { x: 35, y: 8 }, radius: 12, fill: '#123' })
   expect(result.scene.groups[1]).toEqual({ id: 'pair-copy', nodeIds: ['a-copy', 'b-copy'] })
 })
 

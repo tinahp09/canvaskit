@@ -53,6 +53,8 @@ export function copySelection(scene: CanvasScene, ids: readonly string[]): Scene
 export function pasteSelection(scene: CanvasScene, clipboard: SceneClipboard, offset: Point): PasteSelectionResult {
   if (clipboard.nodes.length === 0) return { scene, ids: [] }
 
+  const destinationLayerIds = new Set(scene.layers.map((layer) => layer.id))
+  const fallbackLayerId = scene.layers[0]!.id
   const nodeIds = new Set(scene.nodes.map((node) => node.id))
   const edgeIds = new Set(scene.edges.map((edge) => edge.id))
   const groupIds = new Set(scene.groups.map((group) => group.id))
@@ -60,7 +62,8 @@ export function pasteSelection(scene: CanvasScene, clipboard: SceneClipboard, of
   const nodes = clipboard.nodes.map((node) => {
     const id = uniqueCopyId(node.id, nodeIds)
     remappedIds.set(node.id, id)
-    return translateNode(node, id, offset)
+    const translated = translateNode(node, id, offset)
+    return destinationLayerIds.has(translated.layerId) ? translated : { ...translated, layerId: fallbackLayerId }
   })
   const edges = clipboard.edges.filter((edge) => remappedIds.has(edge.sourceId) && remappedIds.has(edge.targetId)).map((edge) => ({
     ...edge,
