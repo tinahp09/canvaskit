@@ -5,7 +5,15 @@ export function attachPointerInput(element: HTMLElement, canvas: CanvasKit): () 
 
   const emit = (type: CanvasPointerEventType, event: PointerEvent) => {
     const rect = element.getBoundingClientRect()
-    canvas.createPointerEvent({ x: event.clientX - rect.left, y: event.clientY - rect.top }, type)
+    const scale = typeof HTMLCanvasElement !== 'undefined' && element instanceof HTMLCanvasElement
+      ? { x: element.width / rect.width, y: element.height / rect.height }
+      : { x: 1, y: 1 }
+    const modifiers = { shiftKey: event.shiftKey, metaKey: event.metaKey, ctrlKey: event.ctrlKey }
+    canvas.createPointerEvent(
+      { x: (event.clientX - rect.left) * scale.x, y: (event.clientY - rect.top) * scale.y },
+      type,
+      modifiers.shiftKey || modifiers.metaKey || modifiers.ctrlKey ? modifiers : undefined,
+    )
   }
 
   const onPointerDown = (event: PointerEvent) => {

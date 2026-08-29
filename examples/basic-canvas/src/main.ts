@@ -1,11 +1,11 @@
-import { CanvasKit, addCircle, addRectangle, addText, attachKeyboardInput, attachPointerInput, connectNodes, createScene, exportScene, hitTestNode, importScene, moveNodes, nodesInRect } from '@canvaskit/core'
+import { CanvasKit, addCircle, addRectangle, addText, attachKeyboardInput, attachPointerInput, connectNodes, createScene, exportScene, hitTestNode, importScene, moveNodes, type MarqueeMode, type SelectionMode } from '@canvaskit/core'
 import { CanvasRenderer, exportPNG } from '@canvaskit/renderer-canvas'
 import { renderSVG } from '@canvaskit/renderer-svg'
 import { createGridPlugin, createSnapPlugin } from '@canvaskit/plugins'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<header><strong>CanvasKit Phase 5 — Extensible export</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-keyshortcuts="Control+A Meta+A Delete Backspace" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
+app.innerHTML = `<header><strong>CanvasKit Phase 5 — Extensible export</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><span class="workflow-hint">Shift-click adds; Cmd/Ctrl-click toggles; drag empty space to marquee.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
 const canvasElement = app.querySelector('canvas')!
 canvasElement.width = 1200
 canvasElement.height = 720
@@ -19,7 +19,7 @@ const renderer = new CanvasRenderer(canvasElement)
 const redraw = () => renderer.render(kit.getScene(), kit.selection.get())
 attachPointerInput(canvasElement, kit)
 attachKeyboardInput(canvasElement, kit)
-kit.onPointer(redraw)
+kit.subscribe(redraw)
 const showGrid = app.querySelector<HTMLInputElement>('#show-grid')!
 const snapToGrid = app.querySelector<HTMLInputElement>('#snap-to-grid')!
 const updateGrid = () => {
@@ -31,12 +31,8 @@ const updateGrid = () => {
 showGrid.addEventListener('change', updateGrid)
 updateGrid()
 let dragStart: { x: number; y: number } | undefined
-let marqueeStart: { x: number; y: number } | undefined
+let marquee: { start: { x: number; y: number }; mode: MarqueeMode; selection: SelectionMode } | undefined
 let connectionSource: string | undefined
-const worldPoint = (event: PointerEvent) => {
-  const rect = canvasElement.getBoundingClientRect()
-  return kit.createPointerEvent({ x: (event.clientX - rect.left) * canvasElement.width / rect.width, y: (event.clientY - rect.top) * canvasElement.height / rect.height }, event.type as 'pointerdown' | 'pointermove' | 'pointerup').world
-}
 const connectionSourceAt = (point: { x: number; y: number }) => kit.selection.get().map((id) => kit.getScene().nodes.find((node) => node.id === id)).find((node) => {
   if (!node) return false
   const handle = node.type === 'rectangle'
@@ -46,42 +42,51 @@ const connectionSourceAt = (point: { x: number; y: number }) => kit.selection.ge
       : { x: node.position.x + node.text.length * node.fontSize, y: node.position.y - node.fontSize / 2 }
   return Math.hypot(point.x - handle.x, point.y - handle.y) <= 8
 })
-canvasElement.addEventListener('pointerdown', (event) => {
-  if (event.button !== 0) return
-  const point = worldPoint(event)
-  const source = connectionSourceAt(point)
-  if (source) { connectionSource = source.id; redraw(); return }
-  const node = hitTestNode(kit.getScene(), point)
-  if (node) { kit.selection.select(node.id); dragStart = point } else { kit.selection.clear(); marqueeStart = point }
-  redraw()
-})
-canvasElement.addEventListener('pointermove', (event) => {
-  if (!dragStart || event.buttons !== 1) return
-  const point = worldPoint(event)
-  const snapped = snapToGrid.checked ? snapPlugin.snap(point) : point
-  const before = kit.getScene()
-  const after = moveNodes(before, kit.selection.get(), { x: snapped.x - dragStart.x, y: snapped.y - dragStart.y })
-  kit.execute({ label: 'move selection', execute: () => after, undo: () => before })
-  dragStart = snapped
-  redraw()
-})
-canvasElement.addEventListener('pointerup', (event) => {
-  const point = worldPoint(event)
-  if (connectionSource) {
-    const target = hitTestNode(kit.getScene(), point)
-    if (target && target.id !== connectionSource) {
-      const before = kit.getScene()
-      const after = connectNodes(before, connectionSource, target.id)
-      kit.execute({ label: 'connect nodes', execute: () => after, undo: () => before })
+kit.onPointer((event) => {
+  const primaryModifier = event.modifiers?.metaKey || event.modifiers?.ctrlKey
+  if (event.type === 'pointerdown') {
+    const source = connectionSourceAt(event.world)
+    if (source) { connectionSource = source.id; redraw(); return }
+    const node = hitTestNode(kit.getScene(), event.world)
+    if (node) {
+      if (primaryModifier) kit.selection.toggle([node.id])
+      else if (event.modifiers?.shiftKey) kit.selection.add([node.id])
+      else kit.selection.set([node.id])
+      dragStart = event.world
+    } else {
+      marquee = {
+        start: event.world,
+        mode: event.modifiers?.shiftKey ? 'intersect' : 'contain',
+        selection: event.modifiers?.shiftKey ? 'add' : 'replace',
+      }
     }
-    connectionSource = undefined
+  } else if (event.type === 'pointermove' && dragStart) {
+    const snapped = snapToGrid.checked ? snapPlugin.snap(event.world) : event.world
+    const before = kit.getScene()
+    const after = moveNodes(before, kit.selection.get(), { x: snapped.x - dragStart.x, y: snapped.y - dragStart.y })
+    kit.execute({ label: 'move selection', execute: () => after, undo: () => before })
+    dragStart = snapped
+  } else if (event.type === 'pointerup') {
+    if (connectionSource) {
+      const target = hitTestNode(kit.getScene(), event.world)
+      if (target && target.id !== connectionSource) {
+        const before = kit.getScene()
+        const after = connectNodes(before, connectionSource, target.id)
+        kit.execute({ label: 'connect nodes', execute: () => after, undo: () => before })
+      }
+      connectionSource = undefined
+    }
+    if (marquee) {
+      const { start, mode, selection } = marquee
+      kit.selectInRect({
+        x: Math.min(start.x, event.world.x), y: Math.min(start.y, event.world.y),
+        width: Math.abs(event.world.x - start.x), height: Math.abs(event.world.y - start.y),
+      }, { mode, selection })
+    }
+    dragStart = undefined
+    marquee = undefined
   }
-  if (marqueeStart) {
-    const end = point
-    const x = Math.min(marqueeStart.x, end.x); const y = Math.min(marqueeStart.y, end.y)
-    kit.selection.selectMultiple(nodesInRect(kit.getScene(), { x, y, width: Math.abs(end.x - marqueeStart.x), height: Math.abs(end.y - marqueeStart.y) }))
-  }
-  dragStart = undefined; marqueeStart = undefined; redraw()
+  redraw()
 })
 redraw()
 const json = app.querySelector<HTMLTextAreaElement>('[data-testid="scene-json"]')!
@@ -89,9 +94,10 @@ const exportPreview = app.querySelector<HTMLTextAreaElement>('[data-testid="expo
 const status = app.querySelector<HTMLParagraphElement>('#scene-status')!
 app.querySelector<HTMLButtonElement>('#undo')!.onclick = () => { kit.undo(); redraw() }
 app.querySelector<HTMLButtonElement>('#redo')!.onclick = () => { kit.redo(); redraw() }
-app.querySelector<HTMLButtonElement>('#copy')!.onclick = () => { kit.copy() }
-app.querySelector<HTMLButtonElement>('#paste')!.onclick = () => { kit.paste(); redraw() }
-app.querySelector<HTMLButtonElement>('#duplicate')!.onclick = () => { kit.duplicate(); redraw() }
+app.querySelector<HTMLButtonElement>('#copy')!.onclick = () => { kit.executeCommand('copy') }
+app.querySelector<HTMLButtonElement>('#cut')!.onclick = () => { kit.executeCommand('cut'); redraw() }
+app.querySelector<HTMLButtonElement>('#paste')!.onclick = () => { kit.executeCommand('paste'); redraw() }
+app.querySelector<HTMLButtonElement>('#duplicate')!.onclick = () => { kit.executeCommand('duplicate'); redraw() }
 app.querySelector<HTMLButtonElement>('#export')!.onclick = () => { json.value = exportScene(kit.getScene()); status.textContent = 'Scene exported.' }
 app.querySelector<HTMLButtonElement>('#export-svg')!.onclick = () => {
   try {

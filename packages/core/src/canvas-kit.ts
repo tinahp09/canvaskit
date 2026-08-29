@@ -1,9 +1,11 @@
-import { screenToWorld, type Point } from '@canvaskit/geometry'
+import { screenToWorld, type Point, type Rect } from '@canvaskit/geometry'
 import type { CanvasScene } from './model.js'
 import { createScene } from './scene.js'
 import { loadScene, serializeScene } from './serialization.js'
 import { ViewportController } from './viewport.js'
 import { SelectionController } from './selection.js'
+import type { SelectionMode } from './selection.js'
+import { nodesInRect, type MarqueeMode } from './interaction.js'
 import { HistoryController, type SceneCommand } from './history.js'
 import { cloneClipboard, copySelection, pasteSelection, removeSelection, type SceneClipboard } from './clipboard.js'
 import type { EditorCommand } from './editor-command.js'
@@ -13,10 +15,22 @@ import { SceneSubscription, type SceneListener } from './scene-subscription.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup'
 
+export interface CanvasPointerModifiers {
+  shiftKey: boolean
+  metaKey: boolean
+  ctrlKey: boolean
+}
+
 export interface CanvasPointerEvent {
   type: CanvasPointerEventType
   screen: Point
   world: Point
+  modifiers?: CanvasPointerModifiers
+}
+
+export interface MarqueeSelectionOptions {
+  mode?: MarqueeMode
+  selection?: SelectionMode
 }
 
 export interface CanvasKitOptions {
@@ -136,6 +150,17 @@ export class CanvasKit {
     return this.paste({ x: 20, y: 20 })
   }
 
+  selectInRect(rect: Rect, options: MarqueeSelectionOptions = {}): string[] {
+    const ids = nodesInRect(this.getScene(), rect, options.mode ?? 'contain')
+    switch (options.selection ?? 'replace') {
+      case 'replace': this.selection.set(ids); break
+      case 'add': this.selection.add(ids); break
+      case 'remove': this.selection.remove(ids); break
+      case 'toggle': this.selection.toggle(ids); break
+    }
+    return ids
+  }
+
   executeCommand(command: EditorCommand): boolean {
     switch (command) {
       case 'select-all':
@@ -209,8 +234,13 @@ export class CanvasKit {
     this.sceneSubscription.notify(this.getScene())
   }
 
-  createPointerEvent(screen: Point, type: CanvasPointerEventType): CanvasPointerEvent {
-    const event = { type, screen, world: screenToWorld(screen, this.viewport.getTransform()) }
+  createPointerEvent(screen: Point, type: CanvasPointerEventType, modifiers?: CanvasPointerModifiers): CanvasPointerEvent {
+    const event: CanvasPointerEvent = {
+      type,
+      screen,
+      world: screenToWorld(screen, this.viewport.getTransform()),
+      ...(modifiers ? { modifiers } : {}),
+    }
     this.listeners.forEach((listener) => listener(event))
     return event
   }

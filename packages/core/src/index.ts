@@ -11,7 +11,7 @@ export { exportScene, importScene, InvalidSceneError, loadScene, serializeScene,
 export { migrateScene } from './migrations.js'
 export { ViewportController } from './viewport.js'
 export { CanvasKit } from './canvas-kit.js'
-export type { CanvasKitOptions, CanvasPointerEvent, CanvasPointerEventType } from './canvas-kit.js'
+export type { CanvasKitOptions, CanvasPointerEvent, CanvasPointerEventType, CanvasPointerModifiers, MarqueeSelectionOptions } from './canvas-kit.js'
 export type { SceneListener } from './scene-subscription.js'
 export type { CanvasPlugin, Renderer } from './plugin.js'
 export { EdgeRegistry, NodeRegistry } from './registry.js'

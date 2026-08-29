@@ -24,6 +24,21 @@ it('emits element-local pointer coordinates', () => {
   })
 })
 
+it('forwards selection modifier state with pointer events', () => {
+  const element = new FakeElement()
+  const canvas = new CanvasKit()
+  const received: unknown[] = []
+  canvas.onPointer((event) => received.push(event))
+
+  attachPointerInput(element as unknown as HTMLElement, canvas)
+  element.dispatch('pointerdown', { clientX: 35, clientY: 65, shiftKey: true, metaKey: true, ctrlKey: false } as PointerEvent)
+
+  expect(received).toContainEqual({
+    type: 'pointerdown', screen: { x: 25, y: 45 }, world: { x: 25, y: 45 },
+    modifiers: { shiftKey: true, metaKey: true, ctrlKey: false },
+  })
+})
+
 it('pans with a middle-button drag', () => {
   const element = new FakeElement()
   const canvas = new CanvasKit()

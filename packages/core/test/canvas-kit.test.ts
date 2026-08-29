@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { addRectangle, CanvasKit, type CanvasScene } from '../src/index.js'
+import { addRectangle, CanvasKit, createScene, type CanvasScene } from '../src/index.js'
 
 it('reports pointer coordinates in screen and world space', () => {
   const canvas = new CanvasKit()
@@ -8,6 +8,19 @@ it('reports pointer coordinates in screen and world space', () => {
   expect(canvas.createPointerEvent({ x: 30, y: 50 }, 'pointermove')).toEqual({
     type: 'pointermove', screen: { x: 30, y: 50 }, world: { x: 20, y: 30 },
   })
+})
+
+it('applies marquee results with explicit selection semantics', () => {
+  const scene = addRectangle(addRectangle(createScene(), {
+    id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+  }), {
+    id: 'b', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+  })
+  const canvas = new CanvasKit({ scene })
+
+  expect(canvas.selectInRect({ x: 0, y: 0, width: 10, height: 10 })).toEqual(['a'])
+  expect(canvas.selectInRect({ x: 25, y: 0, width: 10, height: 10 }, { mode: 'intersect', selection: 'add' })).toEqual(['b'])
+  expect(canvas.selection.get()).toEqual(['a', 'b'])
 })
 
 it('loads serialized scene data', () => {
