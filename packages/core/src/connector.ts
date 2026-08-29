@@ -78,36 +78,65 @@ export class ConnectorController {
 }
 
 function orthogonalRoute(source: Point, sourceDirection: CanvasConnectorDirection, target: Point, targetDirection: CanvasConnectorDirection): Point[] {
-  const sourceHorizontal = sourceDirection === 'east' || sourceDirection === 'west'
-  const targetHorizontal = targetDirection === 'east' || targetDirection === 'west'
-  if (sourceHorizontal && targetHorizontal) {
-    const middleX = horizontalLane(source.x, sourceDirection, target.x, targetDirection)
-    return [{ ...source }, { x: middleX, y: source.y }, { x: middleX, y: target.y }, { ...target }]
-  }
-  if (!sourceHorizontal && !targetHorizontal) {
-    const middleY = verticalLane(source.y, sourceDirection, target.y, targetDirection)
-    return [{ ...source }, { x: source.x, y: middleY }, { x: target.x, y: middleY }, { ...target }]
-  }
-  if (sourceHorizontal) return [{ ...source }, { x: target.x, y: source.y }, { ...target }]
-  return [{ ...source }, { x: source.x, y: target.y }, { ...target }]
+  if (sourceDirection === 'center' || targetDirection === 'center') return [{ ...source }, { ...target }]
+
+  const twoBend = twoBendRoute(source, sourceDirection, target, targetDirection)
+  if (twoBend) return compactRoute(twoBend)
+
+  const sourceStub = offset(source, sourceDirection)
+  const targetStub = offset(target, targetDirection)
+  const join = sourceDirection === 'east' || sourceDirection === 'west'
+    ? { x: targetStub.x, y: sourceStub.y }
+    : { x: sourceStub.x, y: targetStub.y }
+  return compactRoute([source, sourceStub, join, targetStub, target])
 }
 
 const ROUTE_CLEARANCE = 20
 
-function horizontalLane(sourceX: number, sourceDirection: CanvasConnectorDirection, targetX: number, targetDirection: CanvasConnectorDirection): number {
-  if (sourceDirection === 'east' && targetDirection === 'east') return Math.max(sourceX, targetX) + ROUTE_CLEARANCE
-  if (sourceDirection === 'west' && targetDirection === 'west') return Math.min(sourceX, targetX) - ROUTE_CLEARANCE
-  if (sourceDirection === 'east' && targetDirection === 'west' && sourceX > targetX) return Math.max(sourceX, targetX) + ROUTE_CLEARANCE
-  if (sourceDirection === 'west' && targetDirection === 'east' && sourceX < targetX) return Math.min(sourceX, targetX) - ROUTE_CLEARANCE
-  return (sourceX + targetX) / 2
+function twoBendRoute(source: Point, sourceDirection: Exclude<CanvasConnectorDirection, 'center'>, target: Point, targetDirection: Exclude<CanvasConnectorDirection, 'center'>): Point[] | undefined {
+  const sourceHorizontal = isHorizontal(sourceDirection)
+  if (sourceHorizontal) {
+    if (!isHorizontal(targetDirection)) return undefined
+    const lane = horizontalLane(source.x, sourceDirection, target.x, targetDirection)
+    return lane === undefined ? undefined : [{ ...source }, { x: lane, y: source.y }, { x: lane, y: target.y }, { ...target }]
+  }
+  if (isHorizontal(targetDirection)) return undefined
+  const lane = verticalLane(source.y, sourceDirection, target.y, targetDirection)
+  return lane === undefined ? undefined : [{ ...source }, { x: source.x, y: lane }, { x: target.x, y: lane }, { ...target }]
 }
 
-function verticalLane(sourceY: number, sourceDirection: CanvasConnectorDirection, targetY: number, targetDirection: CanvasConnectorDirection): number {
+function horizontalLane(sourceX: number, sourceDirection: 'east' | 'west', targetX: number, targetDirection: 'east' | 'west'): number | undefined {
+  if (sourceDirection === 'east' && targetDirection === 'east') return Math.max(sourceX, targetX) + ROUTE_CLEARANCE
+  if (sourceDirection === 'west' && targetDirection === 'west') return Math.min(sourceX, targetX) - ROUTE_CLEARANCE
+  if (sourceDirection === 'east' && targetDirection === 'west') return sourceX < targetX ? (sourceX + targetX) / 2 : undefined
+  return sourceX > targetX ? (sourceX + targetX) / 2 : undefined
+}
+
+function verticalLane(sourceY: number, sourceDirection: 'north' | 'south', targetY: number, targetDirection: 'north' | 'south'): number | undefined {
   if (sourceDirection === 'south' && targetDirection === 'south') return Math.max(sourceY, targetY) + ROUTE_CLEARANCE
   if (sourceDirection === 'north' && targetDirection === 'north') return Math.min(sourceY, targetY) - ROUTE_CLEARANCE
-  if (sourceDirection === 'south' && targetDirection === 'north' && sourceY > targetY) return Math.max(sourceY, targetY) + ROUTE_CLEARANCE
-  if (sourceDirection === 'north' && targetDirection === 'south' && sourceY < targetY) return Math.min(sourceY, targetY) - ROUTE_CLEARANCE
-  return (sourceY + targetY) / 2
+  if (sourceDirection === 'south' && targetDirection === 'north') return sourceY < targetY ? (sourceY + targetY) / 2 : undefined
+  return sourceY > targetY ? (sourceY + targetY) / 2 : undefined
+}
+
+function offset(point: Point, direction: Exclude<CanvasConnectorDirection, 'center'>): Point {
+  switch (direction) {
+    case 'north': return { x: point.x, y: point.y - ROUTE_CLEARANCE }
+    case 'east': return { x: point.x + ROUTE_CLEARANCE, y: point.y }
+    case 'south': return { x: point.x, y: point.y + ROUTE_CLEARANCE }
+    case 'west': return { x: point.x - ROUTE_CLEARANCE, y: point.y }
+  }
+}
+
+function isHorizontal(direction: Exclude<CanvasConnectorDirection, 'center'>): direction is 'east' | 'west' {
+  return direction === 'east' || direction === 'west'
+}
+
+function compactRoute(points: readonly Point[]): Point[] {
+  return points.reduce<Point[]>((route, point) => {
+    if (route.length === 0 || route.at(-1)!.x !== point.x || route.at(-1)!.y !== point.y) route.push({ ...point })
+    return route
+  }, [])
 }
 
 type CanvasConnectorDirection = 'north' | 'east' | 'south' | 'west' | 'center'

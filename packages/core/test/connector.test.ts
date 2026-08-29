@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { ConnectorController, createScene, deriveNodePorts, exportScene, importScene, InvalidSceneError, addRectangle, removeSelection } from '../src/index.js'
+import { ConnectorController, createScene, deriveNodePorts, exportScene, importScene, InvalidSceneError, addRectangle, pasteSelection, removeSelection, type SceneClipboard } from '../src/index.js'
 
 it('derives named cardinal ports from each node subtype bounds', () => {
   expect(deriveNodePorts({
@@ -55,6 +55,28 @@ it('migrates a V3 edge into a straight connector with legacy center endpoints', 
   expect('edges' in scene).toBe(false)
 })
 
+it.each([1, 2, 3])('rejects an invalid legacy edge type while migrating V%s scenes', (version) => {
+  const nodes = version === 3
+    ? [
+      { id: 'source', layerId: 'layer-default', type: 'rectangle', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff' },
+      { id: 'target', layerId: 'layer-default', type: 'rectangle', position: { x: 100, y: 0 }, size: { width: 20, height: 20 }, fill: '#000' },
+    ]
+    : [
+      { id: 'source', type: 'rectangle', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff' },
+      { id: 'target', type: 'rectangle', position: { x: 100, y: 0 }, size: { width: 20, height: 20 }, fill: '#000' },
+    ]
+  const scene = {
+    version,
+    nodes,
+    edges: [{ id: 'bad', type: 'nonsense', sourceId: 'source', targetId: 'target' }],
+    groups: [],
+    ...(version === 3 ? { layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }] } : {}),
+    viewport: { x: 0, y: 0, zoom: 1 }, metadata: {},
+  }
+
+  expect(() => importScene(JSON.stringify(scene))).toThrow(InvalidSceneError)
+})
+
 it('creates a connector only when both referenced node ports exist', () => {
   let scene = addRectangle(createScene(), {
     id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
@@ -84,6 +106,30 @@ it('creates a connector only when both referenced node ports exist', () => {
   }])
 })
 
+it('reconnects, rejects an invalid replacement without mutation, and removes connectors', () => {
+  let scene = addRectangle(createScene(), {
+    id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
+  })
+  scene = addRectangle(scene, {
+    id: 'target', position: { x: 100, y: 0 }, size: { width: 20, height: 20 }, fill: '#000',
+  })
+  scene = addRectangle(scene, {
+    id: 'replacement', position: { x: 200, y: 0 }, size: { width: 20, height: 20 }, fill: '#123',
+  })
+  const controller = new ConnectorController()
+  scene = controller.create(scene, {
+    id: 'relation', sourceNodeId: 'source', sourcePortId: 'east', targetNodeId: 'target', targetPortId: 'west', routing: 'straight',
+  })
+
+  const reconnected = controller.reconnect(scene, 'relation', { target: { nodeId: 'replacement', portId: 'north' } })
+
+  expect(scene.connectors[0]).toMatchObject({ targetNodeId: 'target', targetPortId: 'west' })
+  expect(reconnected.connectors[0]).toMatchObject({ targetNodeId: 'replacement', targetPortId: 'north' })
+  expect(() => controller.reconnect(reconnected, 'relation', { target: { nodeId: 'replacement', portId: 'missing' } })).toThrow('Connector target port "missing" does not exist on node "replacement".')
+  expect(reconnected.connectors[0]).toMatchObject({ targetNodeId: 'replacement', targetPortId: 'north' })
+  expect(controller.remove(reconnected, 'relation').connectors).toEqual([])
+})
+
 it('routes matching outbound port directions around their shared exterior side', () => {
   let scene = addRectangle(createScene(), {
     id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
@@ -102,6 +148,57 @@ it('routes matching outbound port directions around their shared exterior side',
   ])
 })
 
+it('honors every source and target port normal across all target quadrants', () => {
+  const directions = ['north', 'east', 'south', 'west'] as const
+  const targetPositions = [
+    { x: 100, y: 100 }, { x: -120, y: 100 }, { x: 100, y: -120 }, { x: -120, y: -120 },
+  ]
+  const controller = new ConnectorController()
+
+  for (const targetPosition of targetPositions) {
+    for (const sourcePortId of directions) {
+      for (const targetPortId of directions) {
+        let scene = addRectangle(createScene(), {
+          id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
+        })
+        scene = addRectangle(scene, {
+          id: 'target', position: targetPosition, size: { width: 20, height: 20 }, fill: '#000',
+        })
+        scene = controller.create(scene, {
+          id: 'route', sourceNodeId: 'source', sourcePortId, targetNodeId: 'target', targetPortId, routing: 'orthogonal',
+        })
+
+        const points = controller.route(scene, 'route')
+        expect(firstDirection(points)).toBe(sourcePortId)
+        expect(lastArrivalDirection(points)).toBe(targetPortId)
+        expect(points.every((point, index) => index === 0 || point.x === points[index - 1]!.x || point.y === points[index - 1]!.y)).toBe(true)
+      }
+    }
+  }
+})
+
+it('recomputes a connector route from moved node bounds without persisting route points', () => {
+  let scene = addRectangle(createScene(), {
+    id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
+  })
+  scene = addRectangle(scene, {
+    id: 'target', position: { x: 100, y: 0 }, size: { width: 20, height: 20 }, fill: '#000',
+  })
+  const controller = new ConnectorController()
+  scene = controller.create(scene, {
+    id: 'relation', sourceNodeId: 'source', sourcePortId: 'east', targetNodeId: 'target', targetPortId: 'west', routing: 'straight',
+  })
+
+  const moved = {
+    ...scene,
+    nodes: scene.nodes.map((node) => node.id === 'target' ? { ...node, position: { x: 160, y: 40 } } : node),
+  }
+
+  expect(controller.route(scene, 'relation')).toEqual([{ x: 20, y: 10 }, { x: 100, y: 10 }])
+  expect(controller.route(moved, 'relation')).toEqual([{ x: 20, y: 10 }, { x: 160, y: 50 }])
+  expect(moved.connectors[0]).not.toHaveProperty('points')
+})
+
 it('removes connectors that become dangling when selected nodes are deleted', () => {
   let scene = addRectangle(createScene(), {
     id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
@@ -118,6 +215,25 @@ it('removes connectors that become dangling when selected nodes are deleted', ()
 
   expect(result.nodes.map((node) => node.id)).toEqual(['target'])
   expect(result.connectors).toEqual([])
+})
+
+it('drops clipboard connectors whose remapped source or target port is invalid', () => {
+  const clipboard: SceneClipboard = {
+    nodes: [
+      { id: 'source', layerId: 'layer-default', type: 'rectangle', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff' },
+      { id: 'target', layerId: 'layer-default', type: 'rectangle', position: { x: 100, y: 0 }, size: { width: 20, height: 20 }, fill: '#000' },
+    ],
+    connectors: [
+      { id: 'invalid-source', sourceNodeId: 'source', sourcePortId: 'missing', targetNodeId: 'target', targetPortId: 'west', routing: 'straight' },
+      { id: 'invalid-target', sourceNodeId: 'source', sourcePortId: 'east', targetNodeId: 'target', targetPortId: 'missing', routing: 'orthogonal' },
+    ],
+    edges: [], groups: [],
+  }
+
+  const result = pasteSelection(createScene(), clipboard, { x: 0, y: 0 })
+
+  expect(result.scene.connectors).toEqual([])
+  expect(() => exportScene(result.scene)).not.toThrow()
 })
 
 it('serializes connector labels but never materializes a derived route', () => {
@@ -149,3 +265,17 @@ it('rejects legacy edge records in a V4 payload instead of treating them as cano
     viewport: { x: 0, y: 0, zoom: 1 }, metadata: {},
   }))).toThrow(InvalidSceneError)
 })
+
+function firstDirection(points: readonly { x: number; y: number }[]): 'north' | 'east' | 'south' | 'west' {
+  return direction(points[0]!, points[1]!)
+}
+
+function lastArrivalDirection(points: readonly { x: number; y: number }[]): 'north' | 'east' | 'south' | 'west' {
+  const incoming = direction(points.at(-2)!, points.at(-1)!)
+  return ({ north: 'south', east: 'west', south: 'north', west: 'east' } as const)[incoming]
+}
+
+function direction(from: { x: number; y: number }, to: { x: number; y: number }): 'north' | 'east' | 'south' | 'west' {
+  if (from.x === to.x) return to.y > from.y ? 'south' : 'north'
+  return to.x > from.x ? 'east' : 'west'
+}

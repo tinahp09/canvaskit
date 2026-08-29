@@ -37,17 +37,7 @@ export function migrateScene(value: unknown): unknown {
   }
 
   if (scene.version === 3) {
-    const edges = scene.edges
-    const connectors = Array.isArray(edges)
-      ? edges.map((edge) => isRecord(edge) ? {
-        id: edge.id,
-        sourceNodeId: edge.sourceId,
-        sourcePortId: 'center',
-        targetNodeId: edge.targetId,
-        targetPortId: 'center',
-        routing: 'straight',
-      } : edge)
-      : edges
+    const connectors = migrateLegacyEdges(scene.edges)
     const { edges: _legacyEdges, ...withoutEdges } = scene
     scene = { ...withoutEdges, version: SCENE_VERSION, connectors }
   }
@@ -58,4 +48,25 @@ export function migrateScene(value: unknown): unknown {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function migrateLegacyEdges(edges: unknown): unknown {
+  if (!Array.isArray(edges)) return edges
+  return edges.map((edge) => {
+    if (!isRecord(edge)
+      || typeof edge.id !== 'string'
+      || !['line', 'arrow', 'bezier'].includes(String(edge.type))
+      || typeof edge.sourceId !== 'string'
+      || typeof edge.targetId !== 'string') {
+      throw new InvalidSceneError('Scene contains an invalid edge.')
+    }
+    return {
+      id: edge.id,
+      sourceNodeId: edge.sourceId,
+      sourcePortId: 'center',
+      targetNodeId: edge.targetId,
+      targetPortId: 'center',
+      routing: 'straight',
+    }
+  })
 }

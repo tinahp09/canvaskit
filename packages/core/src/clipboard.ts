@@ -2,6 +2,7 @@ import type { Point } from '@canvaskit/geometry'
 import type { CanvasConnector, CanvasEdge, CanvasGroup, CanvasNode, CanvasScene } from './model.js'
 import { translateNode } from './scene.js'
 import { implicitLayerId } from './document.js'
+import { ConnectorController } from './connector.js'
 
 export interface SceneClipboard {
   nodes: CanvasNode[]
@@ -70,12 +71,22 @@ export function pasteSelection(scene: CanvasScene, clipboard: SceneClipboard, of
     const translated = translateNode(node, id, offset)
     return destinationLayerIds.has(translated.layerId) ? translated : { ...translated, layerId: fallbackLayerId }
   })
-  const connectors = connectorClipboard(clipboard).filter((connector) => remappedIds.has(connector.sourceNodeId) && remappedIds.has(connector.targetNodeId)).map((connector) => ({
+  const remappedConnectors = connectorClipboard(clipboard).filter((connector) => remappedIds.has(connector.sourceNodeId) && remappedIds.has(connector.targetNodeId)).map((connector) => ({
     ...connector,
     id: uniqueCopyId(connector.id, connectorIds),
     sourceNodeId: remappedIds.get(connector.sourceNodeId)!,
     targetNodeId: remappedIds.get(connector.targetNodeId)!,
   }))
+  const connectorController = new ConnectorController()
+  const validationScene = { ...scene, nodes: [...scene.nodes, ...nodes] }
+  const connectors = remappedConnectors.filter((connector) => {
+    try {
+      connectorController.validate(validationScene, connector)
+      return true
+    } catch {
+      return false
+    }
+  })
   const groups = clipboard.groups.filter((group) => new Set(group.nodeIds).size === group.nodeIds.length && group.nodeIds.every((id) => remappedIds.has(id))).map((group) => ({
     ...group,
     id: uniqueCopyId(group.id, groupIds),
