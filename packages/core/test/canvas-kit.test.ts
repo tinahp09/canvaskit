@@ -224,6 +224,17 @@ it('preserves the controller typed rotation error without recording history', ()
   expect(kit.undo()).toEqual(scene)
 })
 
+it('forwards the typed rotation error before treating an empty selection as a no-op', () => {
+  const scene = addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
+  })
+  const kit = new CanvasKit({ scene })
+
+  expect(() => kit.resizeSelection('rotate', { x: 25, y: 0 })).toThrow(UnsupportedPersistentRotationError)
+  expect(kit.getScene()).toEqual(scene)
+  expect(kit.undo()).toEqual(scene)
+})
+
 it('aligns the current selection without disturbing graph and group relationships', () => {
   let scene = addRectangle(createScene(), {
     id: 'left', position: { x: 0, y: 10 }, size: { width: 10, height: 10 }, fill: '#fff',

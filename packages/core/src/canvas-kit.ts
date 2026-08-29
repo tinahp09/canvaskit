@@ -155,10 +155,8 @@ export class CanvasKit {
   }
 
   resizeSelection(handle: TransformHandle, point: Point, constraints?: TransformConstraints): boolean {
-    const ids = this.selection.get()
-    if (ids.length === 0) return false
     const before = this.getScene()
-    const after = this.transform.resize(before, ids, handle, point, constraints)
+    const after = this.transform.resize(before, this.selection.get(), handle, point, constraints)
     return this.executeTransform('resize selection', before, after)
   }
 
