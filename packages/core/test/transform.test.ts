@@ -1,0 +1,113 @@
+import { expect, it } from 'vitest'
+import { addCircle, addRectangle, addText, createScene, TransformController, UnsupportedPersistentRotationError } from '../src/index.js'
+
+const controller = new TransformController()
+
+it('returns a normalized bounding overlay and world-space handles for a multi-node selection', () => {
+  const scene = addCircle(addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 40, y: 60 }, size: { width: -20, height: -30 }, fill: '#fff',
+  }), {
+    id: 'circle', position: { x: -10, y: 10 }, radius: 5, fill: '#000',
+  })
+
+  expect(controller.getOverlay(scene, ['rectangle', 'circle'])).toEqual({
+    bounds: { x: -15, y: 5, width: 55, height: 55 },
+    handles: {
+      'north-west': { x: -15, y: 5 },
+      north: { x: 12.5, y: 5 },
+      'north-east': { x: 40, y: 5 },
+      east: { x: 40, y: 32.5 },
+      'south-east': { x: 40, y: 60 },
+      south: { x: 12.5, y: 60 },
+      'south-west': { x: -15, y: 60 },
+      west: { x: -15, y: 32.5 },
+      rotate: { x: 12.5, y: -19 },
+    },
+    rotation: 0,
+  })
+})
+
+it('resizes a rectangle from its north-west handle without mutating the input scene', () => {
+  const scene = addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
+  })
+
+  const resized = controller.resize(scene, ['rectangle'], 'north-west', { x: 0, y: 10 })
+
+  expect(resized.nodes[0]).toMatchObject({
+    type: 'rectangle', position: { x: 0, y: 10 }, size: { width: 40, height: 50 }, fill: '#fff',
+  })
+  expect(scene.nodes[0]).toMatchObject({ position: { x: 10, y: 20 }, size: { width: 30, height: 40 } })
+})
+
+it('resizes a circle from its east handle by updating its center and radius', () => {
+  const scene = addCircle(createScene(), {
+    id: 'circle', position: { x: 10, y: 20 }, radius: 10, fill: '#000',
+  })
+
+  const resized = controller.resize(scene, ['circle'], 'east', { x: 40, y: 30 })
+
+  expect(resized.nodes[0]).toEqual({
+    id: 'circle', type: 'circle', position: { x: 20, y: 20 }, radius: 20, fill: '#000',
+  })
+})
+
+it('resizes text from its south handle by scaling its font size while preserving subtype fields', () => {
+  const scene = addText(createScene(), {
+    id: 'text', position: { x: 10, y: 30 }, text: 'hi', fontSize: 10, fill: '#123',
+  })
+
+  const resized = controller.resize(scene, ['text'], 'south', { x: 20, y: 40 })
+
+  expect(resized.nodes[0]).toEqual({
+    id: 'text', type: 'text', position: { x: 10, y: 40 }, text: 'hi', fontSize: 20, fill: '#123',
+  })
+})
+
+it('enforces selection minimum dimensions from the dragged edge', () => {
+  const scene = addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
+  })
+
+  const resized = controller.resize(scene, ['rectangle'], 'west', { x: 39, y: 20 }, { minWidth: 12 })
+
+  expect(resized.nodes[0]).toMatchObject({ position: { x: 28, y: 20 }, size: { width: 12, height: 40 } })
+})
+
+it('locks the original aspect ratio when resizing from a corner', () => {
+  const scene = addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 40, height: 20 }, fill: '#fff',
+  })
+
+  const resized = controller.resize(scene, ['rectangle'], 'south-east', { x: 90, y: 50 }, { preserveAspectRatio: true })
+
+  expect(resized.nodes[0]).toMatchObject({ position: { x: 10, y: 20 }, size: { width: 80, height: 40 } })
+})
+
+it('leaves the scene untouched when selection is empty or includes an unknown node', () => {
+  const scene = addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
+  })
+
+  expect(controller.getOverlay(scene, [])).toBeUndefined()
+  expect(controller.getOverlay(scene, ['missing'])).toBeUndefined()
+  expect(controller.resize(scene, [], 'east', { x: 60, y: 20 })).toBe(scene)
+  expect(controller.resize(scene, ['rectangle', 'missing'], 'east', { x: 60, y: 20 })).toBe(scene)
+})
+
+it('leaves a degenerate selection untouched rather than producing non-finite geometry', () => {
+  const scene = addText(createScene(), {
+    id: 'empty-text', position: { x: 10, y: 30 }, text: '', fontSize: 10, fill: '#123',
+  })
+
+  expect(controller.resize(scene, ['empty-text'], 'east', { x: 40, y: 30 })).toBe(scene)
+})
+
+it('rejects persistent rotation without mutating the scene', () => {
+  const scene = addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
+  })
+
+  expect(() => controller.resize(scene, ['rectangle'], 'rotate', { x: 20, y: 0 })).toThrow(UnsupportedPersistentRotationError)
+  expect(scene.nodes[0]).toMatchObject({ position: { x: 10, y: 20 }, size: { width: 30, height: 40 } })
+})
