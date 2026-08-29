@@ -16,16 +16,23 @@ The benchmark reports elapsed milliseconds for the whole 200-operation batch.
 It is intended for relative comparisons on the same machine, not as a CI
 threshold: browser, Node version, and hardware all affect the result.
 
-## Recorded run
+## Recorded baseline and non-flaky verification
 
-Recorded on 2026-08-27 with Node 22.22.2. The fixture and query set are the
-same for every run.
+Recorded on 2026-08-29 with Node 22.22.2. The fixture, query set, node counts,
+and aggregate-result assertions are the same for every run. Run it as part of
+the local release gate with `pnpm verify:release-quality`, or reproduce just
+this measurement with `pnpm build && pnpm benchmark:spatial-index`.
+
+Elapsed time is intentionally informational, never a pass/fail CI threshold:
+hardware, Node version, CPU scheduling, and background load make timing limits
+flaky. The executable gate throws only when the deterministic linear and
+indexed aggregate match counts differ for any workload.
 
 | Nodes | Linear query | Indexed query | Linear hit-test | Indexed hit-test |
 | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 8.59 ms | 9.31 ms | 4.50 ms | 8.16 ms |
-| 5,000 | 44.16 ms | 40.98 ms | 22.65 ms | 41.48 ms |
-| 10,000 | 83.46 ms | 83.64 ms | 45.56 ms | 80.46 ms |
+| 1,000 | 8.29 ms | 8.84 ms | 4.61 ms | 8.04 ms |
+| 5,000 | 42.04 ms | 40.70 ms | 21.40 ms | 39.18 ms |
+| 10,000 | 82.02 ms | 79.78 ms | 42.16 ms | 78.43 ms |
 
 The current uniform-grid implementation preserves original scene order by
 filtering candidates against the source list. These numbers are a baseline for

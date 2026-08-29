@@ -56,6 +56,13 @@ baseline and fixture details live in `benchmarks/README.md` at the repository ro
 When changing the index algorithm or benchmark workload, rerun it and update
 that recorded baseline together with the change.
 
+For the release-quality command that rebuilds packages, checks deterministic
+bundle budgets, and then runs this non-flaky benchmark verification, use:
+
+```sh
+pnpm verify:release-quality
+```
+
 ## Explore 10,000 nodes in the browser
 
 The `@canvaskit/performance-canvas` Vite example loads a deterministic

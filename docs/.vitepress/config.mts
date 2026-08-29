@@ -45,6 +45,7 @@ export default defineConfig({
           text: 'Release readiness',
           items: [
             { text: 'API stability', link: '/api-stability' },
+            { text: 'Release quality gates', link: '/release-quality' },
             { text: 'V1 RC checklist', link: '/release-candidate-checklist' },
             { text: 'Release checklist', link: '/release-checklist' },
             { text: 'RC feedback', link: '/rc-feedback' },

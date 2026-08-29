@@ -19,6 +19,7 @@ Stable `1.x` candidates must also complete the [V1 release-candidate checklist](
 - [ ] Run `pnpm typecheck`.
 - [ ] Run `pnpm test`.
 - [ ] Run `pnpm test:release`.
+- [ ] Run `pnpm verify:release-quality` for built-package bundle budgets and deterministic benchmark correctness.
 - [ ] Run `pnpm test:e2e` and confirm its final summary includes every test.
 - [ ] Run `pnpm docs:build`.
 - [ ] Run `pnpm storybook:build`.
