@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { addRectangle, CanvasKit, createScene, type EditorCommand } from '../src/index.js'
+import { addConnector, addRectangle, CanvasKit, createScene, type EditorCommand } from '../src/index.js'
 
 const rectangle = { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' }
 
@@ -20,6 +20,22 @@ it('dispatches every command and reports whether clipboard work changed observab
   expect(kit.executeCommand('delete-selection')).toBe(true)
   expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['a', 'a-copy'])
   expect(kit.executeCommand('cut')).toBe(false)
+})
+
+it('clears connector selection so a later delete command cannot remove a stale connector', () => {
+  let scene = addRectangle(createScene(), rectangle)
+  scene = addRectangle(scene, { id: 'b', position: { x: 40, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' })
+  scene = addConnector(scene, {
+    id: 'relation', sourceNodeId: 'a', sourcePortId: 'east', targetNodeId: 'b', targetPortId: 'west', routing: 'straight',
+  })
+  const kit = new CanvasKit({ scene })
+
+  expect(kit.selectConnector('relation')).toBe(true)
+  expect(kit.executeCommand('clear-selection')).toBe(true)
+  expect(kit.getSelectedConnector()).toBeUndefined()
+  expect(kit.executeCommand('clear-selection')).toBe(false)
+  expect(kit.executeCommand('delete-selection')).toBe(false)
+  expect(kit.getScene().connectors.map((connector) => connector.id)).toEqual(['relation'])
 })
 
 it('dispatches transform alignment and distribution commands through the selected nodes', () => {

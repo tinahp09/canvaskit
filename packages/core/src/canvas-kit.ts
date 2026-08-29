@@ -127,6 +127,17 @@ export class CanvasKit {
     return connector && this.isConnectorInteractive(connector) ? connector.id : undefined
   }
 
+  /** Clears either node or connector selection, returning whether state changed. */
+  clearSelection(): boolean {
+    const hasNodeSelection = this.selection.get().length > 0
+    const hasConnectorSelection = this.selectedConnectorId !== undefined
+    if (!hasNodeSelection && !hasConnectorSelection) return false
+    this.selectedConnectorId = undefined
+    if (hasNodeSelection) this.selection.clear()
+    else this.notifyScene()
+    return true
+  }
+
   setScene(scene: CanvasScene): void {
     this.clearHistory()
     this.applyScene(scene)
@@ -325,8 +336,7 @@ export class CanvasKit {
         this.selection.selectAll()
         return true
       case 'clear-selection':
-        this.selection.clear()
-        return true
+        return this.clearSelection()
       case 'delete-selection':
         return this.deleteSelection()
       case 'group-selection': return this.groupSelection()
