@@ -80,3 +80,21 @@ it('implements the public renderer contract and retains its rendered SVG', () =>
 
   expect((renderer as SvgRenderer).svg).toBe(renderSVG(scene))
 })
+
+it('serializes visible connector routes, direction, endpoint ports, and labels', () => {
+  const svg = renderSVG({
+    version: 4,
+    nodes: [
+      { id: 'source', layerId: 'layer-default', type: 'rectangle', position: { x: 120, y: 180 }, size: { width: 150, height: 70 }, fill: '#7C7FF2' },
+      { id: 'target', layerId: 'layer-default', type: 'rectangle', position: { x: 400, y: 180 }, size: { width: 150, height: 70 }, fill: '#60A5FA' },
+    ],
+    connectors: [{ id: 'request-flow', sourceNodeId: 'source', sourcePortId: 'east', targetNodeId: 'target', targetPortId: 'west', routing: 'orthogonal', label: 'request <body>' }],
+    groups: [], layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }], viewport: { x: 0, y: 0, zoom: 1 }, metadata: {},
+  })
+
+  expect(svg).toContain('<path id="connector-request-flow" d="M 270 215 L 290 215 L 290 195 L 380 195 L 380 215 L 400 215" fill="none" stroke="#737B88" stroke-width="1.5" marker-end="url(#arrowhead)"/>')
+  expect(svg).toContain('<circle id="port-source-east" cx="270" cy="215" r="4"')
+  expect(svg).toContain('<circle id="port-target-west" cx="400" cy="215" r="4"')
+  expect(svg).toContain('<text id="connector-label-request-flow" x="335" y="195"')
+  expect(svg).toContain('request &lt;body&gt;</text>')
+})

@@ -1,16 +1,17 @@
-import { CanvasKit, addCircle, addRectangle, addText, attachKeyboardInput, attachPointerInput, connectNodes, createScene, exportScene, hitTestNode, importScene, moveNodes, type MarqueeMode, type SelectionMode, type TransformHandle } from '@canvaskit/core'
+import { CanvasKit, addCircle, addConnector, addRectangle, addText, attachKeyboardInput, attachPointerInput, deriveNodePorts, hitTestConnector, hitTestNode, importScene, isNodeInteractive, createScene, exportScene, moveNodes, projectVisibleDocument, type MarqueeMode, type SelectionMode, type TransformHandle } from '@canvaskit/core'
 import { CanvasRenderer, exportPNG } from '@canvaskit/renderer-canvas'
 import { renderSVG } from '@canvaskit/renderer-svg'
 import { createGridPlugin, createSnapPlugin } from '@canvaskit/plugins'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<header><strong>CanvasKit Phase 5 — Extensible export</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><span class="toolbar-divider" aria-hidden="true"></span><button id="align-left">Align left</button><button id="align-center">Align center</button><button id="distribute-horizontal">Distribute horizontal</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><span class="workflow-hint">Shift-click adds; Cmd/Ctrl-click toggles; drag empty space to marquee. Drag selection handles to resize.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset><fieldset class="layer-controls"><legend>Layers</legend><label>Active layer <select id="active-layer" aria-label="Active layer"></select></label><button id="add-layer">Add layer</button><button id="move-selection-to-layer">Move selected nodes to active layer</button><button id="toggle-layer-visibility">Hide active layer</button><button id="toggle-layer-lock">Lock active layer</button><button id="move-layer-backward">Move active layer backward</button><button id="move-layer-forward">Move active layer forward</button><button id="group-selection">Group selected nodes</button><button id="ungroup-selection">Ungroup selected nodes</button></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
+app.innerHTML = `<header><strong>CanvasKit V2.3 — Diagram Toolkit</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><span class="toolbar-divider" aria-hidden="true"></span><button id="align-left">Align left</button><button id="align-center">Align center</button><button id="distribute-horizontal">Distribute horizontal</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><span class="workflow-hint">Drag between visible port dots to connect; drag a selected connector endpoint to reconnect. Shift-click adds; Cmd/Ctrl-click toggles; drag empty space to marquee.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset><fieldset class="layer-controls"><legend>Layers</legend><label>Active layer <select id="active-layer" aria-label="Active layer"></select></label><button id="add-layer">Add layer</button><button id="move-selection-to-layer">Move selected nodes to active layer</button><button id="toggle-layer-visibility">Hide active layer</button><button id="toggle-layer-lock">Lock active layer</button><button id="move-layer-backward">Move active layer backward</button><button id="move-layer-forward">Move active layer forward</button><button id="group-selection">Group selected nodes</button><button id="ungroup-selection">Ungroup selected nodes</button></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
 const canvasElement = app.querySelector('canvas')!
 canvasElement.width = 1200
 canvasElement.height = 720
 const workflow = addRectangle(addRectangle(addRectangle(createScene(), { id: 'webhook', position: { x: 120, y: 180 }, size: { width: 150, height: 70 }, fill: '#7C7FF2' }), { id: 'request', position: { x: 400, y: 180 }, size: { width: 150, height: 70 }, fill: '#60A5FA' }), { id: 'database', position: { x: 680, y: 180 }, size: { width: 150, height: 70 }, fill: '#34D399' })
-const kit = new CanvasKit({ scene: connectNodes(connectNodes(workflow, 'webhook', 'request'), 'request', 'database') })
+const diagram = addConnector(addConnector(workflow, { id: 'webhook-request', sourceNodeId: 'webhook', sourcePortId: 'east', targetNodeId: 'request', targetPortId: 'west', routing: 'orthogonal', label: 'Webhook request' }), { id: 'request-database', sourceNodeId: 'request', sourcePortId: 'east', targetNodeId: 'database', targetPortId: 'west', routing: 'orthogonal', label: 'Store record' })
+const kit = new CanvasKit({ scene: diagram })
 const gridPlugin = createGridPlugin({ size: 20, style: 'dots', color: '#3A414D' })
 const snapPlugin = createSnapPlugin({ gridSize: 20 })
 kit.use(gridPlugin)
@@ -18,7 +19,7 @@ kit.use(snapPlugin)
 const renderer = new CanvasRenderer(canvasElement)
 const redraw = () => {
   const scene = kit.getScene()
-  renderer.render(scene, kit.selection.get(), kit.transform.getOverlay(scene, kit.selection.get()))
+  renderer.render(scene, kit.selection.get(), kit.transform.getOverlay(scene, kit.selection.get()), kit.getSelectedConnector())
 }
 attachPointerInput(canvasElement, kit)
 attachKeyboardInput(canvasElement, kit)
@@ -89,12 +90,33 @@ syncLayerControls()
 let dragStart: { x: number; y: number } | undefined
 let marquee: { start: { x: number; y: number }; mode: MarqueeMode; selection: SelectionMode } | undefined
 let connectionSource: string | undefined
+type PortHit = { nodeId: string; portId: string }
+type ConnectorDrag =
+  | { kind: 'create'; source: PortHit }
+  | { kind: 'reconnect'; connectorId: string; endpoint: 'source' | 'target' }
+let connectorDrag: ConnectorDrag | undefined
 let resizeHandle: Exclude<TransformHandle, 'rotate'> | undefined
 let resizePreservesAspect = false
 let resizeTransactionActive = false
 const status = app.querySelector<HTMLParagraphElement>('#scene-status')!
 const CONNECTION_HANDLE_OFFSET = 16
 const TRANSFORM_HANDLE_HIT_RADIUS = 8
+const PORT_HIT_RADIUS = 8
+const nextConnectorId = () => {
+  const existing = new Set(kit.getScene().connectors.map((connector) => connector.id))
+  let number = 1
+  while (existing.has(`connector-${number}`)) number += 1
+  return `connector-${number}`
+}
+const portAt = (world: { x: number; y: number }): PortHit | undefined => {
+  const scene = kit.getScene()
+  const tolerance = PORT_HIT_RADIUS / Math.max(Math.abs(scene.viewport.zoom), 0.001)
+  const hit = projectVisibleDocument(scene).nodes
+    .filter((node) => isNodeInteractive(scene, node.id))
+    .flatMap((node) => deriveNodePorts(node).map((port) => ({ nodeId: node.id, port })))
+    .find(({ port }) => Math.hypot(world.x - port.position.x, world.y - port.position.y) <= tolerance)
+  return hit && { nodeId: hit.nodeId, portId: hit.port.id }
+}
 const connectionSourceAt = (screen: { x: number; y: number }) => kit.selection.get().map((id) => kit.getScene().nodes.find((node) => node.id === id)).find((node) => {
   if (!node) return false
   if (!kit.isNodeInteractive(node.id)) return false
@@ -139,9 +161,32 @@ kit.onPointer((event) => {
       resizeTransactionActive = true
       return
     }
+    const port = portAt(event.world)
+    if (port) {
+      const selectedConnectorId = kit.getSelectedConnector()
+      const selectedConnector = selectedConnectorId === undefined
+        ? undefined
+        : kit.getScene().connectors.find((connector) => connector.id === selectedConnectorId)
+      if (selectedConnector && port.nodeId === selectedConnector.sourceNodeId && port.portId === selectedConnector.sourcePortId) {
+        connectorDrag = { kind: 'reconnect', connectorId: selectedConnector.id, endpoint: 'source' }
+      } else if (selectedConnector && port.nodeId === selectedConnector.targetNodeId && port.portId === selectedConnector.targetPortId) {
+        connectorDrag = { kind: 'reconnect', connectorId: selectedConnector.id, endpoint: 'target' }
+      } else {
+        connectorDrag = { kind: 'create', source: port }
+      }
+      redraw()
+      return
+    }
     const source = connectionSourceAt(event.screen)
     if (source) { connectionSource = source.id; redraw(); return }
-    const node = hitTestNode(kit.getScene(), event.world)
+    const scene = kit.getScene()
+    const connector = hitTestConnector(scene, event.world)
+    if (connector) {
+      kit.selectConnector(connector.id)
+      redraw()
+      return
+    }
+    const node = hitTestNode(scene, event.world)
     if (node) {
       if (primaryModifier) kit.selection.toggle([node.id])
       else if (event.modifiers?.shiftKey) kit.selection.add([node.id])
@@ -171,12 +216,40 @@ kit.onPointer((event) => {
     }
     resizeHandle = undefined
     resizePreservesAspect = false
+    if (connectorDrag) {
+      const target = portAt(event.world)
+      if (target) {
+        if (connectorDrag.kind === 'create') {
+          const { source } = connectorDrag
+          if (source.nodeId !== target.nodeId || source.portId !== target.portId) {
+            const created = kit.createConnector({
+              id: nextConnectorId(),
+              sourceNodeId: source.nodeId,
+              sourcePortId: source.portId,
+              targetNodeId: target.nodeId,
+              targetPortId: target.portId,
+              routing: 'orthogonal',
+              label: 'Diagram connection',
+            })
+            if (created) status.textContent = 'Connector created.'
+          }
+        } else if (kit.reconnectConnector(connectorDrag.connectorId, connectorDrag.endpoint, target.nodeId, target.portId)) {
+          status.textContent = 'Connector reconnected.'
+        }
+      }
+      connectorDrag = undefined
+    }
     if (connectionSource) {
       const target = hitTestNode(kit.getScene(), event.world)
       if (target && target.id !== connectionSource) {
-        const before = kit.getScene()
-        const after = connectNodes(before, connectionSource, target.id)
-        kit.execute({ label: 'connect nodes', execute: () => after, undo: () => before })
+        kit.createConnector({
+          id: nextConnectorId(),
+          sourceNodeId: connectionSource,
+          sourcePortId: 'east',
+          targetNodeId: target.id,
+          targetPortId: 'west',
+          routing: 'orthogonal',
+        })
       }
       connectionSource = undefined
     }
@@ -235,4 +308,12 @@ app.querySelector<HTMLButtonElement>('#import')!.onclick = () => {
 }
 app.querySelector<HTMLButtonElement>('#circle')!.onclick = () => { const before = kit.getScene(); const after = addCircle(before, { id: crypto.randomUUID(), position: { x: 440, y: 240 }, radius: 44, fill: '#34D399' }); kit.execute({ label: 'add circle', execute: () => after, undo: () => before }); redraw() }
 app.querySelector<HTMLButtonElement>('#text')!.onclick = () => { const before = kit.getScene(); const after = addText(before, { id: crypto.randomUUID(), position: { x: 200, y: 360 }, text: 'Editable text', fontSize: 20, fill: '#F4F6F8' }); kit.execute({ label: 'add text', execute: () => after, undo: () => before }); redraw() }
-app.querySelector<HTMLButtonElement>('#connect')!.onclick = () => { const ids = kit.selection.get(); if (ids.length === 2) { const before = kit.getScene(); const after = connectNodes(before, ids[0]!, ids[1]!); kit.execute({ label: 'connect nodes', execute: () => after, undo: () => before }); redraw() } }
+app.querySelector<HTMLButtonElement>('#connect')!.onclick = () => {
+  const ids = kit.selection.get()
+  if (ids.length === 2) {
+    kit.createConnector({
+      id: nextConnectorId(), sourceNodeId: ids[0]!, sourcePortId: 'east', targetNodeId: ids[1]!, targetPortId: 'west', routing: 'orthogonal',
+    })
+    redraw()
+  }
+}

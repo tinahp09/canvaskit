@@ -1,9 +1,15 @@
-import { nodeCenter, projectVisibleDocument, SpatialIndex, type CanvasScene, type TransformOverlay } from '@canvaskit/core'
+import { ConnectorController, deriveNodePorts, isNodeInteractive, nodeCenter, projectVisibleDocument, SpatialIndex, type CanvasEdge, type CanvasScene, type TransformOverlay } from '@canvaskit/core'
+
+interface Point { x: number; y: number }
 
 const RESIZE_HANDLES = [
   'north-west', 'north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west',
 ] as const
 const CONNECTION_HANDLE_OFFSET = 16
+const CONNECTOR_STROKE = '#737B88'
+const SELECTED_CONNECTOR_STROKE = '#2563EB'
+
+type CompatibleCanvasScene = CanvasScene & { edges?: readonly CanvasEdge[] }
 
 export class CanvasRenderer {
   private readonly context: CanvasRenderingContext2D
@@ -18,6 +24,7 @@ export class CanvasRenderer {
     scene: CanvasScene,
     selectedNodeIds: readonly string[] = [],
     transformOverlay?: TransformOverlay,
+    selectedConnectorId?: string,
   ): { visibleNodeCount: number } {
     this.context.clearRect(0, 0, this.element.width, this.element.height)
     const { viewport } = scene
@@ -28,7 +35,7 @@ export class CanvasRenderer {
     const visibleNodeIds = new Set(visibleNodes.map((node) => node.id))
     const nodesById = new Map(projection.nodes.map((node) => [node.id, node]))
 
-    for (const edge of projection.edges) {
+    for (const edge of legacyEdges(scene)) {
       const source = nodesById.get(edge.sourceId)
       const target = nodesById.get(edge.targetId)
       if (!source || !target) continue
@@ -40,8 +47,32 @@ export class CanvasRenderer {
       this.context.beginPath(); this.context.moveTo(ax, ay)
       if (edge.type === 'bezier') this.context.bezierCurveTo(ax + (bx - ax) / 2, ay, ax + (bx - ax) / 2, by, bx, by)
       else this.context.lineTo(bx, by)
-      this.context.strokeStyle = '#737B88'; this.context.lineWidth = 1.5; this.context.stroke()
+      this.context.strokeStyle = CONNECTOR_STROKE; this.context.lineWidth = 1.5; this.context.stroke()
       if (edge.type === 'arrow') this.drawArrowhead(ax, ay, bx, by)
+    }
+
+    const connectorController = new ConnectorController()
+    for (const connector of projection.connectors) {
+      const route = connectorController.route(scene, connector)
+      const screenRoute = route.map((point) => toScreenPoint(point, viewport))
+      const hasVisibleEndpoint = visibleNodeIds.has(connector.sourceNodeId) || visibleNodeIds.has(connector.targetNodeId)
+      if (!hasVisibleEndpoint && !routeMayCrossViewport(screenRoute, this.element.width, this.element.height)) continue
+
+      this.context.beginPath()
+      this.context.moveTo(screenRoute[0]!.x, screenRoute[0]!.y)
+      for (const point of screenRoute.slice(1)) this.context.lineTo(point.x, point.y)
+      this.context.strokeStyle = connector.id === selectedConnectorId ? SELECTED_CONNECTOR_STROKE : CONNECTOR_STROKE
+      this.context.lineWidth = connector.id === selectedConnectorId ? 2.5 : 1.5
+      this.context.stroke()
+      const previous = screenRoute.at(-2)
+      const target = screenRoute.at(-1)
+      if (previous && target) this.drawArrowhead(previous.x, previous.y, target.x, target.y)
+      if (connector.label) {
+        const label = pointAlongRoute(screenRoute)
+        this.context.fillStyle = connector.id === selectedConnectorId ? SELECTED_CONNECTOR_STROKE : CONNECTOR_STROKE
+        this.context.font = '12px sans-serif'
+        this.context.fillText(connector.label, label.x, label.y)
+      }
     }
 
     for (const node of visibleNodes) {
@@ -77,6 +108,17 @@ export class CanvasRenderer {
       )
       this.context.fillStyle = '#F4F6F8'
       this.context.fill()
+    }
+
+    for (const node of visibleNodes) {
+      if (!isNodeInteractive(scene, node.id)) continue
+      for (const port of deriveNodePorts(node)) {
+        const point = toScreenPoint(port.position, viewport)
+        this.context.beginPath()
+        this.context.arc(point.x, point.y, 4, 0, Math.PI * 2)
+        this.context.fillStyle = '#F4F6F8'
+        this.context.fill()
+      }
     }
 
     if (transformOverlay) this.drawTransformOverlay(transformOverlay, viewport)
@@ -128,6 +170,31 @@ export class CanvasRenderer {
   }
 }
 
+function legacyEdges(scene: CanvasScene): readonly CanvasEdge[] {
+  const edges = (scene as CompatibleCanvasScene).edges
+  return Array.isArray(edges) ? edges : []
+}
+
+function toScreenPoint(point: Point, viewport: CanvasScene['viewport']): Point {
+  return { x: point.x * viewport.zoom + viewport.x, y: point.y * viewport.zoom + viewport.y }
+}
+
+function pointAlongRoute(route: readonly Point[]): Point {
+  const total = route.slice(1).reduce((length, point, index) => length + Math.hypot(point.x - route[index]!.x, point.y - route[index]!.y), 0)
+  let remaining = total / 2
+  for (let index = 1; index < route.length; index += 1) {
+    const start = route[index - 1]!
+    const end = route[index]!
+    const segmentLength = Math.hypot(end.x - start.x, end.y - start.y)
+    if (remaining <= segmentLength || index === route.length - 1) {
+      const ratio = segmentLength === 0 ? 0 : remaining / segmentLength
+      return { x: start.x + (end.x - start.x) * ratio, y: start.y + (end.y - start.y) * ratio }
+    }
+    remaining -= segmentLength
+  }
+  return route[0] ?? { x: 0, y: 0 }
+}
+
 function getWorldViewport(element: HTMLCanvasElement, viewport: CanvasScene['viewport']): { x: number; y: number; width: number; height: number } | undefined {
   if (!Number.isFinite(viewport.zoom) || viewport.zoom === 0) return undefined
   const first = { x: -viewport.x / viewport.zoom, y: -viewport.y / viewport.zoom }
@@ -143,4 +210,11 @@ function getWorldViewport(element: HTMLCanvasElement, viewport: CanvasScene['vie
 function edgeMayCrossViewport(ax: number, ay: number, bx: number, by: number, width: number, height: number): boolean {
   return Math.max(ax, bx) >= 0 && Math.min(ax, bx) <= width
     && Math.max(ay, by) >= 0 && Math.min(ay, by) <= height
+}
+
+function routeMayCrossViewport(route: readonly Point[], width: number, height: number): boolean {
+  return route.some((point, index) => {
+    const next = route[index + 1]
+    return next !== undefined && edgeMayCrossViewport(point.x, point.y, next.x, next.y, width, height)
+  })
 }

@@ -12,14 +12,15 @@ export interface VisibleDocumentProjection {
  */
 export function projectVisibleDocument(scene: CanvasScene): VisibleDocumentProjection {
   const layers = Array.isArray(scene.layers) ? scene.layers : []
-  if (layers.length === 0) return { nodes: [...scene.nodes], connectors: [...scene.connectors] }
+  const connectors = Array.isArray(scene.connectors) ? scene.connectors : []
+  if (layers.length === 0) return { nodes: [...scene.nodes], connectors: [...connectors] }
 
   const nodes = layers.flatMap((layer) => layer.visible
     ? scene.nodes.filter((node) => node.layerId === layer.id)
     : [])
   const visibleNodeIds = new Set(nodes.map((node) => node.id))
-  const connectors = scene.connectors.filter((connector) => visibleNodeIds.has(connector.sourceNodeId) && visibleNodeIds.has(connector.targetNodeId))
-  return { nodes, connectors }
+  const visibleConnectors = connectors.filter((connector) => visibleNodeIds.has(connector.sourceNodeId) && visibleNodeIds.has(connector.targetNodeId))
+  return { nodes, connectors: visibleConnectors }
 }
 
 /** Returns pointer-interactive nodes in front-to-back hit-test order. */

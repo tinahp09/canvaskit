@@ -17,7 +17,7 @@ function summarize(canvas: CanvasKit): Readonly<MinimapSceneSummary> {
   const scene = canvas.getScene()
   return Object.freeze({
     nodeCount: scene.nodes.length,
-    edgeCount: scene.edges.length,
+    edgeCount: scene.connectors.length,
     groupCount: scene.groups.length,
     viewport: Object.freeze({ ...scene.viewport }),
   })

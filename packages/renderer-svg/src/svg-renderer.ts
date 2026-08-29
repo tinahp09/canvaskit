@@ -1,8 +1,12 @@
-import { nodeCenter, projectVisibleDocument, type CanvasScene, type Renderer } from '@canvaskit/core'
+import { ConnectorController, deriveNodePorts, nodeCenter, projectVisibleDocument, type CanvasEdge, type CanvasScene, type Renderer } from '@canvaskit/core'
+
+interface Point { x: number; y: number }
 
 const SVG_WIDTH = 1200
 const SVG_HEIGHT = 720
 const EDGE_STROKE = '#737B88'
+
+type CompatibleCanvasScene = CanvasScene & { edges?: readonly CanvasEdge[] }
 
 function escapeXML(value: string): string {
   return value.replace(/[&<>"']/g, (character) => ({
@@ -39,7 +43,7 @@ export function renderSVG(scene: CanvasScene): string {
     '<defs><marker id="arrowhead" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 8 4 L 0 8 z" fill="#737B88"/></marker></defs>',
   ]
 
-  for (const edge of projection.edges) {
+  for (const edge of legacyEdges(scene)) {
     const source = nodesById.get(edge.sourceId)
     const target = nodesById.get(edge.targetId)
     if (!source || !target) continue
@@ -60,6 +64,17 @@ export function renderSVG(scene: CanvasScene): string {
     }
   }
 
+  const connectorController = new ConnectorController()
+  for (const connector of projection.connectors) {
+    const route = connectorController.route(scene, connector).map((point) => ({ x: x(point.x), y: y(point.y) }))
+    const path = route.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+    elements.push(`<path${attribute('id', `connector-${connector.id}`)}${attribute('d', path)} fill="none" stroke="${EDGE_STROKE}" stroke-width="1.5" marker-end="url(#arrowhead)"/>`)
+    if (connector.label) {
+      const label = pointAlongRoute(route)
+      elements.push(`<text${attribute('id', `connector-label-${connector.id}`)} x="${label.x}" y="${label.y}" fill="${EDGE_STROKE}" font-size="12" text-anchor="middle">${escapeXML(connector.label)}</text>`)
+    }
+  }
+
   for (const node of projection.nodes) {
     if (node.type === 'rectangle') {
       elements.push(`<rect${attribute('id', node.id)} x="${x(node.position.x)}" y="${y(node.position.y)}" width="${scale(node.size.width)}" height="${scale(node.size.height)}"${attribute('fill', node.fill)}/>`)
@@ -70,7 +85,34 @@ export function renderSVG(scene: CanvasScene): string {
     }
   }
 
+  for (const node of projection.nodes) {
+    for (const port of deriveNodePorts(node)) {
+      elements.push(`<circle${attribute('id', `port-${node.id}-${port.id}`)} cx="${x(port.position.x)}" cy="${y(port.position.y)}" r="4" fill="#F4F6F8" stroke="${EDGE_STROKE}" stroke-width="1"/>`)
+    }
+  }
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" width="${SVG_WIDTH}" height="${SVG_HEIGHT}">${elements.join('')}</svg>`
+}
+
+function legacyEdges(scene: CanvasScene): readonly CanvasEdge[] {
+  const edges = (scene as CompatibleCanvasScene).edges
+  return Array.isArray(edges) ? edges : []
+}
+
+function pointAlongRoute(route: readonly Point[]): Point {
+  const total = route.slice(1).reduce((length, point, index) => length + Math.hypot(point.x - route[index]!.x, point.y - route[index]!.y), 0)
+  let remaining = total / 2
+  for (let index = 1; index < route.length; index += 1) {
+    const start = route[index - 1]!
+    const end = route[index]!
+    const segmentLength = Math.hypot(end.x - start.x, end.y - start.y)
+    if (remaining <= segmentLength || index === route.length - 1) {
+      const ratio = segmentLength === 0 ? 0 : remaining / segmentLength
+      return { x: start.x + (end.x - start.x) * ratio, y: start.y + (end.y - start.y) * ratio }
+    }
+    remaining -= segmentLength
+  }
+  return route[0] ?? { x: 0, y: 0 }
 }
 
 export class SvgRenderer implements Renderer {

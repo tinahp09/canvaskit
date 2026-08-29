@@ -54,9 +54,9 @@ test('clears history after importing a different version 2 scene', async ({ page
     metadata: { source: 'durable-editing-test' },
   }
   const migratedScene = {
-    version: 3,
+    version: 4,
     nodes: [{ id: 'imported-node', layerId: 'layer-default', type: 'rectangle', position: { x: 20, y: 30 }, size: { width: 160, height: 80 }, fill: '#F97316' }],
-    edges: [],
+    connectors: [],
     groups: [],
     layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }],
     viewport: { x: 0, y: 0, zoom: 1 },
@@ -74,9 +74,9 @@ test('clears history after importing a different version 2 scene', async ({ page
   expect(await exportScene(page)).toEqual(migratedScene)
 })
 
-test('edits and exports the Phase 5 workflow', async ({ page }) => {
+test('edits and exports the Diagram Toolkit workflow', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByText('CanvasKit Phase 5 — Extensible export')).toBeVisible()
+  await expect(page.getByText('CanvasKit V2.3 — Diagram Toolkit')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Connect selected' })).toBeVisible()
   await page.getByRole('button', { name: 'Add circle' }).click()
   await page.getByRole('button', { name: 'Export scene' }).click()
@@ -103,7 +103,7 @@ test('connects nodes by dragging from a connection handle', async ({ page }) => 
   })
 
   await page.getByRole('button', { name: 'Export scene' }).click()
-  await expect(page.getByTestId('scene-json')).toHaveValue(/\"id\":\"edge-3\"/)
+  await expect(page.getByTestId('scene-json')).toHaveValue(/\"id\":\"connector-1\"/)
 })
 
 test('shows import errors without changing the scene', async ({ page }) => {

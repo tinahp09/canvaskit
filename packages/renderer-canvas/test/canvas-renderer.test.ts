@@ -7,6 +7,9 @@ it('draws rectangles in transformed world coordinates', () => {
   const context = {
     clearRect: vi.fn(),
     fillRect,
+    beginPath: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
     fillStyle: '',
   } as unknown as CanvasRenderingContext2D
   const element = {
@@ -28,7 +31,7 @@ it('draws rectangles in transformed world coordinates', () => {
 it('renders visible content by layer order and omits hidden-layer edges', () => {
   const fillRect = vi.fn(); const moveTo = vi.fn(); const lineTo = vi.fn()
   const context = {
-    clearRect: vi.fn(), fillRect, beginPath: vi.fn(), moveTo, lineTo, stroke: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1,
+    clearRect: vi.fn(), fillRect, beginPath: vi.fn(), moveTo, lineTo, arc: vi.fn(), fill: vi.fn(), stroke: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1,
   } as unknown as CanvasRenderingContext2D
   const element = { getContext: () => context, width: 800, height: 600 } as unknown as HTMLCanvasElement
   const scene: CanvasScene = {
@@ -62,7 +65,7 @@ it('renders visible content by layer order and omits hidden-layer edges', () => 
 it('culls off-screen nodes and edges without a visible endpoint', () => {
   const fillRect = vi.fn(); const moveTo = vi.fn(); const lineTo = vi.fn()
   const context = {
-    clearRect: vi.fn(), fillRect, beginPath: vi.fn(), moveTo, lineTo, stroke: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1,
+    clearRect: vi.fn(), fillRect, beginPath: vi.fn(), moveTo, lineTo, arc: vi.fn(), fill: vi.fn(), stroke: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1,
   } as unknown as CanvasRenderingContext2D
   const element = { getContext: () => context, width: 100, height: 100 } as unknown as HTMLCanvasElement
 
@@ -99,7 +102,7 @@ it('retains edges that cross the viewport with both endpoints off-screen', () =>
 
 it('renders panned nodes with negative zoom', () => {
   const fillRect = vi.fn()
-  const context = { clearRect: vi.fn(), fillRect, fillStyle: '' } as unknown as CanvasRenderingContext2D
+  const context = { clearRect: vi.fn(), fillRect, beginPath: vi.fn(), arc: vi.fn(), fill: vi.fn(), fillStyle: '' } as unknown as CanvasRenderingContext2D
   const element = { getContext: () => context, width: 100, height: 100 } as unknown as HTMLCanvasElement
 
   new CanvasRenderer(element).render({ version: 1, nodes: [
@@ -124,7 +127,7 @@ it('draws circle and text nodes', () => {
 
 it('draws graph edges between node centers', () => {
   const moveTo = vi.fn(); const lineTo = vi.fn()
-  const context = { clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, stroke: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1 } as unknown as CanvasRenderingContext2D
+  const context = { clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, arc: vi.fn(), fill: vi.fn(), stroke: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1 } as unknown as CanvasRenderingContext2D
   const element = { getContext: () => context, width: 800, height: 600 } as unknown as HTMLCanvasElement
   new CanvasRenderer(element).render({ version: 1, nodes: [
     { id: 'a', type: 'rectangle', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff' },
@@ -136,7 +139,7 @@ it('draws graph edges between node centers', () => {
 
 it('draws an arrowhead and a Bezier edge', () => {
   const moveTo = vi.fn(); const lineTo = vi.fn(); const bezierCurveTo = vi.fn()
-  const context = { clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, bezierCurveTo, stroke: vi.fn(), fill: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1 } as unknown as CanvasRenderingContext2D
+  const context = { clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, arc: vi.fn(), bezierCurveTo, stroke: vi.fn(), fill: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1 } as unknown as CanvasRenderingContext2D
   const element = { getContext: () => context, width: 800, height: 600 } as unknown as HTMLCanvasElement
 
   new CanvasRenderer(element).render({ version: 1, nodes: [
@@ -191,4 +194,31 @@ it('draws a selected transform overlay in viewport coordinates', () => {
   expect(moveTo).toHaveBeenCalledWith(55, 46)
   expect(lineTo).toHaveBeenCalledWith(55, -2)
   expect(arc).toHaveBeenCalledWith(55, -2, 5, 0, Math.PI * 2)
+})
+
+it('draws resolved orthogonal connectors, endpoint ports, labels, and a selected arrowhead', () => {
+  const moveTo = vi.fn(); const lineTo = vi.fn(); const arc = vi.fn(); const fillText = vi.fn()
+  const context = {
+    clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, arc, fillText, fill: vi.fn(), stroke: vi.fn(),
+    fillStyle: '', strokeStyle: '', lineWidth: 1, font: '',
+  } as unknown as CanvasRenderingContext2D
+  const element = { getContext: () => context, width: 800, height: 600 } as unknown as HTMLCanvasElement
+  const scene: CanvasScene = {
+    version: 4,
+    nodes: [
+      { id: 'source', layerId: 'layer-default', type: 'rectangle', position: { x: 120, y: 180 }, size: { width: 150, height: 70 }, fill: '#7C7FF2' },
+      { id: 'target', layerId: 'layer-default', type: 'rectangle', position: { x: 400, y: 180 }, size: { width: 150, height: 70 }, fill: '#60A5FA' },
+    ],
+    connectors: [{ id: 'request-flow', sourceNodeId: 'source', sourcePortId: 'east', targetNodeId: 'target', targetPortId: 'west', routing: 'orthogonal', label: 'request' }],
+    groups: [], layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }], viewport: { x: 0, y: 0, zoom: 1 }, metadata: {},
+  }
+
+  new CanvasRenderer(element).render(scene, ['source'], undefined, 'request-flow')
+
+  expect(moveTo).toHaveBeenCalledWith(270, 215)
+  expect(lineTo).toHaveBeenCalledWith(290, 215)
+  expect(lineTo).toHaveBeenCalledWith(400, 215)
+  expect(fillText).toHaveBeenCalledWith('request', 335, 195)
+  expect(arc).toHaveBeenCalledWith(195, 180, 4, 0, Math.PI * 2)
+  expect(arc).toHaveBeenCalledWith(400, 215, 4, 0, Math.PI * 2)
 })
