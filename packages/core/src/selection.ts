@@ -67,8 +67,9 @@ export class SelectionController {
   }
 
   private update(ids: Set<string>): void {
-    if (ids.size === this.ids.size && [...ids].every((id) => this.ids.has(id))) return
-    this.ids = ids
+    const interactiveIds = this.interactiveIds(ids)
+    if (interactiveIds.size === this.ids.size && [...interactiveIds].every((id) => this.ids.has(id))) return
+    this.ids = interactiveIds
     this.onChange()
   }
 

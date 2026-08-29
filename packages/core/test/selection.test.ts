@@ -1,4 +1,4 @@
-import { addCircle, addLayer, addRectangle, CanvasKit, createScene, SelectionController } from '../src/index.js'
+import { addCircle, addLayer, addRectangle, CanvasKit, createScene, SelectionController, setLayerLocked } from '../src/index.js'
 import { expect, it } from 'vitest'
 
 function canvasWithNodes(): CanvasKit {
@@ -86,4 +86,44 @@ it('enforces document interaction state when used without CanvasKit', () => {
 
   selection.select('hidden-node')
   expect(selection.get()).toEqual([])
+})
+
+function mutableLayeredSelection(): { selection: SelectionController; setPrimaryLocked(locked: boolean): void } {
+  let scene = addLayer(createScene(), { id: 'other', name: 'Other', visible: true, locked: false })
+  scene = addRectangle(scene, { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
+  scene = addRectangle(scene, { id: 'b', layerId: 'other', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' })
+  return {
+    selection: new SelectionController(() => scene),
+    setPrimaryLocked: (locked) => { scene = setLayerLocked(scene, 'layer-default', locked) },
+  }
+}
+
+it('prunes stale non-interactive ids before adding to selection', () => {
+  const { selection, setPrimaryLocked } = mutableLayeredSelection()
+  selection.select('a')
+  setPrimaryLocked(true)
+  selection.add(['b'])
+  setPrimaryLocked(false)
+
+  expect(selection.get()).toEqual(['b'])
+})
+
+it('prunes stale non-interactive ids before removing from selection', () => {
+  const { selection, setPrimaryLocked } = mutableLayeredSelection()
+  selection.select('a')
+  setPrimaryLocked(true)
+  selection.remove(['b'])
+  setPrimaryLocked(false)
+
+  expect(selection.get()).toEqual([])
+})
+
+it('prunes stale non-interactive ids before toggling selection', () => {
+  const { selection, setPrimaryLocked } = mutableLayeredSelection()
+  selection.select('a')
+  setPrimaryLocked(true)
+  selection.toggle(['b'])
+  setPrimaryLocked(false)
+
+  expect(selection.get()).toEqual(['b'])
 })
