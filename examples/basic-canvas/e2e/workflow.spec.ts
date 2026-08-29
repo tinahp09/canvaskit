@@ -1,24 +1,38 @@
 import { expect, test, type Page } from '@playwright/test'
 
-async function dragInWorldSpace(page: Page, start: { x: number; y: number }, end: { x: number; y: number }, modifiers: { shiftKey?: boolean } = {}) {
+interface PointerOptions {
+  button?: number
+  buttons?: number
+  modifiers?: { shiftKey?: boolean; metaKey?: boolean; ctrlKey?: boolean }
+}
+
+async function dragInWorldSpace(page: Page, start: { x: number; y: number }, end: { x: number; y: number }, options: PointerOptions = {}) {
   const canvas = page.locator('canvas')
-  await canvas.evaluate((element, { start, end, modifiers }) => {
+  await canvas.evaluate((element, { start, end, options }) => {
     const bounds = element.getBoundingClientRect()
     const toClient = (point: { x: number; y: number }) => ({
       clientX: bounds.left + point.x * bounds.width / element.width,
       clientY: bounds.top + point.y * bounds.height / element.height,
     })
-    element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, buttons: 1, ...modifiers, ...toClient(start) }))
-    element.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, button: 0, buttons: 1, ...modifiers, ...toClient(end) }))
-    element.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, ...modifiers, ...toClient(end) }))
-  }, { start, end, modifiers })
+    const button = options.button ?? 0
+    const buttons = options.buttons ?? (button === 1 ? 4 : 1)
+    element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button, buttons, ...options.modifiers, ...toClient(start) }))
+    if (start.x !== end.x || start.y !== end.y) {
+      element.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, button: -1, buttons, ...options.modifiers, ...toClient(end) }))
+    }
+    element.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button, buttons: 0, ...options.modifiers, ...toClient(end) }))
+  }, { start, end, options })
 }
 
-async function exportNodeIds(page: Page) {
+async function exportScene(page: Page) {
   await page.getByRole('button', { name: 'Export scene' }).click()
-  const scene = JSON.parse(await page.getByTestId('scene-json').inputValue()) as { nodes: Array<{ id: string }> }
-  return scene.nodes.map((node) => node.id)
+  return JSON.parse(await page.getByTestId('scene-json').inputValue()) as {
+    nodes: Array<{ id: string; position: { x: number; y: number } }>
+    viewport: { x: number; y: number; zoom: number }
+  }
 }
+
+async function exportNodeIds(page: Page) { return (await exportScene(page)).nodes.map((node) => node.id) }
 
 function trackConsoleErrors(page: Page): () => void {
   const errors: string[] = []
@@ -33,16 +47,62 @@ test('supports modifier selection and contain/intersect marquee through the work
   const assertNoConsoleErrors = trackConsoleErrors(page)
   await page.goto('/')
   await dragInWorldSpace(page, { x: 195, y: 215 }, { x: 195, y: 215 })
-  await dragInWorldSpace(page, { x: 475, y: 215 }, { x: 475, y: 215 }, { shiftKey: true })
+  await dragInWorldSpace(page, { x: 475, y: 215 }, { x: 475, y: 215 }, { modifiers: { shiftKey: true } })
   await page.getByRole('button', { name: 'Duplicate' }).click()
   expect(await exportNodeIds(page)).toEqual(['webhook', 'request', 'database', 'webhook-copy', 'request-copy'])
 
   await page.goto('/')
   await dragInWorldSpace(page, { x: 100, y: 160 }, { x: 290, y: 270 })
-  await dragInWorldSpace(page, { x: 350, y: 160 }, { x: 420, y: 270 }, { shiftKey: true })
+  await dragInWorldSpace(page, { x: 350, y: 160 }, { x: 420, y: 270 }, { modifiers: { shiftKey: true } })
   await page.getByRole('button', { name: 'Duplicate' }).click()
   expect(await exportNodeIds(page)).toEqual(['webhook', 'request', 'database', 'webhook-copy', 'request-copy'])
   assertNoConsoleErrors()
+})
+
+test('toggles a hit node with the Cmd/Ctrl pointer modifier', async ({ page }) => {
+  await page.goto('/')
+  await dragInWorldSpace(page, { x: 195, y: 215 }, { x: 195, y: 215 })
+  await dragInWorldSpace(page, { x: 195, y: 215 }, { x: 195, y: 215 }, { modifiers: { ctrlKey: true } })
+  await page.getByRole('button', { name: 'Duplicate' }).click()
+  expect(await exportNodeIds(page)).toEqual(['webhook', 'request', 'database'])
+
+  await dragInWorldSpace(page, { x: 195, y: 215 }, { x: 195, y: 215 }, { modifiers: { ctrlKey: true } })
+  await page.getByRole('button', { name: 'Duplicate' }).click()
+  expect(await exportNodeIds(page)).toEqual(['webhook', 'request', 'database', 'webhook-copy'])
+})
+
+test('middle-pan only changes the viewport in backing-store coordinates', async ({ page }) => {
+  await page.goto('/')
+  await dragInWorldSpace(page, { x: 195, y: 215 }, { x: 195, y: 215 })
+  await dragInWorldSpace(page, { x: 475, y: 215 }, { x: 475, y: 215 }, { modifiers: { shiftKey: true } })
+  const before = await exportScene(page)
+
+  await dragInWorldSpace(page, { x: 195, y: 215 }, { x: 235, y: 235 }, { button: 1, buttons: 4 })
+  const afterPan = await exportScene(page)
+  expect(afterPan.nodes).toEqual(before.nodes)
+  expect(afterPan.viewport.x).toBeCloseTo(40)
+  expect(afterPan.viewport.y).toBeCloseTo(20)
+  expect(afterPan.viewport.zoom).toBe(1)
+  await page.getByRole('button', { name: 'Undo' }).click()
+  expect(await exportScene(page)).toEqual(afterPan)
+
+  await page.getByRole('button', { name: 'Duplicate' }).click()
+  expect(await exportNodeIds(page)).toEqual(['webhook', 'request', 'database', 'webhook-copy', 'request-copy'])
+})
+
+test('zooms around the backing-store wheel anchor', async ({ page }) => {
+  await page.goto('/')
+  const canvas = page.locator('canvas')
+  await canvas.evaluate((element) => {
+    const bounds = element.getBoundingClientRect()
+    const point = { x: bounds.left + 600 * bounds.width / element.width, y: bounds.top + 360 * bounds.height / element.height }
+    element.dispatchEvent(new WheelEvent('wheel', { bubbles: true, clientX: point.x, clientY: point.y, deltaY: -100 }))
+  })
+  const scene = await exportScene(page)
+  const zoom = Math.exp(0.1)
+  expect(scene.viewport.zoom).toBeCloseTo(zoom)
+  expect(scene.viewport.x).toBeCloseTo(600 - 600 * zoom)
+  expect(scene.viewport.y).toBeCloseTo(360 - 360 * zoom)
 })
 
 test('uses internal keyboard clipboard, duplicate, cut, and undo without system clipboard access', async ({ page }) => {

@@ -45,6 +45,7 @@ const connectionSourceAt = (point: { x: number; y: number }) => kit.selection.ge
 kit.onPointer((event) => {
   const primaryModifier = event.modifiers?.metaKey || event.modifiers?.ctrlKey
   if (event.type === 'pointerdown') {
+    if (event.button !== undefined && event.button !== 0) return
     const source = connectionSourceAt(event.world)
     if (source) { connectionSource = source.id; redraw(); return }
     const node = hitTestNode(kit.getScene(), event.world)
@@ -60,13 +61,14 @@ kit.onPointer((event) => {
         selection: event.modifiers?.shiftKey ? 'add' : 'replace',
       }
     }
-  } else if (event.type === 'pointermove' && dragStart) {
+  } else if (event.type === 'pointermove' && dragStart && (event.buttons === undefined || (event.buttons & 1) !== 0)) {
     const snapped = snapToGrid.checked ? snapPlugin.snap(event.world) : event.world
     const before = kit.getScene()
     const after = moveNodes(before, kit.selection.get(), { x: snapped.x - dragStart.x, y: snapped.y - dragStart.y })
     kit.execute({ label: 'move selection', execute: () => after, undo: () => before })
     dragStart = snapped
   } else if (event.type === 'pointerup') {
+    if (event.button !== undefined && event.button !== 0) return
     if (connectionSource) {
       const target = hitTestNode(kit.getScene(), event.world)
       if (target && target.id !== connectionSource) {

@@ -26,6 +26,8 @@ export interface CanvasPointerEvent {
   screen: Point
   world: Point
   modifiers?: CanvasPointerModifiers
+  button?: number
+  buttons?: number
 }
 
 export interface MarqueeSelectionOptions {
@@ -234,12 +236,14 @@ export class CanvasKit {
     this.sceneSubscription.notify(this.getScene())
   }
 
-  createPointerEvent(screen: Point, type: CanvasPointerEventType, modifiers?: CanvasPointerModifiers): CanvasPointerEvent {
+  createPointerEvent(screen: Point, type: CanvasPointerEventType, modifiers?: CanvasPointerModifiers, button?: number, buttons?: number): CanvasPointerEvent {
     const event: CanvasPointerEvent = {
       type,
       screen,
       world: screenToWorld(screen, this.viewport.getTransform()),
       ...(modifiers ? { modifiers } : {}),
+      ...(button === undefined ? {} : { button }),
+      ...(buttons === undefined ? {} : { buttons }),
     }
     this.listeners.forEach((listener) => listener(event))
     return event
