@@ -5,7 +5,8 @@ import { loadScene, serializeScene } from './serialization.js'
 import { ViewportController } from './viewport.js'
 import { SelectionController } from './selection.js'
 import { HistoryController, type SceneCommand } from './history.js'
-import { copySelection, pasteSelection, type SceneClipboard } from './clipboard.js'
+import { copySelection, pasteSelection, removeSelection, type SceneClipboard } from './clipboard.js'
+import type { EditorCommand } from './editor-command.js'
 import type { CanvasPlugin } from './plugin.js'
 import { EdgeRegistry, NodeRegistry } from './registry.js'
 import { SceneSubscription, type SceneListener } from './scene-subscription.js'
@@ -99,6 +100,22 @@ export class CanvasKit {
     return this.clipboard
   }
 
+  cut(): SceneClipboard {
+    const ids = this.selection.get()
+    if (ids.length === 0) return this.clipboard
+
+    const before = this.getScene()
+    this.clipboard = copySelection(before, ids)
+    const after = removeSelection(before, [...ids])
+    this.execute({
+      label: 'cut selection',
+      execute: () => after,
+      undo: () => before,
+    })
+    this.selection.clear()
+    return this.clipboard
+  }
+
   paste(offset: Point = { x: 20, y: 20 }): string[] {
     const before = this.getScene()
     const result = pasteSelection(before, this.clipboard, offset)
@@ -117,6 +134,33 @@ export class CanvasKit {
   duplicate(): string[] {
     this.copy()
     return this.paste({ x: 20, y: 20 })
+  }
+
+  executeCommand(command: EditorCommand): boolean {
+    switch (command) {
+      case 'select-all':
+        this.selection.selectAll()
+        return true
+      case 'clear-selection':
+        this.selection.clear()
+        return true
+      case 'delete-selection':
+        this.deleteSelection()
+        return true
+      case 'copy':
+        if (this.selection.get().length === 0) return false
+        this.copy()
+        return true
+      case 'cut':
+        if (this.selection.get().length === 0) return false
+        this.cut()
+        return true
+      case 'paste':
+        return this.paste().length > 0
+      case 'duplicate':
+        if (this.selection.get().length === 0) return false
+        return this.duplicate().length > 0
+    }
   }
 
   use(plugin: CanvasPlugin): void {

@@ -5,6 +5,7 @@ export type { CanvasEdge, CanvasGroup, CanvasNode, CanvasScene, CircleNode, Crea
 export { addCircle, addEdge, addGroup, addRectangle, addText, connectNodes, createScene, removeEdge, translateNode } from './scene.js'
 export { copySelection, pasteSelection } from './clipboard.js'
 export type { PasteSelectionResult, SceneClipboard } from './clipboard.js'
+export type { EditorCommand } from './editor-command.js'
 export { hitTestEdge, nodeCenter } from './graph-interaction.js'
 export { exportScene, importScene, InvalidSceneError, loadScene, serializeScene, UnsupportedSceneVersionError } from './serialization.js'
 export { migrateScene } from './migrations.js'

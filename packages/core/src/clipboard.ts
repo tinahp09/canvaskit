@@ -13,6 +13,23 @@ export interface PasteSelectionResult {
   ids: string[]
 }
 
+export function removeSelection(scene: CanvasScene, ids: readonly string[]): CanvasScene {
+  const removedIds = new Set(ids)
+  if (removedIds.size === 0) return scene
+
+  const nodes = scene.nodes.filter((node) => !removedIds.has(node.id))
+  const remainingIds = new Set(nodes.map((node) => node.id))
+
+  return {
+    ...scene,
+    nodes,
+    edges: scene.edges.filter((edge) => remainingIds.has(edge.sourceId) && remainingIds.has(edge.targetId)),
+    groups: scene.groups
+      .map((group) => ({ ...group, nodeIds: group.nodeIds.filter((id) => remainingIds.has(id)) }))
+      .filter((group) => group.nodeIds.length > 0),
+  }
+}
+
 export function copySelection(scene: CanvasScene, ids: readonly string[]): SceneClipboard {
   const selected = new Set(ids)
   const nodes = scene.nodes.filter((node) => selected.has(node.id)).map((node) => ({

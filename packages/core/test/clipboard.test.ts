@@ -136,3 +136,24 @@ it('duplicates the selection at a twenty-pixel offset', () => {
   expect(ids).toEqual(['a-copy'])
   expect(kit.getScene().nodes[1]?.position).toEqual({ x: 20, y: 20 })
 })
+
+it('cuts selected nodes, cleans dangling relations, and restores the whole scene with one undo', () => {
+  let scene = addRectangle(createScene(), rectangle)
+  scene = addRectangle(scene, { ...rectangle, id: 'b', position: { x: 30, y: 0 } })
+  scene = addRectangle(scene, { ...rectangle, id: 'c', position: { x: 60, y: 0 } })
+  scene = addEdge(scene, { id: 'ab', sourceId: 'a', targetId: 'b', type: 'line' })
+  scene = addEdge(scene, { id: 'bc', sourceId: 'b', targetId: 'c', type: 'arrow' })
+  scene = addGroup(scene, { id: 'all', nodeIds: ['a', 'b', 'c'] })
+  scene = addGroup(scene, { id: 'only-b', nodeIds: ['b'] })
+  const kit = new CanvasKit({ scene })
+  kit.selection.set(['b'])
+
+  const clipboard = kit.cut()
+
+  expect(clipboard.nodes.map((node) => node.id)).toEqual(['b'])
+  expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['a', 'c'])
+  expect(kit.getScene().edges).toEqual([])
+  expect(kit.getScene().groups).toEqual([{ id: 'all', nodeIds: ['a', 'c'] }])
+  expect(kit.selection.get()).toEqual([])
+  expect(kit.undo()).toEqual(scene)
+})
