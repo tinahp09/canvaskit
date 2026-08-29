@@ -46,7 +46,7 @@ it('deletes through the command without leaving dangling graph records and resto
 
   expect(kit.executeCommand('delete-selection')).toBe(true)
   expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['b', 'c'])
-  expect(kit.getScene().edges).toEqual([{ id: 'bc', sourceId: 'b', targetId: 'c', type: 'arrow' }])
+  expect(kit.getScene().connectors).toEqual([{ id: 'bc', sourceNodeId: 'b', sourcePortId: 'center', targetNodeId: 'c', targetPortId: 'center', routing: 'straight' }])
   expect(kit.getScene().groups).toEqual([{ id: 'pair', nodeIds: ['b'] }])
   expect(importScene(kit.toJSON())).toEqual(kit.getScene())
   expect(kit.undo()).toEqual(scene)

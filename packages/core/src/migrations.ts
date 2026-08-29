@@ -28,12 +28,28 @@ export function migrateScene(value: unknown): unknown {
   }
 
   if (scene.version === 2) {
-    return {
+    scene = {
       ...scene,
-      version: SCENE_VERSION,
+      version: 3,
       layers: [{ id: DEFAULT_LAYER_ID, name: 'Default', visible: true, locked: false }],
       nodes: Array.isArray(scene.nodes) ? scene.nodes.map((node) => isRecord(node) ? { ...node, layerId: DEFAULT_LAYER_ID } : node) : scene.nodes,
     }
+  }
+
+  if (scene.version === 3) {
+    const edges = scene.edges
+    const connectors = Array.isArray(edges)
+      ? edges.map((edge) => isRecord(edge) ? {
+        id: edge.id,
+        sourceNodeId: edge.sourceId,
+        sourcePortId: 'center',
+        targetNodeId: edge.targetId,
+        targetPortId: 'center',
+        routing: 'straight',
+      } : edge)
+      : edges
+    const { edges: _legacyEdges, ...withoutEdges } = scene
+    scene = { ...withoutEdges, version: SCENE_VERSION, connectors }
   }
 
   if (scene.version === SCENE_VERSION) return scene

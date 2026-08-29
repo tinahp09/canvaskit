@@ -38,15 +38,15 @@ it('copies rectangle size into an independent lower-level clipboard snapshot', (
   expect(scene.nodes[0]).toMatchObject({ id: 'a', size: { width: 10, height: 10 } })
 })
 
-it('duplicates an internal edge when both endpoints are copied', () => {
+it('duplicates an internal connector when both endpoints are copied', () => {
   const graph = addEdge(addRectangle(addRectangle(createScene(), rectangle), {
     ...rectangle, id: 'b', position: { x: 30, y: 0 },
   }), { id: 'link', sourceId: 'a', targetId: 'b', type: 'arrow' })
 
   const result = pasteSelection(graph, copySelection(graph, ['a', 'b']), { x: 10, y: 0 })
 
-  expect(result.scene.edges).toHaveLength(2)
-  expect(result.scene.edges[1]).toEqual({ id: 'link-copy', sourceId: 'a-copy', targetId: 'b-copy', type: 'arrow' })
+  expect(result.scene.connectors).toHaveLength(2)
+  expect(result.scene.connectors[1]).toEqual({ id: 'link-copy', sourceNodeId: 'a-copy', sourcePortId: 'center', targetNodeId: 'b-copy', targetPortId: 'center', routing: 'straight' })
 })
 
 it('copies only edges and groups whose nodes are all selected', () => {
@@ -72,7 +72,7 @@ it('filters clipboard relations that reference nodes outside the clipboard', () 
   const result = pasteSelection(createScene(), clipboard, { x: 0, y: 0 })
 
   expect(result.scene.nodes.map((node) => node.id)).toEqual(['a-copy'])
-  expect(result.scene.edges).toEqual([])
+  expect(result.scene.connectors).toEqual([])
   expect(result.scene.groups).toEqual([])
 })
 
@@ -100,7 +100,7 @@ it('uses collision-free deterministic ids for pasted records', () => {
   const result = pasteSelection(scene, copySelection(scene, ['a', 'b']), { x: 0, y: 0 })
 
   expect(result.ids).toEqual(['a-copy-2', 'b-copy-2'])
-  expect(result.scene.edges.at(-1)).toEqual({ id: 'link-copy-2', sourceId: 'a-copy-2', targetId: 'b-copy-2', type: 'line' })
+  expect(result.scene.connectors.at(-1)).toEqual({ id: 'link-copy-2', sourceNodeId: 'a-copy-2', sourcePortId: 'center', targetNodeId: 'b-copy-2', targetPortId: 'center', routing: 'straight' })
   expect(result.scene.groups.at(-1)).toEqual({ id: 'pair-copy-2', nodeIds: ['a-copy-2', 'b-copy-2'] })
 })
 
@@ -192,7 +192,7 @@ it('cuts selected nodes, cleans dangling relations, and restores the whole scene
 
   expect(clipboard.nodes.map((node) => node.id)).toEqual(['b'])
   expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['a', 'c'])
-  expect(kit.getScene().edges).toEqual([])
+  expect(kit.getScene().connectors).toEqual([])
   expect(kit.getScene().groups).toEqual([{ id: 'all', nodeIds: ['a', 'c'] }])
   expect(kit.selection.get()).toEqual([])
   expect(kit.undo()).toEqual(scene)

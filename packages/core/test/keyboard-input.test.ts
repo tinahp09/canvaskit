@@ -73,7 +73,7 @@ it('maps Delete to relation-safe graph removal', () => {
   target.dispatch({ key: 'Delete', preventDefault() {} } as KeyboardEvent)
 
   expect(canvas.getScene().nodes.map((node) => node.id)).toEqual(['b'])
-  expect(canvas.getScene().edges).toEqual([])
+  expect(canvas.getScene().connectors).toEqual([])
   expect(canvas.getScene().groups).toEqual([{ id: 'pair', nodeIds: ['b'] }])
   expect(importScene(canvas.toJSON())).toEqual(canvas.getScene())
 })

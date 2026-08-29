@@ -1,10 +1,12 @@
 import type { Point } from '@canvaskit/geometry'
-import type { CanvasEdge, CanvasGroup, CanvasNode, CanvasScene } from './model.js'
+import type { CanvasConnector, CanvasEdge, CanvasGroup, CanvasNode, CanvasScene } from './model.js'
 import { translateNode } from './scene.js'
 import { implicitLayerId } from './document.js'
 
 export interface SceneClipboard {
   nodes: CanvasNode[]
+  connectors?: CanvasConnector[]
+  /** @deprecated Legacy clipboard edge adapter. V4 scenes store connectors. */
   edges: CanvasEdge[]
   groups: CanvasGroup[]
 }
@@ -17,6 +19,7 @@ export interface PasteSelectionResult {
 export function cloneClipboard(clipboard: SceneClipboard): SceneClipboard {
   return {
     nodes: clipboard.nodes.map(cloneNode),
+    connectors: connectorClipboard(clipboard).map((connector) => ({ ...connector })),
     edges: clipboard.edges.map((edge) => ({ ...edge })),
     groups: clipboard.groups.map((group) => ({ ...group, nodeIds: [...group.nodeIds] })),
   }
@@ -32,7 +35,7 @@ export function removeSelection(scene: CanvasScene, ids: readonly string[]): Can
   return {
     ...scene,
     nodes,
-    edges: scene.edges.filter((edge) => remainingIds.has(edge.sourceId) && remainingIds.has(edge.targetId)),
+    connectors: scene.connectors.filter((connector) => remainingIds.has(connector.sourceNodeId) && remainingIds.has(connector.targetNodeId)),
     groups: scene.groups
       .map((group) => ({ ...group, nodeIds: group.nodeIds.filter((id) => remainingIds.has(id)) }))
       .filter((group) => group.nodeIds.length > 0),
@@ -46,7 +49,8 @@ export function copySelection(scene: CanvasScene, ids: readonly string[]): Scene
 
   return {
     nodes,
-    edges: scene.edges.filter((edge) => nodeIds.has(edge.sourceId) && nodeIds.has(edge.targetId)).map((edge) => ({ ...edge })),
+    connectors: scene.connectors.filter((connector) => nodeIds.has(connector.sourceNodeId) && nodeIds.has(connector.targetNodeId)).map((connector) => ({ ...connector })),
+    edges: [],
     groups: scene.groups.filter((group) => group.nodeIds.every((id) => nodeIds.has(id))).map((group) => ({ ...group, nodeIds: [...group.nodeIds] })),
   }
 }
@@ -57,7 +61,7 @@ export function pasteSelection(scene: CanvasScene, clipboard: SceneClipboard, of
   const destinationLayerIds = new Set(scene.layers.map((layer) => layer.id))
   const fallbackLayerId = implicitLayerId(scene)
   const nodeIds = new Set(scene.nodes.map((node) => node.id))
-  const edgeIds = new Set(scene.edges.map((edge) => edge.id))
+  const connectorIds = new Set(scene.connectors.map((connector) => connector.id))
   const groupIds = new Set(scene.groups.map((group) => group.id))
   const remappedIds = new Map<string, string>()
   const nodes = clipboard.nodes.map((node) => {
@@ -66,11 +70,11 @@ export function pasteSelection(scene: CanvasScene, clipboard: SceneClipboard, of
     const translated = translateNode(node, id, offset)
     return destinationLayerIds.has(translated.layerId) ? translated : { ...translated, layerId: fallbackLayerId }
   })
-  const edges = clipboard.edges.filter((edge) => remappedIds.has(edge.sourceId) && remappedIds.has(edge.targetId)).map((edge) => ({
-    ...edge,
-    id: uniqueCopyId(edge.id, edgeIds),
-    sourceId: remappedIds.get(edge.sourceId)!,
-    targetId: remappedIds.get(edge.targetId)!,
+  const connectors = connectorClipboard(clipboard).filter((connector) => remappedIds.has(connector.sourceNodeId) && remappedIds.has(connector.targetNodeId)).map((connector) => ({
+    ...connector,
+    id: uniqueCopyId(connector.id, connectorIds),
+    sourceNodeId: remappedIds.get(connector.sourceNodeId)!,
+    targetNodeId: remappedIds.get(connector.targetNodeId)!,
   }))
   const groups = clipboard.groups.filter((group) => new Set(group.nodeIds).size === group.nodeIds.length && group.nodeIds.every((id) => remappedIds.has(id))).map((group) => ({
     ...group,
@@ -79,7 +83,7 @@ export function pasteSelection(scene: CanvasScene, clipboard: SceneClipboard, of
   }))
 
   return {
-    scene: { ...scene, nodes: [...scene.nodes, ...nodes], edges: [...scene.edges, ...edges], groups: [...scene.groups, ...groups] },
+    scene: { ...scene, nodes: [...scene.nodes, ...nodes], connectors: [...scene.connectors, ...connectors], groups: [...scene.groups, ...groups] },
     ids: nodes.map((node) => node.id),
   }
 }
@@ -97,4 +101,16 @@ function uniqueCopyId(id: string, used: Set<string>): string {
   while (used.has(candidate)) candidate = `${id}-copy-${++suffix}`
   used.add(candidate)
   return candidate
+}
+
+function connectorClipboard(clipboard: SceneClipboard): CanvasConnector[] {
+  if (clipboard.connectors !== undefined) return clipboard.connectors
+  return clipboard.edges.map((edge) => ({
+    id: edge.id,
+    sourceNodeId: edge.sourceId,
+    sourcePortId: 'center',
+    targetNodeId: edge.targetId,
+    targetPortId: 'center',
+    routing: 'straight',
+  }))
 }

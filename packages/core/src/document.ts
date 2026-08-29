@@ -1,8 +1,8 @@
-import { DEFAULT_LAYER_ID, type CanvasEdge, type CanvasLayer, type CanvasNode, type CanvasScene, type CreateGroupInput } from './model.js'
+import { DEFAULT_LAYER_ID, type CanvasConnector, type CanvasLayer, type CanvasNode, type CanvasScene, type CreateGroupInput } from './model.js'
 
 export interface VisibleDocumentProjection {
   nodes: CanvasNode[]
-  edges: CanvasEdge[]
+  connectors: CanvasConnector[]
 }
 
 /**
@@ -12,14 +12,14 @@ export interface VisibleDocumentProjection {
  */
 export function projectVisibleDocument(scene: CanvasScene): VisibleDocumentProjection {
   const layers = Array.isArray(scene.layers) ? scene.layers : []
-  if (layers.length === 0) return { nodes: [...scene.nodes], edges: [...(scene.edges ?? [])] }
+  if (layers.length === 0) return { nodes: [...scene.nodes], connectors: [...scene.connectors] }
 
   const nodes = layers.flatMap((layer) => layer.visible
     ? scene.nodes.filter((node) => node.layerId === layer.id)
     : [])
   const visibleNodeIds = new Set(nodes.map((node) => node.id))
-  const edges = (scene.edges ?? []).filter((edge) => visibleNodeIds.has(edge.sourceId) && visibleNodeIds.has(edge.targetId))
-  return { nodes, edges }
+  const connectors = scene.connectors.filter((connector) => visibleNodeIds.has(connector.sourceNodeId) && visibleNodeIds.has(connector.targetNodeId))
+  return { nodes, connectors }
 }
 
 /** Returns pointer-interactive nodes in front-to-back hit-test order. */

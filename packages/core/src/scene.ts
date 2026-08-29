@@ -1,12 +1,13 @@
-import { DEFAULT_LAYER_ID, SCENE_VERSION, type CanvasNode, type CanvasScene, type CreateCircleInput, type CreateEdgeInput, type CreateGroupInput, type CreateRectangleInput, type CreateTextInput } from './model.js'
+import { DEFAULT_LAYER_ID, SCENE_VERSION, type CanvasNode, type CanvasScene, type CreateCircleInput, type CreateConnectorInput, type CreateEdgeInput, type CreateGroupInput, type CreateRectangleInput, type CreateTextInput } from './model.js'
 import type { Point } from '@canvaskit/geometry'
 import { groupNodes, implicitLayerId } from './document.js'
+import { ConnectorController } from './connector.js'
 
 export function createScene(): CanvasScene {
   return {
     version: SCENE_VERSION,
     nodes: [],
-    edges: [],
+    connectors: [],
     groups: [],
     layers: [{ id: DEFAULT_LAYER_ID, name: 'Default', visible: true, locked: false }],
     viewport: { x: 0, y: 0, zoom: 1 },
@@ -34,19 +35,32 @@ function addNode(scene: CanvasScene, node: CanvasNode): CanvasScene {
 export function addCircle(scene: CanvasScene, input: CreateCircleInput): CanvasScene { return addNode(scene, { ...input, layerId: input.layerId ?? implicitLayerId(scene), type: 'circle' }) }
 export function addText(scene: CanvasScene, input: CreateTextInput): CanvasScene { return addNode(scene, { ...input, layerId: input.layerId ?? implicitLayerId(scene), type: 'text' }) }
 export function addEdge(scene: CanvasScene, input: CreateEdgeInput): CanvasScene {
-  if (scene.edges.some((edge) => edge.id === input.id)) throw new Error(`An edge with id "${input.id}" already exists.`)
-  if (!scene.nodes.some((node) => node.id === input.sourceId) || !scene.nodes.some((node) => node.id === input.targetId)) throw new Error('Edge endpoints must exist.')
-  return { ...scene, edges: [...scene.edges, { ...input }] }
+  return addConnector(scene, {
+    id: input.id,
+    sourceNodeId: input.sourceId,
+    sourcePortId: 'center',
+    targetNodeId: input.targetId,
+    targetPortId: 'center',
+    routing: 'straight',
+  })
 }
 export function removeEdge(scene: CanvasScene, edgeId: string): CanvasScene {
-  return { ...scene, edges: scene.edges.filter((edge) => edge.id !== edgeId) }
+  return removeConnector(scene, edgeId)
 }
 export function addGroup(scene: CanvasScene, input: CreateGroupInput): CanvasScene {
   return groupNodes(scene, input)
 }
 export function connectNodes(scene: CanvasScene, sourceId: string, targetId: string, type: CreateEdgeInput['type'] = 'arrow'): CanvasScene {
-  const id = `edge-${scene.edges.length + 1}`
+  const id = `connector-${scene.connectors.length + 1}`
   return addEdge(scene, { id, sourceId, targetId, type })
+}
+
+export function addConnector(scene: CanvasScene, input: CreateConnectorInput): CanvasScene {
+  return new ConnectorController().create(scene, input)
+}
+
+export function removeConnector(scene: CanvasScene, connectorId: string): CanvasScene {
+  return new ConnectorController().remove(scene, connectorId)
 }
 
 export function translateNode(node: CanvasNode, id: string, offset: Point): CanvasNode {
