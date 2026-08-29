@@ -2,8 +2,7 @@ import { access, readdir, readFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const STABLE_VERSION = '1.0.0'
-const STABLE_INTERNAL_RANGE = 'workspace:^1.0.0'
+const DEFAULT_STABLE_VERSION = '1.0.0'
 const PACKAGE_NAMES = [
   'core',
   'geometry',
@@ -16,6 +15,7 @@ const PACKAGE_NAMES = [
 const PACKAGE_SET = new Set(PACKAGE_NAMES.map((name) => `@canvaskit/${name}`))
 const RELEASE_ARTIFACTS = [
   'README.md',
+  'LICENSE',
   'CONTRIBUTING.md',
   'SECURITY.md',
   'docs/api-stability.md',
@@ -25,7 +25,7 @@ const RELEASE_ARTIFACTS = [
   'docs/release-notes-v1.md',
   'docs/upgrading-to-v1.md',
   'docs/publishing.md',
-  '.changeset/phase-nine.md',
+  'CHANGELOG.md',
   'docs/api/core.md',
   'docs/api/geometry.md',
   'docs/api/plugins.md',
@@ -68,11 +68,15 @@ async function collectSourceFiles(path) {
   return files
 }
 
-function inspectManifest(manifest, manifestPath) {
+function inspectManifest(manifest, manifestPath, { version, internalRange }) {
   const errors = []
 
-  if (manifest.version !== STABLE_VERSION) {
-    errors.push(`${manifestPath}: expected version ${STABLE_VERSION}, found ${String(manifest.version)}.`)
+  if (manifest.version !== version) {
+    errors.push(`${manifestPath}: expected version ${version}, found ${String(manifest.version)}.`)
+  }
+
+  if (manifest.license !== 'MIT') {
+    errors.push(`${manifestPath}: license must be MIT, found ${String(manifest.license)}.`)
   }
 
   if (!Array.isArray(manifest.files) || manifest.files.length !== 1 || manifest.files[0] !== 'dist') {
@@ -93,8 +97,8 @@ function inspectManifest(manifest, manifestPath) {
 
   for (const dependencyType of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
     for (const [name, range] of Object.entries(manifest[dependencyType] ?? {})) {
-      if (PACKAGE_SET.has(name) && range !== STABLE_INTERNAL_RANGE) {
-        errors.push(`${manifestPath}: ${name} must use ${STABLE_INTERNAL_RANGE}, found ${String(range)}.`)
+      if (PACKAGE_SET.has(name) && range !== internalRange) {
+        errors.push(`${manifestPath}: ${name} must use ${internalRange}, found ${String(range)}.`)
       }
     }
   }
@@ -130,8 +134,21 @@ async function inspectPrivateImports(root) {
   return errors
 }
 
-export async function verifyStableRelease(root = process.cwd()) {
+async function inspectPendingChangesets(root) {
+  const directory = resolve(root, '.changeset')
+  if (!(await exists(directory))) return []
+
+  const entries = await readdir(directory, { withFileTypes: true })
+  return entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+    .sort((left, right) => left.name.localeCompare(right.name))
+    .map((entry) => `Pending Changeset must be consumed before release: .changeset/${entry.name}.`)
+}
+
+export async function verifyStableRelease(root = process.cwd(), options = {}) {
   const errors = []
+  const version = options.version ?? DEFAULT_STABLE_VERSION
+  const contract = { version, internalRange: options.internalRange ?? `workspace:^${version}` }
 
   for (const packageName of PACKAGE_NAMES) {
     const manifestPath = `packages/${packageName}/package.json`
@@ -141,10 +158,11 @@ export async function verifyStableRelease(root = process.cwd()) {
       continue
     }
     const manifest = JSON.parse(await readFile(absoluteManifestPath, 'utf8'))
-    errors.push(...inspectManifest(manifest, manifestPath))
+    errors.push(...inspectManifest(manifest, manifestPath, contract))
   }
 
   errors.push(...await inspectPrivateImports(root))
+  errors.push(...await inspectPendingChangesets(root))
 
   for (const artifact of RELEASE_ARTIFACTS) {
     if (!(await exists(resolve(root, artifact)))) errors.push(`Missing release artifact: ${artifact}.`)
@@ -154,9 +172,10 @@ export async function verifyStableRelease(root = process.cwd()) {
 }
 
 async function main() {
-  const errors = await verifyStableRelease()
+  const version = process.env.CANVASKIT_RELEASE_VERSION ?? DEFAULT_STABLE_VERSION
+  const errors = await verifyStableRelease(process.cwd(), { version })
   if (errors.length === 0) {
-    console.log(`Stable release metadata verified for ${PACKAGE_NAMES.length} packages.`)
+    console.log(`Stable release ${version} metadata verified for ${PACKAGE_NAMES.length} packages.`)
     return
   }
 

@@ -6,6 +6,7 @@ Use this checklist for every `1.x` release candidate in addition to the general 
 
 - [ ] Run `pnpm test:release` and attach its complete output.
 - [ ] Confirm all seven published package manifests carry the intended release version and `dist`-only file allowlist.
+- [ ] Confirm the repository `LICENSE` and every packed manifest declare the approved MIT license.
 - [ ] Confirm internal published-package dependencies use the intended compatible workspace range.
 - [ ] Confirm each package exposes only its documented root entry point with matching JavaScript and declaration output.
 - [ ] Search the candidate source, examples, and documentation for package subpath imports; resolve every private import.
@@ -16,7 +17,9 @@ Use this checklist for every `1.x` release candidate in addition to the general 
 - [ ] Compare every root export and public declaration with the previous stable release.
 - [ ] Classify each public change as compatible, deprecated, or breaking under the [API stability policy](api-stability.md).
 - [ ] Add migration guidance for every intentional breaking change and do not ship it in a `1.x` minor or patch release.
-- [ ] Verify supported React, Vue, Node.js, TypeScript, and pnpm ranges from a clean consumer installation.
+- [ ] Verify supported React, Vue, Node.js, TypeScript, and pnpm ranges through
+      the fresh consumer that installs all seven tarballs, typechecks, builds,
+      and imports every package root.
 - [ ] Verify scene imports for the current schema and every documented automatic migration path.
 
 ## Candidate evidence and decision

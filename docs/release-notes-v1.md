@@ -18,7 +18,7 @@ stable `1.x` contract described in the [API stability policy](api-stability.md).
 
 All packages expose a single documented root entry point. Package `src/`,
 `dist/`, and other subpaths are implementation details and are not supported
-imports.
+imports. CanvasKit is released under the repository's MIT license.
 
 ## Highlights
 

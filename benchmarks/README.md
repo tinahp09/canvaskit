@@ -3,6 +3,9 @@
 This benchmark uses a deterministic rectangle-node scene at 1,000, 5,000, and
 10,000 nodes. Each case runs 200 fixed viewport queries and 200 fixed hit tests,
 comparing the public `SpatialIndex` path with the corresponding linear scan.
+Every individual query must return the same node IDs in the same order, and
+every hit test must select the same node ID; matching aggregate counts are not
+sufficient.
 
 Build the packages first, then run either command from the repository root:
 
@@ -19,14 +22,14 @@ threshold: browser, Node version, and hardware all affect the result.
 ## Recorded baseline and non-flaky verification
 
 Recorded on 2026-08-29 with Node 22.22.2. The fixture, query set, node counts,
-and aggregate-result assertions are the same for every run. Run it as part of
+and per-operation identity assertions are the same for every run. Run it as part of
 the local release gate with `pnpm verify:release-quality`, or reproduce just
 this measurement with `pnpm build && pnpm benchmark:spatial-index`.
 
 Elapsed time is intentionally informational, never a pass/fail CI threshold:
 hardware, Node version, CPU scheduling, and background load make timing limits
-flaky. The executable gate throws only when the deterministic linear and
-indexed aggregate match counts differ for any workload.
+flaky. The executable gate throws when any deterministic linear and indexed
+query differs by node ID or order, or any hit test selects a different ID.
 
 | Nodes | Linear query | Indexed query | Linear hit-test | Indexed hit-test |
 | ---: | ---: | ---: | ---: | ---: |

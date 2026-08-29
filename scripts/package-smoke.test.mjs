@@ -1,14 +1,27 @@
 import assert from 'node:assert/strict'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import test from 'node:test'
 
 import * as packageSmoke from './package-smoke.mjs'
 
 const { verifyPackedPackage } = packageSmoke
+const publishedPackages = [
+  'core',
+  'geometry',
+  'plugins',
+  'react',
+  'renderer-canvas',
+  'renderer-svg',
+  'vue',
+]
 
 function stableCoreManifest(overrides = {}) {
   return {
     name: '@canvaskit/core',
     version: '1.0.0',
+    license: 'MIT',
     exports: {
       '.': {
         types: './dist/index.d.ts',
@@ -104,4 +117,55 @@ test('rejects a packed manifest without the stable root export', () => {
   assert.deepEqual(packageSmoke.verifyPackedManifest('@canvaskit/core', manifest), [
     '@canvaskit/core: packed manifest root export is invalid.',
   ])
+})
+
+test('accepts a later stable 1.x packed version and internal consumer range', () => {
+  const manifest = stableCoreManifest({
+    version: '1.2.3',
+    dependencies: { '@canvaskit/geometry': '^1.2.3' },
+  })
+
+  assert.deepEqual(packageSmoke.verifyPackedManifest('@canvaskit/core', manifest, {
+    version: '1.2.3',
+  }), [])
+})
+
+test('rejects a packed manifest without MIT license metadata', () => {
+  const manifest = stableCoreManifest({ license: undefined })
+
+  assert.deepEqual(packageSmoke.verifyPackedManifest('@canvaskit/core', manifest), [
+    '@canvaskit/core: packed manifest license must be MIT, found undefined.',
+  ])
+})
+
+test('rejects a package suite that fails when imported by a fresh consumer', { timeout: 30_000 }, async () => {
+  const root = await mkdtemp(join(tmpdir(), 'canvaskit-pack-consumer-test-'))
+  try {
+    for (const packageName of publishedPackages) {
+      const directory = join(root, 'packages', packageName)
+      await mkdir(join(directory, 'dist'), { recursive: true })
+      await writeFile(join(directory, 'package.json'), `${JSON.stringify({
+        name: `@canvaskit/${packageName}`,
+        version: '1.0.0',
+        type: 'module',
+        license: 'MIT',
+        files: ['dist'],
+        exports: { '.': { types: './dist/index.d.ts', import: './dist/index.js' } },
+      }, null, 2)}\n`)
+      await writeFile(
+        join(directory, 'dist', 'index.js'),
+        packageName === 'core'
+          ? "throw new Error('broken consumer import')\n"
+          : `export const packageName = '@canvaskit/${packageName}'\n`,
+      )
+      await writeFile(join(directory, 'dist', 'index.d.ts'), 'export declare const packageName: string\n')
+    }
+
+    const errors = await packageSmoke.smokePackedPackages(root)
+
+    assert.equal(errors.length, 1)
+    assert.match(errors[0], /fresh consumer import failed.*broken consumer import/s)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
 })

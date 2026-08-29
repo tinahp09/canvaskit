@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import { verifyStableRelease } from './release-readiness.mjs'
 
@@ -18,6 +19,7 @@ const packages = [
 
 const releaseArtifacts = [
   'README.md',
+  'LICENSE',
   'CONTRIBUTING.md',
   'SECURITY.md',
   'docs/api-stability.md',
@@ -27,11 +29,17 @@ const releaseArtifacts = [
   'docs/release-notes-v1.md',
   'docs/upgrading-to-v1.md',
   'docs/publishing.md',
-  '.changeset/phase-nine.md',
+  'CHANGELOG.md',
   ...packages.map((name) => `docs/api/${name.replace('renderer-', '')}.md`),
 ]
 
-async function createRepository() {
+test('the dry run starts with the dependency-ordered clean release build', async () => {
+  const manifest = JSON.parse(await readFile(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'))
+  assert.match(manifest.scripts['build:release'], /geometry build.*core build.*renderer-canvas build.*react build/)
+  assert.match(manifest.scripts['publish:dry-run'], /^pnpm build:release &&/)
+})
+
+async function createRepository(version = '1.0.0') {
   const root = await mkdtemp(join(tmpdir(), 'canvaskit-release-'))
 
   for (const name of packages) {
@@ -39,8 +47,9 @@ async function createRepository() {
     await mkdir(directory, { recursive: true })
     const manifest = {
       name: `@canvaskit/${name}`,
-      version: '1.0.0',
+      version,
       type: 'module',
+      license: 'MIT',
       files: ['dist'],
       exports: {
         '.': {
@@ -75,6 +84,20 @@ async function withRepository(run) {
     await rm(root, { recursive: true, force: true })
   }
 }
+
+test('accepts a later stable 1.x candidate version and internal range', async () => {
+  const root = await createRepository('1.2.3')
+  try {
+    const path = join(root, 'packages', 'core', 'package.json')
+    const manifest = JSON.parse(await readFile(path, 'utf8'))
+    manifest.dependencies = { '@canvaskit/geometry': 'workspace:^1.2.3' }
+    await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
+
+    assert.deepEqual(await verifyStableRelease(root, { version: '1.2.3' }), [])
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
 
 test('accepts a complete stable release repository', async () => {
   await withRepository(async (root) => {
@@ -179,6 +202,41 @@ test('rejects a missing stable-release artifact', async () => {
 
     assert.deepEqual(await verifyStableRelease(root), [
       'Missing release artifact: docs/api-stability.md.',
+    ])
+  })
+})
+
+test('rejects a stable release without its public license text', async () => {
+  await withRepository(async (root) => {
+    await rm(join(root, 'LICENSE'))
+
+    assert.deepEqual(await verifyStableRelease(root), [
+      'Missing release artifact: LICENSE.',
+    ])
+  })
+})
+
+test('rejects a publishable package without MIT license metadata', async () => {
+  await withRepository(async (root) => {
+    const path = join(root, 'packages', 'core', 'package.json')
+    const manifest = JSON.parse(await readFile(path, 'utf8'))
+    delete manifest.license
+    await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
+
+    assert.deepEqual(await verifyStableRelease(root), [
+      'packages/core/package.json: license must be MIT, found undefined.',
+    ])
+  })
+})
+
+test('rejects an unconsumed pending Changeset in a final release candidate', async () => {
+  await withRepository(async (root) => {
+    const path = join(root, '.changeset', 'future.md')
+    await mkdir(join(path, '..'), { recursive: true })
+    await writeFile(path, '# pending release intent\n')
+
+    assert.deepEqual(await verifyStableRelease(root), [
+      'Pending Changeset must be consumed before release: .changeset/future.md.',
     ])
   })
 })

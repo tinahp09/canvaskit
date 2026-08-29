@@ -116,3 +116,65 @@ untracked Phase 8/Phase 9 plan files were neither removed nor staged. Temporary
 tarballs, consumer projects, and npm caches were created outside the repository
 and removed after verification. No npm publish, registry write, git tag, push,
 or other external release mutation was performed.
+
+## Final RC audit addendum
+
+This addendum supersedes the earlier Changeset and package-smoke descriptions
+above where the final release-candidate review required a stricter contract.
+
+- Release CI and `publish:dry-run` now build all seven release packages in
+  dependency order before any test or benchmark can import package `dist`
+  output. This also avoids the clean-build peer dependency race found in the
+  final isolated audit for the React and Vue adapters.
+- The dry run packs all seven packages, creates a new temporary npm consumer,
+  installs all seven tarballs together, typechecks and builds a root-import
+  program, and executes its JavaScript imports. Temporary tarballs, the
+  consumer, and its isolated npm cache are removed in all outcomes.
+- Phase 1–9 Changesets are now explicitly consumed: their release intent is
+  recorded in `CHANGELOG.md` and the pending files are deleted. Contributor and
+  publishing guidance define one lifecycle, and release readiness rejects any
+  remaining `.changeset/*.md` file.
+- CanvasKit's public licensing decision is MIT. The repository now contains the
+  full `LICENSE` text and every published manifest carries `license: MIT`; both
+  source and packed-manifest audits enforce it.
+- SVG documentation now matches the implementation: `SvgRenderer` retains the
+  latest serialized string in `svg` and does not create or mutate a DOM node.
+- Spatial-index benchmark equivalence now compares the exact ordered node IDs
+  for every query and the selected node ID for every hit test, rather than only
+  aggregate counts.
+- Release-readiness and packed-artifact checks accept an explicit release
+  version and derived internal range. `CANVASKIT_RELEASE_VERSION` drives the
+  command-line checks for later stable 1.x candidates while retaining `1.0.0`
+  as the default.
+
+Each behavior change was covered by a regression test that failed against the
+previous implementation before the corresponding fix was applied. Final
+clean-checkout-equivalent verification results are recorded below after the
+canonical pinned-pnpm run.
+
+### Addendum verification
+
+The exact staged candidate was applied to a `git archive` checkout. It began
+without package or example `dist` directories, used the repository-pinned pnpm
+`10.0.0`, and reused only the existing locked dependency installation.
+
+- `pnpm publish:dry-run`: passed. Seven release packages built in dependency
+  order; 17 release-readiness tests and the repository audit passed; 11 pack
+  tests passed; all seven tarballs passed manifest inspection and a fresh npm
+  consumer install, typecheck, build, and runtime root-import check.
+- `pnpm test`: 27 files / 126 tests passed, including four spatial benchmark
+  equivalence regressions.
+- `pnpm typecheck`: seven package tasks passed.
+- `pnpm verify:release-quality`: passed; three bundle tests, all seven byte
+  budgets, and deterministic 1,000 / 5,000 / 10,000-node benchmarks passed.
+- `pnpm build`: all 14 package and example builds passed after the clean
+  release-package build established their public declaration entrypoints.
+- `pnpm docs:build`: passed.
+- `pnpm test:e2e`: 25 browser tests passed.
+- React and Vue Storybook production builds passed with Storybook's existing
+  dependency `eval` warnings.
+- JSON parsing, workflow inspection, `git diff --check`, and staged-path review
+  passed. No cache, build output, plan, tarball, or consumer directory is part
+  of the release commit.
+
+No publish, registry write, tag, push, or remote mutation was performed.

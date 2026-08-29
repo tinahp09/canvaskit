@@ -32,5 +32,7 @@ To update a budget intentionally, rebuild first, inspect `pnpm bundle:size`,
 and update both the explicit value in `scripts/bundle-size.mjs` and this table
 in the same change. Avoid benchmarking elapsed time as a pass/fail threshold:
 timings depend on hardware and concurrent system load. Instead, the benchmark
-always checks deterministic query and hit-test equivalence; recorded timings are
-comparative baselines documented in `benchmarks/README.md`.
+compares the ordered node IDs for every individual query and the selected node
+ID for every individual hit test; aggregate counts alone are not accepted as
+proof of equivalence. Recorded timings are comparative baselines documented in
+`benchmarks/README.md`.

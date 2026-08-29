@@ -1,6 +1,7 @@
 {
   "name": "@canvaskit/geometry",
   "version": "1.0.0",
+  "license": "MIT",
   "type": "module",
   "files": ["dist"],
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },

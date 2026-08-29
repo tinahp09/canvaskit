@@ -28,6 +28,12 @@ The workspace packages use their built `dist/` entry points. Run `pnpm build` ag
 4. Update public API documentation, runnable examples, and migration guidance when the change affects consumers.
 5. Add a Changeset for every publishable-package change. Use a minor bump for a backwards-compatible feature and a patch bump for a backwards-compatible fix.
 
+Changeset Markdown files are pending release inputs, not permanent history. A
+release owner applies their version intent, incorporates their user-visible
+text into `CHANGELOG.md` and the target release notes, and deletes the consumed
+files in the release commit. `pnpm test:release` rejects a final candidate that
+still contains pending `.changeset/*.md` files.
+
 Useful commands:
 
 ```sh

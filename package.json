@@ -1,9 +1,11 @@
 {
   "name": "canvaskit",
   "private": true,
+  "license": "MIT",
   "packageManager": "pnpm@10.0.0",
   "scripts": {
     "build": "turbo run build",
+    "build:release": "pnpm --filter @canvaskit/geometry build && pnpm --filter @canvaskit/core build && pnpm --filter @canvaskit/plugins build && pnpm --filter @canvaskit/renderer-canvas build && pnpm --filter @canvaskit/renderer-svg build && pnpm --filter @canvaskit/react build && pnpm --filter @canvaskit/vue build",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
@@ -18,9 +20,9 @@
     "test:release": "node --test scripts/release-readiness.test.mjs && node scripts/release-readiness.mjs",
     "bundle:size": "node scripts/bundle-size.mjs",
     "test:bundle-size": "node --test scripts/bundle-size.test.mjs",
-    "verify:release-quality": "pnpm build && pnpm test:bundle-size && pnpm bundle:size && pnpm benchmark:spatial-index",
+    "verify:release-quality": "pnpm build:release && pnpm test:bundle-size && pnpm bundle:size && pnpm benchmark:spatial-index",
     "test:pack": "node --test scripts/package-smoke.test.mjs && node scripts/package-smoke.mjs",
-    "publish:dry-run": "pnpm test:release && pnpm test:pack"
+    "publish:dry-run": "pnpm build:release && pnpm test:release && pnpm test:pack"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

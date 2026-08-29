@@ -35,8 +35,16 @@ manifest still contains a `workspace:` range.
   output, local caches, credentials, or phase-plan artifacts.
 
 The Phase 9 metadata commit already sets every publishable manifest to `1.0.0`.
-`.changeset/phase-nine.md` records the major stable-release intent; do not apply
-another automated version bump to the already prepared candidate.
+Phase 1 through Phase 9 Changesets have been consumed into `CHANGELOG.md` and
+the V1 release notes and removed from `.changeset/`. For later releases, apply
+every pending Changeset to the package versions and lockfile, incorporate its
+user-visible text into the changelog and target release notes, then delete the
+consumed Markdown file. The final release audit rejects pending Changesets.
+
+For a later stable candidate, set `CANVASKIT_RELEASE_VERSION` to the exact
+target version when running release-readiness and package smoke commands. The
+audits derive source workspace ranges and packed consumer ranges from that
+version instead of assuming `1.0.0`.
 
 ## 2. Reproduce the release gates
 
@@ -45,6 +53,7 @@ root:
 
 ```sh
 pnpm install --frozen-lockfile
+pnpm build:release
 pnpm typecheck
 pnpm test
 pnpm docs:build
@@ -63,11 +72,12 @@ clean install.
 
 ## 3. Inspect the exact package artifacts
 
-`pnpm publish:dry-run` builds temporary tarballs, checks required JavaScript and
-declaration entry points, inspects each packed manifest, and removes its
-temporary output. For the release-owner review, pack all seven packages into a
-new temporary directory and retain the checksum report with the release
-evidence:
+`pnpm publish:dry-run` first builds the clean workspace, then creates temporary
+tarballs, checks required JavaScript and declaration entry points, inspects each
+packed manifest, installs all seven archives into a new consumer, typechecks and
+builds that consumer, imports every package root, and removes all temporary
+output. For the release-owner review, pack all seven packages into a new
+temporary directory and retain the checksum report with the release evidence:
 
 ```sh
 CANVASKIT_PACK_DIR="$(mktemp -d)"
@@ -84,6 +94,7 @@ shasum -a 256 "$CANVASKIT_PACK_DIR"/*.tgz
 For every tarball, confirm:
 
 - the name and version are correct;
+- the packed manifest declares the MIT license;
 - `package.json`, `dist/index.js`, and `dist/index.d.ts` are present;
 - no source, tests, examples, credentials, caches, or planning artifacts are
   present;

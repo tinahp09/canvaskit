@@ -14,4 +14,7 @@ When displaying an export preview, render the string as text (for example in a r
 
 ## `SvgRenderer`
 
-`SvgRenderer` implements Core’s renderer contract and writes a scene to an SVG element. Use it when an application needs a retained SVG surface instead of an exported string.
+`SvgRenderer` implements Core’s renderer contract and retains the latest
+serialized markup in its read-only `svg` property. Calling `render(scene)`
+replaces that string; the renderer does not create or mutate an SVG element.
+Applications own any DOM insertion and its trust boundary.

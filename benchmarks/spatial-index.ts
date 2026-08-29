@@ -24,27 +24,37 @@ export function runSpatialIndexBenchmark(nodeCount: BenchmarkNodeCount): Spatial
   const queries = createQueries(nodeCount)
   const points = queries.map((query) => ({ x: query.x + NODE_WIDTH / 2, y: query.y + NODE_HEIGHT / 2 }))
 
-  const linearQueryResult = measure(() => queries.reduce((total, query) => total + linearQuery(scene.nodes, query).length, 0))
-  const indexedQueryResult = measure(() => queries.reduce((total, query) => total + index.query(query).length, 0))
-  const linearHitTestResult = measure(() => points.reduce((total, point) => total + Number(hitTestNode(scene, point) !== undefined), 0))
-  const indexedHitTestResult = measure(() => points.reduce((total, point) => total + Number(hitTestNode(scene, point, index) !== undefined), 0))
+  const linearQueryResult = measure(() => queries.map((query) => linearQuery(scene.nodes, query)))
+  const indexedQueryResult = measure(() => queries.map((query) => index.query(query)))
+  const linearHitTestResult = measure(() => points.map((point) => hitTestNode(scene, point)))
+  const indexedHitTestResult = measure(() => points.map((point) => hitTestNode(scene, point, index)))
 
-  assertEquivalent('query', linearQueryResult.value, indexedQueryResult.value)
-  assertEquivalent('hit-test', linearHitTestResult.value, indexedHitTestResult.value)
+  const linearQueryIds = linearQueryResult.value.map((nodes) => nodes.map((node) => node.id))
+  const indexedQueryIds = indexedQueryResult.value.map((nodes) => nodes.map((node) => node.id))
+  const linearHitIds = linearHitTestResult.value.map((node) => node?.id)
+  const indexedHitIds = indexedHitTestResult.value.map((node) => node?.id)
+
+  assertQueryIdsEquivalent(linearQueryIds, indexedQueryIds)
+  assertHitIdsEquivalent(linearHitIds, indexedHitIds)
+
+  const linearQueryMatches = linearQueryIds.reduce((total, ids) => total + ids.length, 0)
+  const indexedQueryMatches = indexedQueryIds.reduce((total, ids) => total + ids.length, 0)
+  const linearHitMatches = linearHitIds.reduce((total, id) => total + Number(id !== undefined), 0)
+  const indexedHitMatches = indexedHitIds.reduce((total, id) => total + Number(id !== undefined), 0)
 
   return {
     nodeCount,
     query: {
       linearMilliseconds: linearQueryResult.milliseconds,
       indexedMilliseconds: indexedQueryResult.milliseconds,
-      linearMatches: linearQueryResult.value,
-      indexedMatches: indexedQueryResult.value,
+      linearMatches: linearQueryMatches,
+      indexedMatches: indexedQueryMatches,
     },
     hitTest: {
       linearMilliseconds: linearHitTestResult.milliseconds,
       indexedMilliseconds: indexedHitTestResult.milliseconds,
-      linearMatches: linearHitTestResult.value,
-      indexedMatches: indexedHitTestResult.value,
+      linearMatches: linearHitMatches,
+      indexedMatches: indexedHitMatches,
     },
   }
 }
@@ -71,9 +81,35 @@ function measure<T>(work: () => T): { milliseconds: number; value: T } {
   return { milliseconds: performance.now() - startedAt, value }
 }
 
-function assertEquivalent(operation: string, linearResult: number, indexedResult: number): void {
-  if (linearResult !== indexedResult) {
-    throw new Error(`${operation} benchmark result mismatch: linear ${linearResult}, indexed ${indexedResult}.`)
+export function assertQueryIdsEquivalent(
+  linearResults: readonly (readonly string[])[],
+  indexedResults: readonly (readonly string[])[],
+): void {
+  if (linearResults.length !== indexedResults.length) {
+    throw new Error(`query benchmark batch mismatch: linear ${linearResults.length}, indexed ${indexedResults.length}.`)
+  }
+
+  for (const [index, linearIds] of linearResults.entries()) {
+    const indexedIds = indexedResults[index]!
+    if (linearIds.length !== indexedIds.length || linearIds.some((id, idIndex) => id !== indexedIds[idIndex])) {
+      throw new Error(`query ${index} benchmark IDs mismatch: linear ${linearIds.join(',')}, indexed ${indexedIds.join(',')}.`)
+    }
+  }
+}
+
+export function assertHitIdsEquivalent(
+  linearResults: readonly (string | undefined)[],
+  indexedResults: readonly (string | undefined)[],
+): void {
+  if (linearResults.length !== indexedResults.length) {
+    throw new Error(`hit-test benchmark batch mismatch: linear ${linearResults.length}, indexed ${indexedResults.length}.`)
+  }
+
+  for (const [index, linearId] of linearResults.entries()) {
+    const indexedId = indexedResults[index]
+    if (linearId !== indexedId) {
+      throw new Error(`hit-test ${index} benchmark ID mismatch: linear ${linearId ?? 'none'}, indexed ${indexedId ?? 'none'}.`)
+    }
   }
 }
 
