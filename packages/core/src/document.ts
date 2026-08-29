@@ -1,4 +1,4 @@
-import type { CanvasLayer, CanvasScene, CreateGroupInput } from './model.js'
+import { DEFAULT_LAYER_ID, type CanvasLayer, type CanvasScene, type CreateGroupInput } from './model.js'
 
 export function addLayer(scene: CanvasScene, layer: CanvasLayer): CanvasScene {
   if (scene.layers.some((item) => item.id === layer.id)) throw new Error(`A layer with id "${layer.id}" already exists.`)
@@ -8,8 +8,16 @@ export function addLayer(scene: CanvasScene, layer: CanvasLayer): CanvasScene {
 export function removeLayer(scene: CanvasScene, layerId: string): CanvasScene {
   assertLayer(scene, layerId)
   if (scene.nodes.some((node) => node.layerId === layerId)) throw new Error('Cannot remove a nonempty layer.')
+  if (layerId === DEFAULT_LAYER_ID) throw new Error('Cannot remove the default layer.')
   if (scene.layers.length === 1) throw new Error('Cannot remove the final layer.')
   return { ...scene, layers: scene.layers.filter((layer) => layer.id !== layerId) }
+}
+
+export function implicitLayerId(scene: CanvasScene): string {
+  if (scene.layers.some((layer) => layer.id === DEFAULT_LAYER_ID)) return DEFAULT_LAYER_ID
+  const fallbackLayer = scene.layers[0]
+  if (!fallbackLayer) throw new Error('Scene must contain at least one layer.')
+  return fallbackLayer.id
 }
 
 export function reorderLayer(scene: CanvasScene, layerId: string, targetIndex: number): CanvasScene {

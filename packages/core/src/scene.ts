@@ -1,6 +1,6 @@
 import { DEFAULT_LAYER_ID, SCENE_VERSION, type CanvasNode, type CanvasScene, type CreateCircleInput, type CreateEdgeInput, type CreateGroupInput, type CreateRectangleInput, type CreateTextInput } from './model.js'
 import type { Point } from '@canvaskit/geometry'
-import { groupNodes } from './document.js'
+import { groupNodes, implicitLayerId } from './document.js'
 
 export function createScene(): CanvasScene {
   return {
@@ -19,7 +19,7 @@ export function addRectangle(scene: CanvasScene, input: CreateRectangleInput): C
     throw new Error(`A node with id "${input.id}" already exists.`)
   }
 
-  const layerId = input.layerId ?? DEFAULT_LAYER_ID
+  const layerId = input.layerId ?? implicitLayerId(scene)
   assertNodeLayer(scene, layerId)
   return {
     ...scene,
@@ -31,8 +31,8 @@ function addNode(scene: CanvasScene, node: CanvasNode): CanvasScene {
   assertNodeLayer(scene, node.layerId)
   return { ...scene, nodes: [...scene.nodes, node] }
 }
-export function addCircle(scene: CanvasScene, input: CreateCircleInput): CanvasScene { return addNode(scene, { ...input, layerId: input.layerId ?? DEFAULT_LAYER_ID, type: 'circle' }) }
-export function addText(scene: CanvasScene, input: CreateTextInput): CanvasScene { return addNode(scene, { ...input, layerId: input.layerId ?? DEFAULT_LAYER_ID, type: 'text' }) }
+export function addCircle(scene: CanvasScene, input: CreateCircleInput): CanvasScene { return addNode(scene, { ...input, layerId: input.layerId ?? implicitLayerId(scene), type: 'circle' }) }
+export function addText(scene: CanvasScene, input: CreateTextInput): CanvasScene { return addNode(scene, { ...input, layerId: input.layerId ?? implicitLayerId(scene), type: 'text' }) }
 export function addEdge(scene: CanvasScene, input: CreateEdgeInput): CanvasScene {
   if (scene.edges.some((edge) => edge.id === input.id)) throw new Error(`An edge with id "${input.id}" already exists.`)
   if (!scene.nodes.some((node) => node.id === input.sourceId) || !scene.nodes.some((node) => node.id === input.targetId)) throw new Error('Edge endpoints must exist.')

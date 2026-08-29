@@ -1,6 +1,7 @@
 import type { Point } from '@canvaskit/geometry'
 import type { CanvasEdge, CanvasGroup, CanvasNode, CanvasScene } from './model.js'
 import { translateNode } from './scene.js'
+import { implicitLayerId } from './document.js'
 
 export interface SceneClipboard {
   nodes: CanvasNode[]
@@ -54,7 +55,7 @@ export function pasteSelection(scene: CanvasScene, clipboard: SceneClipboard, of
   if (clipboard.nodes.length === 0) return { scene, ids: [] }
 
   const destinationLayerIds = new Set(scene.layers.map((layer) => layer.id))
-  const fallbackLayerId = scene.layers[0]!.id
+  const fallbackLayerId = implicitLayerId(scene)
   const nodeIds = new Set(scene.nodes.map((node) => node.id))
   const edgeIds = new Set(scene.edges.map((edge) => edge.id))
   const groupIds = new Set(scene.groups.map((group) => group.id))
@@ -71,7 +72,7 @@ export function pasteSelection(scene: CanvasScene, clipboard: SceneClipboard, of
     sourceId: remappedIds.get(edge.sourceId)!,
     targetId: remappedIds.get(edge.targetId)!,
   }))
-  const groups = clipboard.groups.filter((group) => group.nodeIds.every((id) => remappedIds.has(id))).map((group) => ({
+  const groups = clipboard.groups.filter((group) => new Set(group.nodeIds).size === group.nodeIds.length && group.nodeIds.every((id) => remappedIds.has(id))).map((group) => ({
     ...group,
     id: uniqueCopyId(group.id, groupIds),
     nodeIds: group.nodeIds.map((id) => remappedIds.get(id)!),

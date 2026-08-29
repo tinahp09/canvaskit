@@ -1,7 +1,9 @@
 import { expect, it } from 'vitest'
 import {
   addLayer,
+  addCircle,
   addRectangle,
+  addText,
   createScene,
   exportScene,
   groupNodes,
@@ -72,6 +74,33 @@ it('does not remove nonempty layers', () => {
   expect(() => removeLayer(scene, 'layer-default')).toThrow('Cannot remove a nonempty layer.')
 })
 
+it('preserves the default layer after a reordered-layer removal attempt', () => {
+  let scene = addLayer(createScene(), { id: 'foreground', name: 'Foreground', visible: true, locked: false })
+  scene = reorderLayer(scene, 'foreground', 0)
+
+  expect(() => removeLayer(scene, 'layer-default')).toThrow('Cannot remove the default layer.')
+  expect(scene.layers.map((layer) => layer.id)).toEqual(['foreground', 'layer-default'])
+})
+
+it('assigns legacy node helpers to the default layer even after layer reordering', () => {
+  let scene = addLayer(createScene(), { id: 'foreground', name: 'Foreground', visible: true, locked: false })
+  scene = reorderLayer(scene, 'foreground', 0)
+  scene = addRectangle(scene, { id: 'rectangle', position: { x: 0, y: 0 }, size: { width: 1, height: 1 }, fill: '#fff' })
+  scene = addCircle(scene, { id: 'circle', position: { x: 10, y: 0 }, radius: 1, fill: '#fff' })
+  scene = addText(scene, { id: 'text', position: { x: 20, y: 0 }, text: 'text', fontSize: 1, fill: '#fff' })
+
+  expect(scene.nodes.map((node) => node.layerId)).toEqual(['layer-default', 'layer-default', 'layer-default'])
+})
+
+it('uses the first canonical layer for legacy adds in an imported V3 document without layer-default', () => {
+  const imported = importScene('{"version":3,"nodes":[],"edges":[],"groups":[],"layers":[{"id":"custom","name":"Custom","visible":true,"locked":false}],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}')
+
+  const updated = addRectangle(imported, { id: 'rectangle', position: { x: 0, y: 0 }, size: { width: 1, height: 1 }, fill: '#fff' })
+
+  expect(updated.nodes[0]?.layerId).toBe('custom')
+  expect(importScene(exportScene(updated))).toEqual(updated)
+})
+
 it('rejects unknown layer ids before reordering the layer stack', () => {
   const scene = createScene()
 
@@ -98,6 +127,27 @@ it('pastes a node into an existing destination layer when its source layer is ab
   const pasted = pasteSelection(createScene(), clipboard, { x: 0, y: 0 })
 
   expect(pasted.scene.nodes[0]?.layerId).toBe('layer-default')
+})
+
+it('uses layer-default when a cross-document paste falls back after layer reorder', () => {
+  let source = addLayer(createScene(), { id: 'source-layer', name: 'Source', visible: true, locked: false })
+  source = addRectangle(source, { id: 'a', layerId: 'source-layer', position: { x: 0, y: 0 }, size: { width: 1, height: 1 }, fill: '#fff' })
+  let destination = addLayer(createScene(), { id: 'foreground', name: 'Foreground', visible: true, locked: false })
+  destination = reorderLayer(destination, 'foreground', 0)
+
+  const pasted = pasteSelection(destination, { nodes: [source.nodes[0]!], edges: [], groups: [] }, { x: 0, y: 0 })
+
+  expect(pasted.scene.nodes[0]?.layerId).toBe('layer-default')
+})
+
+it('discards clipboard groups with duplicate members before returning a serializable scene', () => {
+  const source = addRectangle(createScene(), { id: 'seed', position: { x: 0, y: 0 }, size: { width: 1, height: 1 }, fill: '#fff' })
+  const clipboard = { nodes: [source.nodes[0]!], edges: [], groups: [{ id: 'duplicate-members', nodeIds: ['seed', 'seed'] }] }
+
+  const pasted = pasteSelection(createScene(), clipboard, { x: 0, y: 0 })
+
+  expect(pasted.scene.groups).toEqual([])
+  expect(importScene(exportScene(pasted.scene))).toEqual(pasted.scene)
 })
 
 it('refuses to serialize a scene whose node references a missing layer', () => {
