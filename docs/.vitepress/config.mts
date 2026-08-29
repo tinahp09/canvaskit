@@ -10,7 +10,9 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/getting-started' },
+      { text: 'Editor workflow guide', link: '/guides/editor-workflow' },
       { text: 'API reference', link: '/api/core' },
+      { text: 'Editor workflow API', link: '/api/editor-workflow' },
       { text: 'Examples', link: '/examples' },
       { text: 'V1 release', link: '/release-notes-v1' },
     ],
@@ -21,6 +23,7 @@ export default defineConfig({
           items: [
             { text: 'Geometry', link: '/api/geometry' },
             { text: 'Core', link: '/api/core' },
+            { text: 'Editor workflow', link: '/api/editor-workflow' },
             { text: 'Canvas renderer', link: '/api/canvas' },
             { text: 'SVG renderer', link: '/api/svg' },
             { text: 'Official plugins', link: '/api/plugins' },
@@ -34,6 +37,7 @@ export default defineConfig({
           text: 'Guide',
           items: [
             { text: 'Getting started', link: '/getting-started' },
+            { text: 'Editor workflow', link: '/guides/editor-workflow' },
             { text: 'Examples', link: '/examples' },
             { text: 'Performance', link: '/performance' },
             { text: 'Plugins', link: '/plugins' },

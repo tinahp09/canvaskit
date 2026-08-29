@@ -31,7 +31,10 @@ Create and transform immutable scene values with:
 - `setScene(scene)` replaces the scene, retains only valid selections, and clears history.
 - `execute(command)`, `undo()`, and `redo()` apply `SceneCommand` values through history.
 - `beginTransaction(label)` and `commitTransaction()` group history commands; `clearHistory()` removes undo and redo state.
-- `copy()`, `paste(offset?)`, `duplicate()`, and `deleteSelection()` implement clipboard editing.
+- `copy()`, `cut()`, `paste(offset?)`, `duplicate()`, `deleteSelection()`,
+  `selectInRect(rect, options?)`, and `executeCommand(command)` implement the
+  editor workflow. See the dedicated [editor workflow API](/api/editor-workflow)
+  for selection modes, marquee semantics, clipboard constraints, and commands.
 - `toJSON()` serializes the current scene and `load(json)` validates and replaces it.
 - `createPointerEvent(screen, type)` turns a screen point into a `CanvasPointerEvent`, including its world point, and delivers it to pointer listeners.
 - `onPointer(listener)` subscribes to `CanvasPointerEvent` values; `subscribe(listener)` receives each scene snapshot as a `SceneListener`. Both return cleanup functions.
@@ -48,7 +51,10 @@ The instance exposes four public controllers: `viewport`, `selection`, `nodes`, 
 ## Controllers, history, and registries
 
 - `ViewportController` reads and changes the scene transform with `getTransform`, `panBy`, `setZoom`, `zoomAt`, and `reset`.
-- `SelectionController` manages node IDs with `select`, `selectMultiple`, `clear`, `get`, and `selectAll`; selections are retained only for nodes that still exist.
+- `SelectionController` manages node IDs with `select`, `selectMultiple`,
+  `set`, `add`, `remove`, `toggle`, `clear`, `get`, and `selectAll`; selections
+  are retained only for nodes that still exist. `SelectionMode` describes the
+  four explicit selection mutations.
 - `HistoryController` is the lower-level undo/redo implementation. `SceneCommand` supplies a label plus `execute` and `undo` scene transformations.
 - `NodeRegistry` and `EdgeRegistry` register named node and edge definitions. `NamedDefinition` is the minimum registry shape: an `id` string.
 
@@ -63,8 +69,13 @@ The instance exposes four public controllers: `viewport`, `selection`, `nodes`, 
 
 ## Input and interaction helpers
 
-- `attachPointerInput(element, canvas)` forwards DOM pointer events to a `CanvasKit`; `attachKeyboardInput(element, canvas)` adds select-all and delete/backspace shortcuts. Each returns a cleanup function.
-- `hitTestNode(scene, point, index?)`, `hitTestEdge(scene, point, tolerance?)`, `nodesInRect(scene, rect, index?)`, and `moveNodes(scene, ids, delta)` support custom editor interaction.
+- `attachPointerInput(element, canvas)` forwards DOM pointer events and their
+  modifiers to a `CanvasKit`; `attachKeyboardInput(element, canvas)` adds the
+  editor workflow shortcuts. Each returns a cleanup function.
+- `hitTestNode(scene, point, index?)`, `hitTestEdge(scene, point, tolerance?)`,
+  `nodesInRect(scene, rect, mode?, index?)`, and `moveNodes(scene, ids, delta)`
+  support custom editor interaction. `MarqueeMode` selects `contain` or
+  `intersect` bounds matching.
 - `nodeCenter(node)` and `nodeBounds(node)` derive geometry for a node.
 - `snapPointToGrid(point, gridSize)` returns the nearest grid point for a positive grid size.
 - `SpatialIndex(nodes)` creates a read-only node index. Its `query(rect)` method returns candidates in original scene order; recreate it after node bounds change.
