@@ -18,7 +18,9 @@
     "test:release": "node --test scripts/release-readiness.test.mjs && node scripts/release-readiness.mjs",
     "bundle:size": "node scripts/bundle-size.mjs",
     "test:bundle-size": "node --test scripts/bundle-size.test.mjs",
-    "verify:release-quality": "pnpm build && pnpm test:bundle-size && pnpm bundle:size && pnpm benchmark:spatial-index"
+    "verify:release-quality": "pnpm build && pnpm test:bundle-size && pnpm bundle:size && pnpm benchmark:spatial-index",
+    "test:pack": "node --test scripts/package-smoke.test.mjs && node scripts/package-smoke.mjs",
+    "publish:dry-run": "pnpm test:release && pnpm test:pack"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

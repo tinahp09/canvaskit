@@ -1,0 +1,54 @@
+name: Release validation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Stable release gates
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.2
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build documentation
+        run: pnpm docs:build
+
+      - name: Build React Storybook
+        run: pnpm storybook:build
+
+      - name: Build Vue Storybook
+        run: pnpm storybook:vue:build
+
+      - name: Build examples
+        run: pnpm --filter './examples/*' build
+
+      - name: Run release quality gates
+        run: pnpm verify:release-quality
+
+      - name: Run publishing dry run without publishing
+        run: pnpm publish:dry-run
