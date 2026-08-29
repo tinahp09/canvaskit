@@ -2,6 +2,8 @@
 
 Use this checklist for every CanvasKit release candidate and final release. Record the commands, platform, and results in the release pull request or release notes.
 
+Stable `1.x` candidates must also complete the [V1 release-candidate checklist](release-candidate-checklist.md) and follow the [API stability policy](api-stability.md).
+
 ## Prepare the candidate
 
 - [ ] Confirm the target version and release scope.
@@ -16,6 +18,7 @@ Use this checklist for every CanvasKit release candidate and final release. Reco
 - [ ] Run `pnpm build`.
 - [ ] Run `pnpm typecheck`.
 - [ ] Run `pnpm test`.
+- [ ] Run `pnpm test:release`.
 - [ ] Run `pnpm test:e2e` and confirm its final summary includes every test.
 - [ ] Run `pnpm docs:build`.
 - [ ] Run `pnpm storybook:build`.

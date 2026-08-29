@@ -42,6 +42,8 @@ pnpm storybook:vue:build
 
 Run the checks relevant to your change before requesting review. Before a release, follow the full [release checklist](docs/release-checklist.md).
 
+Published package consumers must import from package roots only. See the [API stability policy](docs/api-stability.md) before changing a root export, public type, peer range, or serialized scene contract.
+
 ## Pull requests
 
 Use a descriptive title and explain the user-visible effect, implementation approach, and validation performed. Link related issues and call out any behaviour that needs special review, such as:
