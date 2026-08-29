@@ -100,3 +100,43 @@ git diff --check
 Results: focused suite 24/24 tests, full Core suite 88/88 tests, typecheck and
 diff check passed. This follow-up is committed separately as
 `fix: protect clipboard snapshots`.
+
+## Final review round: rectangle snapshots and delete integrity
+
+The final independent review identified two release-blocking scene-integrity
+defects.
+
+### RED
+
+New regression coverage first failed in the expected places:
+
+- Mutating `size.width` in the result of `copySelection()`, `copy()`, or `cut()`
+  changed the source/internal clipboard and caused later paste to use width 999.
+- `delete-selection`, including its keyboard route, retained edges and group IDs
+  that referenced deleted nodes. The command regression also required
+  `importScene(kit.toJSON())` to validate and one undo to restore the exact
+  original graph.
+
+The focused run reported five failing assertions across clipboard, command, and
+keyboard coverage before production changes.
+
+### GREEN
+
+- Clipboard node cloning now handles every current subtype explicitly; rectangle
+  `size` is cloned in addition to `position`.
+- `deleteSelection()` now uses the same immutable relation-aware removal routine
+  as cut, so it removes dangling edges, cleans group membership, discards empty
+  groups, and still records one undoable history command.
+
+Fresh verification:
+
+```sh
+./node_modules/.bin/vitest run packages/core/test/clipboard.test.ts packages/core/test/canvas-kit.test.ts packages/core/test/editor-command.test.ts packages/core/test/keyboard-input.test.ts
+./node_modules/.bin/tsc -p packages/core/tsconfig.json --noEmit
+./node_modules/.bin/vitest run packages/core/test
+git diff --check
+```
+
+Results: focused suite 30/30 tests; full Core suite 95/95 tests; typecheck and
+diff check passed. The source test coverage also validates the serialized
+post-delete scene with `importScene()`.

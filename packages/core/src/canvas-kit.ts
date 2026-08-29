@@ -218,7 +218,7 @@ export class CanvasKit {
     const ids = new Set(this.selection.get())
     if (ids.size === 0) return
     const before = this.getScene()
-    const after = { ...before, nodes: before.nodes.filter((node) => !ids.has(node.id)) }
+    const after = removeSelection(before, [...ids])
     this.execute({ label: 'delete selection', execute: () => after, undo: () => before })
     this.selection.clear()
   }

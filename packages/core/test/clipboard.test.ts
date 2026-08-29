@@ -27,6 +27,17 @@ it('pastes copied nodes with fresh ids and an offset', () => {
   })
 })
 
+it('copies rectangle size into an independent lower-level clipboard snapshot', () => {
+  const scene = addRectangle(createScene(), rectangle)
+  const clipboard = copySelection(scene, ['a'])
+  const copiedNode = clipboard.nodes[0]!
+  if (copiedNode.type !== 'rectangle') throw new Error('Expected copied rectangle.')
+
+  copiedNode.size.width = 999
+
+  expect(scene.nodes[0]).toMatchObject({ id: 'a', size: { width: 10, height: 10 } })
+})
+
 it('duplicates an internal edge when both endpoints are copied', () => {
   const graph = addEdge(addRectangle(addRectangle(createScene(), rectangle), {
     ...rectangle, id: 'b', position: { x: 30, y: 0 },
@@ -142,11 +153,14 @@ it('keeps the internal clipboard unchanged when a returned copy snapshot is muta
   kit.selection.select('a')
 
   const returnedClipboard = kit.copy()
-  returnedClipboard.nodes[0]!.id = 'caller-modified'
-  returnedClipboard.nodes[0]!.position.x = 999
+  const returnedNode = returnedClipboard.nodes[0]!
+  if (returnedNode.type !== 'rectangle') throw new Error('Expected copied rectangle.')
+  returnedNode.id = 'caller-modified'
+  returnedNode.position.x = 999
+  returnedNode.size.width = 999
 
   expect(kit.paste()).toEqual(['a-copy'])
-  expect(kit.getScene().nodes.at(-1)).toMatchObject({ id: 'a-copy', position: { x: 20, y: 20 } })
+  expect(kit.getScene().nodes.at(-1)).toMatchObject({ id: 'a-copy', position: { x: 20, y: 20 }, size: { width: 10, height: 10 } })
 })
 
 it('keeps the internal clipboard unchanged when a returned cut snapshot is mutated', () => {
@@ -154,10 +168,13 @@ it('keeps the internal clipboard unchanged when a returned cut snapshot is mutat
   kit.selection.select('a')
 
   const returnedClipboard = kit.cut()
-  returnedClipboard.nodes[0]!.id = 'caller-modified'
+  const returnedNode = returnedClipboard.nodes[0]!
+  if (returnedNode.type !== 'rectangle') throw new Error('Expected cut rectangle.')
+  returnedNode.id = 'caller-modified'
+  returnedNode.size.width = 999
 
   expect(kit.paste()).toEqual(['a-copy'])
-  expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['a-copy'])
+  expect(kit.getScene().nodes).toMatchObject([{ id: 'a-copy', size: { width: 10, height: 10 } }])
 })
 
 it('cuts selected nodes, cleans dangling relations, and restores the whole scene with one undo', () => {

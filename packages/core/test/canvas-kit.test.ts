@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { addRectangle, CanvasKit, createScene, type CanvasScene } from '../src/index.js'
+import { addEdge, addGroup, addRectangle, CanvasKit, createScene, importScene, type CanvasScene } from '../src/index.js'
 
 it('reports pointer coordinates in screen and world space', () => {
   const canvas = new CanvasKit()
@@ -21,6 +21,25 @@ it('applies marquee results with explicit selection semantics', () => {
   expect(canvas.selectInRect({ x: 0, y: 0, width: 10, height: 10 })).toEqual(['a'])
   expect(canvas.selectInRect({ x: 25, y: 0, width: 10, height: 10 }, { mode: 'intersect', selection: 'add' })).toEqual(['b'])
   expect(canvas.selection.get()).toEqual(['a', 'b'])
+})
+
+it('deletes through the command without leaving dangling graph records and restores one scene on undo', () => {
+  let scene = addRectangle(createScene(), { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
+  scene = addRectangle(scene, { id: 'b', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' })
+  scene = addRectangle(scene, { id: 'c', position: { x: 40, y: 0 }, size: { width: 10, height: 10 }, fill: '#123' })
+  scene = addEdge(scene, { id: 'ab', sourceId: 'a', targetId: 'b', type: 'line' })
+  scene = addEdge(scene, { id: 'bc', sourceId: 'b', targetId: 'c', type: 'arrow' })
+  scene = addGroup(scene, { id: 'pair', nodeIds: ['a', 'b'] })
+  scene = addGroup(scene, { id: 'only-a', nodeIds: ['a'] })
+  const kit = new CanvasKit({ scene })
+  kit.selection.set(['a'])
+
+  expect(kit.executeCommand('delete-selection')).toBe(true)
+  expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['b', 'c'])
+  expect(kit.getScene().edges).toEqual([{ id: 'bc', sourceId: 'b', targetId: 'c', type: 'arrow' }])
+  expect(kit.getScene().groups).toEqual([{ id: 'pair', nodeIds: ['b'] }])
+  expect(importScene(kit.toJSON())).toEqual(kit.getScene())
+  expect(kit.undo()).toEqual(scene)
 })
 
 it('loads serialized scene data', () => {

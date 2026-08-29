@@ -15,7 +15,7 @@ export interface PasteSelectionResult {
 
 export function cloneClipboard(clipboard: SceneClipboard): SceneClipboard {
   return {
-    nodes: clipboard.nodes.map((node) => ({ ...node, position: { ...node.position } })),
+    nodes: clipboard.nodes.map(cloneNode),
     edges: clipboard.edges.map((edge) => ({ ...edge })),
     groups: clipboard.groups.map((group) => ({ ...group, nodeIds: [...group.nodeIds] })),
   }
@@ -40,10 +40,7 @@ export function removeSelection(scene: CanvasScene, ids: readonly string[]): Can
 
 export function copySelection(scene: CanvasScene, ids: readonly string[]): SceneClipboard {
   const selected = new Set(ids)
-  const nodes = scene.nodes.filter((node) => selected.has(node.id)).map((node) => ({
-    ...node,
-    position: { ...node.position },
-  }))
+  const nodes = scene.nodes.filter((node) => selected.has(node.id)).map(cloneNode)
   const nodeIds = new Set(nodes.map((node) => node.id))
 
   return {
@@ -81,6 +78,13 @@ export function pasteSelection(scene: CanvasScene, clipboard: SceneClipboard, of
     scene: { ...scene, nodes: [...scene.nodes, ...nodes], edges: [...scene.edges, ...edges], groups: [...scene.groups, ...groups] },
     ids: nodes.map((node) => node.id),
   }
+}
+
+function cloneNode(node: CanvasNode): CanvasNode {
+  if (node.type === 'rectangle') {
+    return { ...node, position: { ...node.position }, size: { ...node.size } }
+  }
+  return { ...node, position: { ...node.position } }
 }
 
 function uniqueCopyId(id: string, used: Set<string>): string {

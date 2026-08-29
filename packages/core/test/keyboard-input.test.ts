@@ -1,4 +1,4 @@
-import { addRectangle, attachKeyboardInput, CanvasKit, createScene } from '../src/index.js'
+import { addEdge, addGroup, addRectangle, attachKeyboardInput, CanvasKit, createScene, importScene } from '../src/index.js'
 import { expect, it } from 'vitest'
 
 class FakeKeyboardTarget {
@@ -58,4 +58,22 @@ it('maps Delete and leaves ordinary typing inside editable descendants untouched
     } as unknown as KeyboardEvent)
     expect(prevented).toBe(false)
   }
+})
+
+it('maps Delete to relation-safe graph removal', () => {
+  const target = new FakeKeyboardTarget()
+  let scene = addRectangle(createScene(), { id: 'a', position: { x: 0, y: 0 }, size: { width: 1, height: 1 }, fill: '#fff' })
+  scene = addRectangle(scene, { id: 'b', position: { x: 2, y: 0 }, size: { width: 1, height: 1 }, fill: '#000' })
+  scene = addEdge(scene, { id: 'ab', sourceId: 'a', targetId: 'b', type: 'line' })
+  scene = addGroup(scene, { id: 'pair', nodeIds: ['a', 'b'] })
+  const canvas = new CanvasKit({ scene })
+  canvas.selection.set(['a'])
+  attachKeyboardInput(target as unknown as HTMLElement, canvas)
+
+  target.dispatch({ key: 'Delete', preventDefault() {} } as KeyboardEvent)
+
+  expect(canvas.getScene().nodes.map((node) => node.id)).toEqual(['b'])
+  expect(canvas.getScene().edges).toEqual([])
+  expect(canvas.getScene().groups).toEqual([{ id: 'pair', nodeIds: ['b'] }])
+  expect(importScene(canvas.toJSON())).toEqual(canvas.getScene())
 })
