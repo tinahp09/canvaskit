@@ -5,7 +5,7 @@ import { createGridPlugin, createSnapPlugin } from '@canvaskit/plugins'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<header><strong>CanvasKit Phase 5 — Extensible export</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><span class="toolbar-divider" aria-hidden="true"></span><button id="align-left">Align left</button><button id="align-center">Align center</button><button id="distribute-horizontal">Distribute horizontal</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><span class="workflow-hint">Shift-click adds; Cmd/Ctrl-click toggles; drag empty space to marquee. Drag selection handles to resize.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
+app.innerHTML = `<header><strong>CanvasKit Phase 5 — Extensible export</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><span class="toolbar-divider" aria-hidden="true"></span><button id="align-left">Align left</button><button id="align-center">Align center</button><button id="distribute-horizontal">Distribute horizontal</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><span class="workflow-hint">Shift-click adds; Cmd/Ctrl-click toggles; drag empty space to marquee. Drag selection handles to resize.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset><fieldset class="layer-controls"><legend>Layers</legend><label>Active layer <select id="active-layer" aria-label="Active layer"></select></label><button id="add-layer">Add layer</button><button id="move-selection-to-layer">Move selected nodes to active layer</button><button id="toggle-layer-visibility">Hide active layer</button><button id="toggle-layer-lock">Lock active layer</button><button id="move-layer-backward">Move active layer backward</button><button id="move-layer-forward">Move active layer forward</button><button id="group-selection">Group selected nodes</button><button id="ungroup-selection">Ungroup selected nodes</button></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
 const canvasElement = app.querySelector('canvas')!
 canvasElement.width = 1200
 canvasElement.height = 720
@@ -22,9 +22,61 @@ const redraw = () => {
 }
 attachPointerInput(canvasElement, kit)
 attachKeyboardInput(canvasElement, kit)
-kit.subscribe(redraw)
 const showGrid = app.querySelector<HTMLInputElement>('#show-grid')!
 const snapToGrid = app.querySelector<HTMLInputElement>('#snap-to-grid')!
+const activeLayer = app.querySelector<HTMLSelectElement>('#active-layer')!
+let activeLayerId = kit.getScene().layers[0]?.id ?? ''
+const syncLayerControls = () => {
+  const scene = kit.getScene()
+  const layer = scene.layers.find((candidate) => candidate.id === activeLayerId) ?? scene.layers[0]
+  activeLayerId = layer?.id ?? ''
+  activeLayer.replaceChildren(...scene.layers.map((candidate) => {
+    const option = document.createElement('option')
+    option.value = candidate.id
+    option.textContent = candidate.name
+    return option
+  }))
+  activeLayer.value = activeLayerId
+  const layerIndex = scene.layers.findIndex((candidate) => candidate.id === activeLayerId)
+  const visibilityButton = app.querySelector<HTMLButtonElement>('#toggle-layer-visibility')!
+  const lockButton = app.querySelector<HTMLButtonElement>('#toggle-layer-lock')!
+  visibilityButton.textContent = layer?.visible ? 'Hide active layer' : 'Show active layer'
+  lockButton.textContent = layer?.locked ? 'Unlock active layer' : 'Lock active layer'
+  app.querySelector<HTMLButtonElement>('#move-layer-backward')!.disabled = layerIndex <= 0
+  app.querySelector<HTMLButtonElement>('#move-layer-forward')!.disabled = layerIndex < 0 || layerIndex >= scene.layers.length - 1
+}
+kit.subscribe(() => { syncLayerControls(); redraw() })
+activeLayer.onchange = () => { activeLayerId = activeLayer.value; syncLayerControls() }
+const nextLayerId = () => {
+  const existing = new Set(kit.getScene().layers.map((layer) => layer.id))
+  let number = 1
+  while (existing.has(`layer-${number}`)) number += 1
+  return `layer-${number}`
+}
+app.querySelector<HTMLButtonElement>('#add-layer')!.onclick = () => {
+  const id = nextLayerId()
+  if (kit.createLayer({ id, name: `Layer ${id.slice('layer-'.length)}`, visible: true, locked: false })) activeLayerId = id
+  syncLayerControls()
+}
+app.querySelector<HTMLButtonElement>('#move-selection-to-layer')!.onclick = () => { kit.moveSelectionToLayer(activeLayerId) }
+app.querySelector<HTMLButtonElement>('#toggle-layer-visibility')!.onclick = () => {
+  const layer = kit.getScene().layers.find((candidate) => candidate.id === activeLayerId)
+  if (layer) kit.setLayerVisibility(layer.id, !layer.visible)
+}
+app.querySelector<HTMLButtonElement>('#toggle-layer-lock')!.onclick = () => {
+  const layer = kit.getScene().layers.find((candidate) => candidate.id === activeLayerId)
+  if (layer) kit.setLayerLocked(layer.id, !layer.locked)
+}
+app.querySelector<HTMLButtonElement>('#move-layer-backward')!.onclick = () => {
+  const index = kit.getScene().layers.findIndex((layer) => layer.id === activeLayerId)
+  if (index > 0) kit.reorderLayer(activeLayerId, index - 1)
+}
+app.querySelector<HTMLButtonElement>('#move-layer-forward')!.onclick = () => {
+  const index = kit.getScene().layers.findIndex((layer) => layer.id === activeLayerId)
+  if (index >= 0 && index < kit.getScene().layers.length - 1) kit.reorderLayer(activeLayerId, index + 1)
+}
+app.querySelector<HTMLButtonElement>('#group-selection')!.onclick = () => { kit.groupSelection() }
+app.querySelector<HTMLButtonElement>('#ungroup-selection')!.onclick = () => { kit.ungroupSelection() }
 const updateGrid = () => {
   canvasElement.style.backgroundImage = showGrid.checked
     ? `radial-gradient(${gridPlugin.config.color} 1px, transparent 1px)`
@@ -33,6 +85,7 @@ const updateGrid = () => {
 }
 showGrid.addEventListener('change', updateGrid)
 updateGrid()
+syncLayerControls()
 let dragStart: { x: number; y: number } | undefined
 let marquee: { start: { x: number; y: number }; mode: MarqueeMode; selection: SelectionMode } | undefined
 let connectionSource: string | undefined
@@ -44,6 +97,7 @@ const CONNECTION_HANDLE_OFFSET = 16
 const TRANSFORM_HANDLE_HIT_RADIUS = 8
 const connectionSourceAt = (screen: { x: number; y: number }) => kit.selection.get().map((id) => kit.getScene().nodes.find((node) => node.id === id)).find((node) => {
   if (!node) return false
+  if (!kit.isNodeInteractive(node.id)) return false
   const { viewport } = kit.getScene()
   const handle = node.type === 'rectangle'
     ? { x: node.position.x + node.size.width, y: node.position.y + node.size.height / 2 }
@@ -105,7 +159,8 @@ kit.onPointer((event) => {
   } else if (event.type === 'pointermove' && dragStart && (event.buttons === undefined || (event.buttons & 1) !== 0)) {
     const snapped = snapToGrid.checked ? snapPlugin.snap(event.world) : event.world
     const before = kit.getScene()
-    const after = moveNodes(before, kit.selection.get(), { x: snapped.x - dragStart.x, y: snapped.y - dragStart.y })
+    const ids = kit.selection.get().filter((id) => kit.isNodeInteractive(id))
+    const after = moveNodes(before, ids, { x: snapped.x - dragStart.x, y: snapped.y - dragStart.y })
     kit.execute({ label: 'move selection', execute: () => after, undo: () => before })
     dragStart = snapped
   } else if (event.type === 'pointerup') {

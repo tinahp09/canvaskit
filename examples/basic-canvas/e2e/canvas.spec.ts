@@ -53,16 +53,25 @@ test('clears history after importing a different version 2 scene', async ({ page
     viewport: { x: 0, y: 0, zoom: 1 },
     metadata: { source: 'durable-editing-test' },
   }
+  const migratedScene = {
+    version: 3,
+    nodes: [{ id: 'imported-node', layerId: 'layer-default', type: 'rectangle', position: { x: 20, y: 30 }, size: { width: 160, height: 80 }, fill: '#F97316' }],
+    edges: [],
+    groups: [],
+    layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }],
+    viewport: { x: 0, y: 0, zoom: 1 },
+    metadata: { source: 'durable-editing-test' },
+  }
   await page.getByTestId('scene-json').fill(JSON.stringify(importedScene))
   await page.getByRole('button', { name: 'Import scene' }).click()
   await expect(page.getByRole('status')).toHaveText('Scene imported.')
-  expect(await exportScene(page)).toEqual(importedScene)
+  expect(await exportScene(page)).toEqual(migratedScene)
 
   await page.getByRole('button', { name: 'Undo' }).click()
-  expect(await exportScene(page)).toEqual(importedScene)
+  expect(await exportScene(page)).toEqual(migratedScene)
 
   await page.getByRole('button', { name: 'Redo' }).click()
-  expect(await exportScene(page)).toEqual(importedScene)
+  expect(await exportScene(page)).toEqual(migratedScene)
 })
 
 test('edits and exports the Phase 5 workflow', async ({ page }) => {

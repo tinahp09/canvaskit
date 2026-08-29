@@ -63,9 +63,9 @@ test('resizes the selected node only when dragging its overlay handle', async ({
   await dragInWorldSpace(page, { x: 195, y: 215 }, { x: 195, y: 215 })
   await dragInWorldSpace(page, { x: 270, y: 250 }, { x: 330, y: 290 })
 
-  expect(node(await exportScene(page), 'webhook')).toMatchObject({
-    position: { x: 120, y: 180 }, size: { width: 210, height: 110 },
-  })
+  const resized = node(await exportScene(page), 'webhook')
+  expect(resized).toMatchObject({ position: { x: 120, y: 180 }, size: { width: 210 } })
+  expect(resized.size?.height).toBeCloseTo(110, 10)
   assertNoConsoleErrors()
 })
 

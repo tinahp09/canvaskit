@@ -1,4 +1,32 @@
-import { DEFAULT_LAYER_ID, type CanvasLayer, type CanvasScene, type CreateGroupInput } from './model.js'
+import { DEFAULT_LAYER_ID, type CanvasEdge, type CanvasLayer, type CanvasNode, type CanvasScene, type CreateGroupInput } from './model.js'
+
+export interface VisibleDocumentProjection {
+  nodes: CanvasNode[]
+  edges: CanvasEdge[]
+}
+
+/**
+ * Returns the content a renderer may draw. Layers are painted in scene-layer
+ * order and nodes retain their stable order within each layer. Legacy scenes
+ * without layers remain renderable for adapters that have not migrated them.
+ */
+export function projectVisibleDocument(scene: CanvasScene): VisibleDocumentProjection {
+  const layers = Array.isArray(scene.layers) ? scene.layers : []
+  if (layers.length === 0) return { nodes: [...scene.nodes], edges: [...(scene.edges ?? [])] }
+
+  const nodes = layers.flatMap((layer) => layer.visible
+    ? scene.nodes.filter((node) => node.layerId === layer.id)
+    : [])
+  const visibleNodeIds = new Set(nodes.map((node) => node.id))
+  const edges = (scene.edges ?? []).filter((edge) => visibleNodeIds.has(edge.sourceId) && visibleNodeIds.has(edge.targetId))
+  return { nodes, edges }
+}
+
+/** Returns pointer-interactive nodes in front-to-back hit-test order. */
+export function interactiveNodesInRenderOrder(scene: CanvasScene): CanvasNode[] {
+  const layers = new Map((scene.layers ?? []).map((layer) => [layer.id, layer]))
+  return projectVisibleDocument(scene).nodes.filter((node) => layers.size === 0 || layers.get(node.layerId)?.locked === false)
+}
 
 export function addLayer(scene: CanvasScene, layer: CanvasLayer): CanvasScene {
   if (scene.layers.some((item) => item.id === layer.id)) throw new Error(`A layer with id "${layer.id}" already exists.`)

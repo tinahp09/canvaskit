@@ -2,13 +2,15 @@ import { rectContainsPoint, type Point, type Rect } from '@canvaskit/geometry'
 import { nodeBounds } from './bounds.js'
 import type { CanvasNode, CanvasScene } from './model.js'
 import { SpatialIndex } from './spatial-index.js'
-import { isNodeInteractive } from './document.js'
+import { interactiveNodesInRenderOrder, isNodeInteractive } from './document.js'
 
 export type MarqueeMode = 'contain' | 'intersect'
 
 export function hitTestNode(scene: CanvasScene, point: Point, index?: SpatialIndex): CanvasNode | undefined {
-  const candidates = index?.query({ x: point.x - 0.5, y: point.y - 0.5, width: 1, height: 1 }) ?? scene.nodes
-  return [...candidates].reverse().find((node) => {
+  const candidates = index?.query({ x: point.x - 0.5, y: point.y - 0.5, width: 1, height: 1 })
+  const candidateIds = candidates ? new Set(candidates.map((node) => node.id)) : undefined
+  return [...interactiveNodesInRenderOrder(scene)].reverse().find((node) => {
+    if (candidateIds && !candidateIds.has(node.id)) return false
     if (!isNodeInteractive(scene, node.id)) return false
     if (node.type === 'rectangle') return rectContainsPoint({ ...node.position, ...node.size }, point)
     if (node.type === 'circle') return Math.hypot(point.x - node.position.x, point.y - node.position.y) <= node.radius

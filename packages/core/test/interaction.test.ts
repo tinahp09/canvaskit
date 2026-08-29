@@ -24,6 +24,16 @@ it('excludes hidden and locked nodes from interactive hit and marquee results', 
   expect(nodesInRect(layered, { x: 0, y: 0, width: 20, height: 20 })).toEqual(['visible'])
 })
 
+it('hit-tests the last rendered visible layer before raw node order', () => {
+  let layered = addLayer(createScene(), { id: 'below', name: 'Below', visible: true, locked: false })
+  layered = addLayer(layered, { id: 'above', name: 'Above', visible: true, locked: false })
+  layered = addRectangle(layered, { id: 'above-node', layerId: 'above', position: { x: 10, y: 10 }, size: { width: 30, height: 30 }, fill: '#fff' })
+  layered = addRectangle(layered, { id: 'below-node', layerId: 'below', position: { x: 10, y: 10 }, size: { width: 30, height: 30 }, fill: '#000' })
+
+  expect(hitTestNode(layered, { x: 20, y: 20 })?.id).toBe('above-node')
+  expect(hitTestNode(layered, { x: 20, y: 20 }, new SpatialIndex(layered.nodes))?.id).toBe('above-node')
+})
+
 it('uses an index without changing topmost hit-test selection', () => {
   const overlapping = addRectangle(addRectangle(createScene(), {
     id: 'bottom', position: { x: 10, y: 10 }, size: { width: 30, height: 30 }, fill: '#fff',

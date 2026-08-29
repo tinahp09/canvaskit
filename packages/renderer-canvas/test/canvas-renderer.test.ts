@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest'
 import { CanvasRenderer } from '../src/index.js'
-import type { TransformOverlay } from '@canvaskit/core'
+import type { CanvasScene, TransformOverlay } from '@canvaskit/core'
 
 it('draws rectangles in transformed world coordinates', () => {
   const fillRect = vi.fn()
@@ -23,6 +23,40 @@ it('draws rectangles in transformed world coordinates', () => {
   })
 
   expect(fillRect).toHaveBeenCalledWith(25, 46, 60, 80)
+})
+
+it('renders visible content by layer order and omits hidden-layer edges', () => {
+  const fillRect = vi.fn(); const moveTo = vi.fn(); const lineTo = vi.fn()
+  const context = {
+    clearRect: vi.fn(), fillRect, beginPath: vi.fn(), moveTo, lineTo, stroke: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1,
+  } as unknown as CanvasRenderingContext2D
+  const element = { getContext: () => context, width: 800, height: 600 } as unknown as HTMLCanvasElement
+  const scene: CanvasScene = {
+    version: 3,
+    layers: [
+      { id: 'foreground', name: 'Foreground', visible: true, locked: false },
+      { id: 'background', name: 'Background', visible: true, locked: false },
+      { id: 'hidden', name: 'Hidden', visible: false, locked: false },
+    ],
+    nodes: [
+      { id: 'back', layerId: 'background', type: 'rectangle', position: { x: 30, y: 20 }, size: { width: 10, height: 10 }, fill: '#0af' },
+      { id: 'hidden', layerId: 'hidden', type: 'rectangle', position: { x: 50, y: 20 }, size: { width: 10, height: 10 }, fill: '#f0a' },
+      { id: 'front', layerId: 'foreground', type: 'rectangle', position: { x: 10, y: 20 }, size: { width: 10, height: 10 }, fill: '#fa0' },
+    ],
+    edges: [
+      { id: 'visible', type: 'line', sourceId: 'front', targetId: 'back' },
+      { id: 'hidden-edge', type: 'line', sourceId: 'front', targetId: 'hidden' },
+    ],
+    groups: [], viewport: { x: 0, y: 0, zoom: 1 }, metadata: {},
+  }
+
+  new CanvasRenderer(element).render(scene)
+
+  expect(fillRect).toHaveBeenNthCalledWith(1, 10, 20, 10, 10)
+  expect(fillRect).toHaveBeenNthCalledWith(2, 30, 20, 10, 10)
+  expect(fillRect).toHaveBeenCalledTimes(2)
+  expect(moveTo).toHaveBeenCalledTimes(1)
+  expect(lineTo).toHaveBeenCalledTimes(1)
 })
 
 it('culls off-screen nodes and edges without a visible endpoint', () => {

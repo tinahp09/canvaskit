@@ -1,4 +1,4 @@
-import { nodeCenter, SpatialIndex, type CanvasScene, type TransformOverlay } from '@canvaskit/core'
+import { nodeCenter, projectVisibleDocument, SpatialIndex, type CanvasScene, type TransformOverlay } from '@canvaskit/core'
 
 const RESIZE_HANDLES = [
   'north-west', 'north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west',
@@ -23,11 +23,12 @@ export class CanvasRenderer {
     const { viewport } = scene
     const worldViewport = getWorldViewport(this.element, viewport)
     if (!worldViewport) return { visibleNodeCount: 0 }
-    const visibleNodes = new SpatialIndex(scene.nodes).query(worldViewport)
+    const projection = projectVisibleDocument(scene)
+    const visibleNodes = new SpatialIndex(projection.nodes).query(worldViewport)
     const visibleNodeIds = new Set(visibleNodes.map((node) => node.id))
-    const nodesById = new Map(scene.nodes.map((node) => [node.id, node]))
+    const nodesById = new Map(projection.nodes.map((node) => [node.id, node]))
 
-    for (const edge of scene.edges ?? []) {
+    for (const edge of projection.edges) {
       const source = nodesById.get(edge.sourceId)
       const target = nodesById.get(edge.targetId)
       if (!source || !target) continue
