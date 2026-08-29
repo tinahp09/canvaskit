@@ -52,7 +52,7 @@ it('resizes a circle from its east handle by updating its center and radius', ()
   })
 })
 
-it('resizes text from its south handle by scaling its font size while preserving subtype fields', () => {
+it('resizes text from its south handle with a uniform, centered cross-axis expansion', () => {
   const scene = addText(createScene(), {
     id: 'text', position: { x: 10, y: 30 }, text: 'hi', fontSize: 10, fill: '#123',
   })
@@ -60,8 +60,9 @@ it('resizes text from its south handle by scaling its font size while preserving
   const resized = controller.resize(scene, ['text'], 'south', { x: 20, y: 40 })
 
   expect(resized.nodes[0]).toEqual({
-    id: 'text', type: 'text', position: { x: 10, y: 40 }, text: 'hi', fontSize: 20, fill: '#123',
+    id: 'text', type: 'text', position: { x: 0, y: 40 }, text: 'hi', fontSize: 20, fill: '#123',
   })
+  expect(controller.getOverlay(resized, ['text'])?.bounds).toEqual({ x: 0, y: 20, width: 40, height: 20 })
 })
 
 it('enforces selection minimum dimensions from the dragged edge', () => {
@@ -82,6 +83,38 @@ it('locks the original aspect ratio when resizing from a corner', () => {
   const resized = controller.resize(scene, ['rectangle'], 'south-east', { x: 90, y: 50 }, { preserveAspectRatio: true })
 
   expect(resized.nodes[0]).toMatchObject({ position: { x: 10, y: 20 }, size: { width: 80, height: 40 } })
+})
+
+it('projects a mixed rectangle and circle selection to one uniform corner transform with stable bounds', () => {
+  const scene = addCircle(addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
+  }), {
+    id: 'circle', position: { x: 40, y: 10 }, radius: 10, fill: '#000',
+  })
+
+  const resized = controller.resize(scene, ['rectangle', 'circle'], 'south-east', { x: 100, y: 30 })
+
+  expect(resized.nodes[1]).toEqual({
+    id: 'circle', type: 'circle', position: { x: 80, y: 20 }, radius: 20, fill: '#000',
+  })
+  expect(controller.getOverlay(resized, ['rectangle', 'circle'])?.bounds).toEqual({ x: 0, y: 0, width: 100, height: 40 })
+  expect(controller.getOverlay(resized, ['rectangle', 'circle'])?.handles['south-east']).toEqual({ x: 100, y: 40 })
+})
+
+it('projects a mixed rectangle and text selection to one uniform corner transform with stable bounds', () => {
+  const scene = addText(addRectangle(createScene(), {
+    id: 'rectangle', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
+  }), {
+    id: 'text', position: { x: 30, y: 10 }, text: 'hi', fontSize: 10, fill: '#123',
+  })
+
+  const resized = controller.resize(scene, ['rectangle', 'text'], 'south-east', { x: 100, y: 30 })
+
+  expect(resized.nodes[1]).toEqual({
+    id: 'text', type: 'text', position: { x: 60, y: 20 }, text: 'hi', fontSize: 20, fill: '#123',
+  })
+  expect(controller.getOverlay(resized, ['rectangle', 'text'])?.bounds).toEqual({ x: 0, y: 0, width: 100, height: 40 })
+  expect(controller.getOverlay(resized, ['rectangle', 'text'])?.handles['south-east']).toEqual({ x: 100, y: 40 })
 })
 
 it('leaves the scene untouched when selection is empty or includes an unknown node', () => {

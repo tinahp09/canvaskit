@@ -61,7 +61,10 @@ export class TransformController {
 
     const sourceBounds = unionBounds(nodes)
     if (sourceBounds.width === 0 || sourceBounds.height === 0) return scene
-    const targetBounds = resizeBounds(sourceBounds, handle, point, constraints)
+    const resizedBounds = resizeBounds(sourceBounds, handle, point, constraints)
+    const targetBounds = requiresUniformNodeScale(nodes, sourceBounds, resizedBounds)
+      ? projectToUniformScale(sourceBounds, resizedBounds, handle, constraints)
+      : resizedBounds
     const scaleX = targetBounds.width / sourceBounds.width
     const scaleY = targetBounds.height / sourceBounds.height
     const selectedIds = new Set(nodes.map((node) => node.id))
@@ -138,6 +141,49 @@ function resizeBounds(source: Rect, handle: Exclude<TransformHandle, 'rotate'>, 
 
   const resized = { x: left, y: top, width: nextRight - left, height: nextBottom - top }
   return constraints.preserveAspectRatio ? preserveAspectRatio(source, resized, handle, minWidth, minHeight) : resized
+}
+
+/**
+ * Circle and text nodes have one scalar size, so their bounds cannot represent
+ * a non-uniform scale. Project the entire selection onto a uniform transform
+ * whenever either type is selected; this keeps every node and the overlay in
+ * the same affine transform instead of mixing an affine position with a
+ * different scalar-size transform.
+ */
+function requiresUniformNodeScale(nodes: readonly CanvasNode[], source: Rect, target: Rect): boolean {
+  return nodes.some((node) => node.type !== 'rectangle')
+    && target.width / source.width !== target.height / source.height
+}
+
+function projectToUniformScale(
+  source: Rect,
+  candidate: Rect,
+  handle: Exclude<TransformHandle, 'rotate'>,
+  constraints: TransformConstraints,
+): Rect {
+  const scaleX = candidate.width / source.width
+  const scaleY = candidate.height / source.height
+  const scale = Math.max(
+    Math.abs(scaleX - 1) >= Math.abs(scaleY - 1) ? scaleX : scaleY,
+    minimum(constraints.minWidth) / source.width,
+    minimum(constraints.minHeight) / source.height,
+  )
+  const width = source.width * scale
+  const height = source.height * scale
+  const right = source.x + source.width
+  const bottom = source.y + source.height
+
+  if (handle === 'east') return { x: source.x, y: source.y + (source.height - height) / 2, width, height }
+  if (handle === 'west') return { x: right - width, y: source.y + (source.height - height) / 2, width, height }
+  if (handle === 'south') return { x: source.x + (source.width - width) / 2, y: source.y, width, height }
+  if (handle === 'north') return { x: source.x + (source.width - width) / 2, y: bottom - height, width, height }
+
+  return {
+    x: handle === 'north-west' || handle === 'south-west' ? right - width : source.x,
+    y: handle === 'north-west' || handle === 'north-east' ? bottom - height : source.y,
+    width,
+    height,
+  }
 }
 
 function minimum(value: number | undefined): number {
