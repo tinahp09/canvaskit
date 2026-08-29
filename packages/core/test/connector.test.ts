@@ -177,6 +177,38 @@ it('honors every source and target port normal across all target quadrants', () 
   }
 })
 
+it('never immediately reverses or backtracks from source and target stubs in the 64-case route matrix', () => {
+  const directions = ['north', 'east', 'south', 'west'] as const
+  const targetPositions = [
+    { x: 100, y: 100 }, { x: -120, y: 100 }, { x: 100, y: -120 }, { x: -120, y: -120 },
+  ]
+  const controller = new ConnectorController()
+
+  for (const targetPosition of targetPositions) {
+    for (const sourcePortId of directions) {
+      for (const targetPortId of directions) {
+        let scene = addRectangle(createScene(), {
+          id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
+        })
+        scene = addRectangle(scene, {
+          id: 'target', position: targetPosition, size: { width: 20, height: 20 }, fill: '#000',
+        })
+        scene = controller.create(scene, {
+          id: 'route', sourceNodeId: 'source', sourcePortId, targetNodeId: 'target', targetPortId, routing: 'orthogonal',
+        })
+
+        const directionsAlongRoute = routeDirections(controller.route(scene, 'route'))
+        expect(directionsAlongRoute[0]).toBe(sourcePortId)
+        expect(directionsAlongRoute.at(-1)).toBe(oppositeDirection(targetPortId))
+        expect(
+          directionsAlongRoute.every((direction, index) => index === 0 || direction !== oppositeDirection(directionsAlongRoute[index - 1]!)),
+          `${sourcePortId} -> ${targetPortId} at (${targetPosition.x}, ${targetPosition.y}): ${directionsAlongRoute.join(', ')}`,
+        ).toBe(true)
+      }
+    }
+  }
+})
+
 it('recomputes a connector route from moved node bounds without persisting route points', () => {
   let scene = addRectangle(createScene(), {
     id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
@@ -278,4 +310,12 @@ function lastArrivalDirection(points: readonly { x: number; y: number }[]): 'nor
 function direction(from: { x: number; y: number }, to: { x: number; y: number }): 'north' | 'east' | 'south' | 'west' {
   if (from.x === to.x) return to.y > from.y ? 'south' : 'north'
   return to.x > from.x ? 'east' : 'west'
+}
+
+function routeDirections(points: readonly { x: number; y: number }[]): Array<'north' | 'east' | 'south' | 'west'> {
+  return points.slice(1).map((point, index) => direction(points[index]!, point))
+}
+
+function oppositeDirection(direction: 'north' | 'east' | 'south' | 'west'): 'north' | 'east' | 'south' | 'west' {
+  return ({ north: 'south', east: 'west', south: 'north', west: 'east' } as const)[direction]
 }

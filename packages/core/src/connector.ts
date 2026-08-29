@@ -86,8 +86,17 @@ function orthogonalRoute(source: Point, sourceDirection: CanvasConnectorDirectio
   const sourceStub = offset(source, sourceDirection)
   const targetStub = offset(target, targetDirection)
   const join = sourceDirection === 'east' || sourceDirection === 'west'
-    ? { x: targetStub.x, y: sourceStub.y }
-    : { x: sourceStub.x, y: targetStub.y }
+    ? { x: sourceStub.x, y: targetStub.y }
+    : { x: targetStub.x, y: sourceStub.y }
+  const approachDirection = segmentDirection(join, targetStub)
+  if (approachDirection === targetDirection) {
+    const stubDirection = segmentDirection(sourceStub, join)
+    const detour = offset(join, stubDirection)
+    const turn = isHorizontal(sourceDirection)
+      ? { x: targetStub.x, y: detour.y }
+      : { x: detour.x, y: targetStub.y }
+    return compactRoute([source, sourceStub, join, detour, turn, targetStub, target])
+  }
   return compactRoute([source, sourceStub, join, targetStub, target])
 }
 
@@ -130,6 +139,11 @@ function offset(point: Point, direction: Exclude<CanvasConnectorDirection, 'cent
 
 function isHorizontal(direction: Exclude<CanvasConnectorDirection, 'center'>): direction is 'east' | 'west' {
   return direction === 'east' || direction === 'west'
+}
+
+function segmentDirection(from: Point, to: Point): Exclude<CanvasConnectorDirection, 'center'> {
+  if (from.x === to.x) return to.y > from.y ? 'south' : 'north'
+  return to.x > from.x ? 'east' : 'west'
 }
 
 function compactRoute(points: readonly Point[]): Point[] {

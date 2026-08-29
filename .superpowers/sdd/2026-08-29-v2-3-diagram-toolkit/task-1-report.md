@@ -13,7 +13,7 @@
 
 ```text
 ./node_modules/.bin/vitest run packages/core/test
-20 test files passed, 163 tests passed
+20 test files passed, 164 tests passed
 
 ./node_modules/.bin/tsc -p packages/core/tsconfig.json --noEmit
 passed
@@ -28,6 +28,7 @@ passed
 - Paste now removes copied connectors whose remapped source or target port is invalid, preserving a serializable canonical V4 scene.
 - Legacy edge migration validates the complete V1/V2/V3 edge record before adapting it, including the permitted legacy edge types.
 - Added controller regressions for reconnect success/failure, direct removal, and lazy route updates after node movement.
+- Corrected fallback stub joins and added a 64-case guard against immediate route reversals and source/target stub backtracking.
 
 ## Intentional task boundary
 
