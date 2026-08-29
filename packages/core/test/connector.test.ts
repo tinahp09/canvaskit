@@ -237,8 +237,57 @@ it('uses non-reversing exterior lanes for all cardinal axial target placements',
           directionsAlongRoute.every((direction, index) => index === 0 || direction !== oppositeDirection(directionsAlongRoute[index - 1]!)),
           `${sourcePortId} -> ${targetPortId} at (${targetPosition.x}, ${targetPosition.y}): ${directionsAlongRoute.join(', ')}`,
         ).toBe(true)
-        expect(routeAvoidsOpenInterior(points, { x: 0, y: 0, width: 20, height: 20 })).toBe(true)
-        expect(routeAvoidsOpenInterior(points, { ...targetPosition, width: 20, height: 20 })).toBe(true)
+        expect(
+          routeAvoidsOpenInterior(points, { x: 0, y: 0, width: 20, height: 20 }),
+          `source interior: ${sourcePortId} -> ${targetPortId} at (${targetPosition.x}, ${targetPosition.y})`,
+        ).toBe(true)
+        expect(
+          routeAvoidsOpenInterior(points, { ...targetPosition, width: 20, height: 20 }),
+          `target interior: ${sourcePortId} -> ${targetPortId} at (${targetPosition.x}, ${targetPosition.y})`,
+        ).toBe(true)
+      }
+    }
+  }
+})
+
+it('uses exterior detours for near-offset placements including every ±30 port pairing', () => {
+  const directions = ['north', 'east', 'south', 'west'] as const
+  const targetPositions = [
+    { x: -30, y: -30 }, { x: 0, y: -30 }, { x: 30, y: -30 },
+    { x: -30, y: 0 }, { x: 30, y: 0 },
+    { x: -30, y: 30 }, { x: 0, y: 30 }, { x: 30, y: 30 },
+  ]
+  const controller = new ConnectorController()
+
+  for (const targetPosition of targetPositions) {
+    for (const sourcePortId of directions) {
+      for (const targetPortId of directions) {
+        let scene = addRectangle(createScene(), {
+          id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
+        })
+        scene = addRectangle(scene, {
+          id: 'target', position: targetPosition, size: { width: 20, height: 20 }, fill: '#000',
+        })
+        scene = controller.create(scene, {
+          id: 'route', sourceNodeId: 'source', sourcePortId, targetNodeId: 'target', targetPortId, routing: 'orthogonal',
+        })
+
+        const points = controller.route(scene, 'route')
+        const directionsAlongRoute = routeDirections(points)
+        expect(directionsAlongRoute[0]).toBe(sourcePortId)
+        expect(directionsAlongRoute.at(-1)).toBe(oppositeDirection(targetPortId))
+        expect(
+          directionsAlongRoute.every((direction, index) => index === 0 || direction !== oppositeDirection(directionsAlongRoute[index - 1]!)),
+          `${sourcePortId} -> ${targetPortId} at (${targetPosition.x}, ${targetPosition.y}): ${directionsAlongRoute.join(', ')}`,
+        ).toBe(true)
+        expect(
+          routeAvoidsOpenInterior(points, { x: 0, y: 0, width: 20, height: 20 }),
+          `source interior: ${sourcePortId} -> ${targetPortId} at (${targetPosition.x}, ${targetPosition.y})`,
+        ).toBe(true)
+        expect(
+          routeAvoidsOpenInterior(points, { ...targetPosition, width: 20, height: 20 }),
+          `target interior: ${sourcePortId} -> ${targetPortId} at (${targetPosition.x}, ${targetPosition.y})`,
+        ).toBe(true)
       }
     }
   }

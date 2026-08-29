@@ -1,5 +1,6 @@
-import type { Point } from '@canvaskit/geometry'
+import type { Point, Rect } from '@canvaskit/geometry'
 import type { CanvasConnector, CanvasScene, CreateConnectorInput } from './model.js'
+import { nodeBounds } from './bounds.js'
 import { findNodePort } from './ports.js'
 
 export interface ConnectorEndpoint {
@@ -59,7 +60,11 @@ export class ConnectorController {
     const source = this.endpoint(scene, connector.sourceNodeId, connector.sourcePortId)
     const target = this.endpoint(scene, connector.targetNodeId, connector.targetPortId)
     if (connector.routing === 'straight') return [source.position, target.position]
-    return orthogonalRoute(source.position, source.direction, target.position, target.direction)
+    if (source.direction === 'center' || target.direction === 'center') return [source.position, target.position]
+    const route = orthogonalRoute(source.position, source.direction, target.position, target.direction)
+    return routeCrossesOpenInterior(route, source.bounds) || routeCrossesOpenInterior(route, target.bounds)
+      ? exteriorNodeDetour(source.position, source.direction, source.bounds, target.position, target.direction, target.bounds)
+      : route
   }
 
   private assertEndpoint(scene: CanvasScene, side: 'source' | 'target', nodeId: string, portId: string): void {
@@ -73,7 +78,7 @@ export class ConnectorController {
     if (!node) throw new Error(`Unknown node id: "${nodeId}".`)
     const port = findNodePort(node, portId)
     if (!port) throw new Error(`Unknown port id: "${portId}".`)
-    return port
+    return { ...port, bounds: nodeBounds(node) }
   }
 }
 
@@ -89,9 +94,11 @@ function orthogonalRoute(source: Point, sourceDirection: CanvasConnectorDirectio
     ? { x: sourceStub.x, y: targetStub.y }
     : { x: targetStub.x, y: sourceStub.y }
   const approachDirection = segmentDirection(join, targetStub)
+  const stubDirection = segmentDirection(sourceStub, join)
+  if (!approachDirection || !stubDirection || samePoint(join, sourceStub) || samePoint(join, targetStub)) {
+    return perpendicularLaneDetour(source, sourceStub, targetStub, target, sourceDirection, targetDirection)
+  }
   if (approachDirection === targetDirection) {
-    const stubDirection = segmentDirection(sourceStub, join)
-    if (!stubDirection) return compactRoute([source, sourceStub, join, targetStub, target])
     const detour = offset(join, stubDirection)
     const turn = isHorizontal(sourceDirection)
       ? { x: targetStub.x, y: detour.y }
@@ -166,10 +173,204 @@ function isHorizontal(direction: Exclude<CanvasConnectorDirection, 'center'>): d
   return direction === 'east' || direction === 'west'
 }
 
+function perpendicularLaneDetour(
+  source: Point,
+  sourceStub: Point,
+  targetStub: Point,
+  target: Point,
+  sourceDirection: Exclude<CanvasConnectorDirection, 'center'>,
+  targetDirection: Exclude<CanvasConnectorDirection, 'center'>,
+): Point[] {
+  const extendedSourceStub = offset(sourceStub, sourceDirection)
+  const offsets = [
+    perpendicularOffset(sourceDirection),
+    -perpendicularOffset(sourceDirection),
+    2 * perpendicularOffset(sourceDirection),
+    -2 * perpendicularOffset(sourceDirection),
+  ]
+
+  for (const laneOffset of offsets) {
+    for (const approachOffset of offsets) {
+      const route = detourRoute(
+        source,
+        sourceStub,
+        extendedSourceStub,
+        targetStub,
+        target,
+        sourceDirection,
+        targetDirection,
+        laneOffset,
+        approachOffset,
+      )
+      if (!hasImmediateReversal(route)) return route
+    }
+  }
+
+  // The deterministic first candidate is retained as a total fallback; the
+  // route still preserves the port stubs even for degenerate coordinates.
+  return detourRoute(
+    source, sourceStub, extendedSourceStub, targetStub, target,
+    sourceDirection, targetDirection, offsets[0]!, offsets[0]!,
+  )
+}
+
+function detourRoute(
+  source: Point,
+  sourceStub: Point,
+  extendedSourceStub: Point,
+  targetStub: Point,
+  target: Point,
+  sourceDirection: Exclude<CanvasConnectorDirection, 'center'>,
+  targetDirection: Exclude<CanvasConnectorDirection, 'center'>,
+  laneOffset: number,
+  approachOffset: number,
+): Point[] {
+  if (isHorizontal(sourceDirection)) {
+    const lane = { x: extendedSourceStub.x, y: extendedSourceStub.y + laneOffset }
+    if (isHorizontal(targetDirection)) {
+      return compactRoute([source, sourceStub, extendedSourceStub, lane, { x: targetStub.x, y: lane.y }, targetStub, target])
+    }
+    const approachX = targetStub.x + approachOffset
+    return compactRoute([
+      source, sourceStub, extendedSourceStub, lane,
+      { x: approachX, y: lane.y }, { x: approachX, y: targetStub.y },
+      targetStub, target,
+    ])
+  }
+
+  const lane = { x: extendedSourceStub.x + laneOffset, y: extendedSourceStub.y }
+  if (!isHorizontal(targetDirection)) {
+    return compactRoute([source, sourceStub, extendedSourceStub, lane, { x: lane.x, y: targetStub.y }, targetStub, target])
+  }
+  const approachY = targetStub.y + approachOffset
+  return compactRoute([
+    source, sourceStub, extendedSourceStub, lane,
+    { x: lane.x, y: approachY }, { x: targetStub.x, y: approachY },
+    targetStub, target,
+  ])
+}
+
+function hasImmediateReversal(points: readonly Point[]): boolean {
+  let previous: Exclude<CanvasConnectorDirection, 'center'> | undefined
+  for (let index = 1; index < points.length; index += 1) {
+    const direction = segmentDirection(points[index - 1]!, points[index]!)
+    if (!direction) continue
+    if (previous && direction === oppositeDirection(previous)) return true
+    previous = direction
+  }
+  return false
+}
+
+function exteriorNodeDetour(
+  source: Point,
+  sourceDirection: Exclude<CanvasConnectorDirection, 'center'>,
+  sourceBounds: Rect,
+  target: Point,
+  targetDirection: Exclude<CanvasConnectorDirection, 'center'>,
+  targetBounds: Rect,
+): Point[] {
+  const sourceStub = exteriorStub(source, sourceDirection)
+  const targetStub = exteriorStub(target, targetDirection)
+  const top = Math.min(sourceBounds.y, targetBounds.y) - ROUTE_CLEARANCE
+  const bottom = Math.max(sourceBounds.y + sourceBounds.height, targetBounds.y + targetBounds.height) + ROUTE_CLEARANCE
+  const left = Math.min(sourceBounds.x, targetBounds.x) - ROUTE_CLEARANCE
+  const right = Math.max(sourceBounds.x + sourceBounds.width, targetBounds.x + targetBounds.width) + ROUTE_CLEARANCE
+  const verticalLanes = sourceDirection === 'north' ? [top, bottom] : [bottom, top]
+  const horizontalLanes = sourceDirection === 'west' ? [left, right] : [right, left]
+
+  for (const lane of isHorizontal(sourceDirection) ? verticalLanes : horizontalLanes) {
+    for (const approach of isHorizontal(targetDirection) ? verticalLanes : horizontalLanes) {
+      const route = exteriorDetourCandidate(
+        source, sourceStub, targetStub, target,
+        sourceDirection, targetDirection, lane, approach,
+      )
+      if (!hasImmediateReversal(route) && !routeCrossesOpenInterior(route, sourceBounds) && !routeCrossesOpenInterior(route, targetBounds)) {
+        return route
+      }
+    }
+  }
+
+  return exteriorDetourCandidate(
+    source, sourceStub, targetStub, target,
+    sourceDirection, targetDirection,
+    isHorizontal(sourceDirection) ? verticalLanes[0]! : horizontalLanes[0]!,
+    isHorizontal(targetDirection) ? verticalLanes[0]! : horizontalLanes[0]!,
+  )
+}
+
+function exteriorStub(point: Point, direction: Exclude<CanvasConnectorDirection, 'center'>): Point {
+  switch (direction) {
+    case 'north': return { x: point.x, y: point.y - 1 }
+    case 'east': return { x: point.x + 1, y: point.y }
+    case 'south': return { x: point.x, y: point.y + 1 }
+    case 'west': return { x: point.x - 1, y: point.y }
+  }
+}
+
+function exteriorDetourCandidate(
+  source: Point,
+  sourceStub: Point,
+  targetStub: Point,
+  target: Point,
+  sourceDirection: Exclude<CanvasConnectorDirection, 'center'>,
+  targetDirection: Exclude<CanvasConnectorDirection, 'center'>,
+  lane: number,
+  approach: number,
+): Point[] {
+  if (isHorizontal(sourceDirection)) {
+    if (isHorizontal(targetDirection)) {
+      return compactRoute([source, sourceStub, { x: sourceStub.x, y: lane }, { x: targetStub.x, y: lane }, targetStub, target])
+    }
+    return compactRoute([
+      source, sourceStub, { x: sourceStub.x, y: lane }, { x: approach, y: lane },
+      { x: approach, y: targetStub.y }, targetStub, target,
+    ])
+  }
+  if (!isHorizontal(targetDirection)) {
+    return compactRoute([source, sourceStub, { x: lane, y: sourceStub.y }, { x: lane, y: targetStub.y }, targetStub, target])
+  }
+  return compactRoute([
+    source, sourceStub, { x: lane, y: sourceStub.y }, { x: lane, y: approach },
+    { x: targetStub.x, y: approach }, targetStub, target,
+  ])
+}
+
+function routeCrossesOpenInterior(points: readonly Point[], bounds: Rect): boolean {
+  return points.slice(1).some((point, index) => segmentCrossesOpenInterior(points[index]!, point, bounds))
+}
+
+function segmentCrossesOpenInterior(from: Point, to: Point, bounds: Rect): boolean {
+  const right = bounds.x + bounds.width
+  const bottom = bounds.y + bounds.height
+  if (from.x === to.x) {
+    return from.x > bounds.x && from.x < right
+      && Math.max(Math.min(from.y, to.y), bounds.y) < Math.min(Math.max(from.y, to.y), bottom)
+  }
+  return from.y > bounds.y && from.y < bottom
+    && Math.max(Math.min(from.x, to.x), bounds.x) < Math.min(Math.max(from.x, to.x), right)
+}
+
+function oppositeDirection(direction: Exclude<CanvasConnectorDirection, 'center'>): Exclude<CanvasConnectorDirection, 'center'> {
+  switch (direction) {
+    case 'north': return 'south'
+    case 'east': return 'west'
+    case 'south': return 'north'
+    case 'west': return 'east'
+  }
+}
+
+function perpendicularOffset(direction: Exclude<CanvasConnectorDirection, 'center'>): number {
+  return direction === 'north' || direction === 'east' ? ROUTE_CLEARANCE : -ROUTE_CLEARANCE
+}
+
 function segmentDirection(from: Point, to: Point): Exclude<CanvasConnectorDirection, 'center'> | undefined {
   if (from.x === to.x && from.y === to.y) return undefined
   if (from.x === to.x) return to.y > from.y ? 'south' : 'north'
   return to.x > from.x ? 'east' : 'west'
+}
+
+function samePoint(a: Point, b: Point): boolean {
+  return a.x === b.x && a.y === b.y
 }
 
 function compactRoute(points: readonly Point[]): Point[] {

@@ -13,9 +13,12 @@
 
 ```text
 ./node_modules/.bin/vitest run packages/core/test
-20 test files passed, 165 tests passed
+20 test files passed, 166 tests passed
 
 ./node_modules/.bin/tsc -p packages/core/tsconfig.json --noEmit
+passed
+
+./node_modules/.bin/tsc -p packages/core/tsconfig.json
 passed
 
 git diff --check
@@ -30,6 +33,7 @@ passed
 - Added controller regressions for reconnect success/failure, direct removal, and lazy route updates after node movement.
 - Corrected fallback stub joins and added a 64-case guard against immediate route reversals and source/target stub backtracking.
 - Added a separated axial-placement matrix and deterministic perpendicular lanes for collinear same-axis port pairs, including open-node-interior exclusion.
+- Added the complete near-offset (±30) port matrix. Coincident/undefined fallback joins now select deterministic perpendicular detours, and bounds-aware exterior lanes prevent either endpoint stub from crossing a nearby node interior.
 
 ## Intentional task boundary
 
