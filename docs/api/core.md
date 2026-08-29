@@ -35,12 +35,18 @@ Create and transform immutable scene values with:
   `selectInRect(rect, options?)`, and `executeCommand(command)` implement the
   editor workflow. See the dedicated [editor workflow API](/api/editor-workflow)
   for selection modes, marquee semantics, clipboard constraints, and commands.
+- `resizeSelection(handle, point, constraints?)`, `alignSelection(axis)`, and
+  `distributeSelection(axis)` apply history-backed transforms to the current
+  selection. `transform` is the shared `TransformController`; see the
+  dedicated [transform tools API](/api/transform-tools) for handle positions,
+  constraints, and the V2.0 preview-only rotation boundary.
 - `toJSON()` serializes the current scene and `load(json)` validates and replaces it.
 - `createPointerEvent(screen, type)` turns a screen point into a `CanvasPointerEvent`, including its world point, and delivers it to pointer listeners.
 - `onPointer(listener)` subscribes to `CanvasPointerEvent` values; `subscribe(listener)` receives each scene snapshot as a `SceneListener`. Both return cleanup functions.
 - `use(plugin)` installs a `CanvasPlugin`; `dispose()` runs installed plugin cleanups.
 
-The instance exposes four public controllers: `viewport`, `selection`, `nodes`, and `edges`.
+The instance exposes five public controllers: `viewport`, `selection`,
+`transform`, `nodes`, and `edges`.
 
 ### Pointer and scene subscription types
 
@@ -79,6 +85,16 @@ The instance exposes four public controllers: `viewport`, `selection`, `nodes`, 
 - `nodeCenter(node)` and `nodeBounds(node)` derive geometry for a node.
 - `snapPointToGrid(point, gridSize)` returns the nearest grid point for a positive grid size.
 - `SpatialIndex(nodes)` creates a read-only node index. Its `query(rect)` method returns candidates in original scene order; recreate it after node bounds change.
+
+## Transform tools
+
+`TransformController` computes `TransformOverlay` values and immutable resize,
+alignment, and distribution scenes. `TransformHandle`, `TransformConstraints`,
+`AlignmentAxis`, and `DistributionAxis` describe its inputs.
+`UnsupportedPersistentRotationError` is thrown for a `rotate` resize request:
+the V2.0 rotation handle is visible for preview/interaction affordance only and
+does not persist into `CanvasScene`. See [Transform tools](/api/transform-tools)
+for the complete contract and examples.
 
 ## Plugins and renderers
 

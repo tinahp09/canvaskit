@@ -11,6 +11,19 @@ The project is available under the [MIT License](LICENSE).
 
 CanvasKit provides rectangle, circle, and text scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
 
+## V2.0 transform tools
+
+V2.0 adds a headless transform pipeline for selection bounds, eight resize
+handles, min-size and aspect-ratio constraints, multi-selection alignment and
+distribution, and a Canvas overlay. Begin with the [transform tools
+guide](docs/guides/transform-tools.md) or [API
+reference](docs/api/transform-tools.md). The overlay includes a rotation handle,
+but persistent rotation is deliberately **preview-only** in V2.0: the current
+scene schema and serializers do not store a rotation value, so asking Core to
+persist it throws `UnsupportedPersistentRotationError` without changing the
+scene. Persistent rotation is deferred to the transform-capable scene model in
+V2.2.
+
 ## V2.1 editor workflow
 
 V2.1 adds a headless workflow layer for ordered multi-selection, world-space

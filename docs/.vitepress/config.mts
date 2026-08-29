@@ -10,8 +10,10 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/getting-started' },
+      { text: 'Transform tools', link: '/guides/transform-tools' },
       { text: 'Editor workflow guide', link: '/guides/editor-workflow' },
       { text: 'API reference', link: '/api/core' },
+      { text: 'Transform API', link: '/api/transform-tools' },
       { text: 'Editor workflow API', link: '/api/editor-workflow' },
       { text: 'Examples', link: '/examples' },
       { text: 'V1 release', link: '/release-notes-v1' },
@@ -23,6 +25,7 @@ export default defineConfig({
           items: [
             { text: 'Geometry', link: '/api/geometry' },
             { text: 'Core', link: '/api/core' },
+            { text: 'Transform tools', link: '/api/transform-tools' },
             { text: 'Editor workflow', link: '/api/editor-workflow' },
             { text: 'Canvas renderer', link: '/api/canvas' },
             { text: 'SVG renderer', link: '/api/svg' },
@@ -37,6 +40,7 @@ export default defineConfig({
           text: 'Guide',
           items: [
             { text: 'Getting started', link: '/getting-started' },
+            { text: 'Transform tools', link: '/guides/transform-tools' },
             { text: 'Editor workflow', link: '/guides/editor-workflow' },
             { text: 'Examples', link: '/examples' },
             { text: 'Performance', link: '/performance' },
@@ -50,6 +54,9 @@ export default defineConfig({
           text: 'Release readiness',
           items: [
             { text: 'CanvasKit 1.0.0', link: '/release-notes-v1' },
+            { text: 'CanvasKit V2.0 transform tools', link: '/release-notes-v2' },
+            { text: 'V2.0 architecture', link: '/architecture/v2-transform-tools' },
+            { text: 'V2.0 release asset manifest', link: '/release-assets-v2' },
             { text: 'Upgrading to V1', link: '/upgrading-to-v1' },
             { text: 'API stability', link: '/api-stability' },
             { text: 'Release quality gates', link: '/release-quality' },

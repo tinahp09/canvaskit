@@ -4,29 +4,29 @@ Use this checklist for every CanvasKit release. Major milestones (V2.0–V3.0) r
 
 ## Code
 
-- [ ] Features complete / feature freeze confirmed
-- [ ] Tests passing
-- [ ] Performance checked
-- [ ] Breaking changes documented
+- [x] Features complete / feature freeze confirmed (V2.0 source scope; only release validation fixes remain)
+- [x] Tests passing (2026-08-29 V2.0 candidate gate: 166 unit tests and 38 browser E2E tests)
+- [x] Performance checked (2026-08-29 release-quality spatial-index verification)
+- [x] Breaking changes documented (none; no scene schema change)
 
 ## Documentation
 
-- [ ] README updated
-- [ ] Architecture docs updated
-- [ ] API documented
-- [ ] Migration notes added when needed
+- [x] README updated
+- [x] Architecture docs updated
+- [x] API documented
+- [x] Migration notes added when needed (not needed: V2.0 does not change scene JSON)
 
 ## Media
 
 - [ ] GIF recorded for a major milestone
 - [ ] Screenshots captured for a major milestone
-- [ ] Demo updated
+- [x] Demo updated (basic-canvas transform workflow)
 
 ## Release
 
 - [ ] Version bumped
 - [ ] CHANGELOG updated
-- [ ] Release notes written
+- [x] Release notes written (candidate: `docs/release-notes-v2.md`)
 - [ ] GitHub Release created
 
 ## Public

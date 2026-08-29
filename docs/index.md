@@ -24,6 +24,12 @@ features:
 
 ## What you can build
 
-CanvasKit supports rectangles, circles, text, edges, groups, pan and zoom, selection, clipboard editing, undo and redo, and versioned scene JSON. Use it as the engine beneath whiteboards, diagrams, workflow editors, or architecture maps.
+CanvasKit supports rectangles, circles, text, edges, groups, pan and zoom,
+selection, clipboard editing, undo and redo, versioned scene JSON, plus V2.0
+selection transforms: resize constraints, alignment, distribution, and Canvas
+overlays. Use it as the engine beneath whiteboards, diagrams, workflow editors,
+or architecture maps.
 
-Start with the [getting-started guide](/getting-started), inspect the [product examples](/examples), or browse the package-level [API reference](/api/core).
+Start with the [getting-started guide](/getting-started), the [transform tools
+guide](/guides/transform-tools), inspect the [product examples](/examples), or
+browse the package-level [API reference](/api/core).
