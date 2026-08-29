@@ -91,6 +91,7 @@ function orthogonalRoute(source: Point, sourceDirection: CanvasConnectorDirectio
   const approachDirection = segmentDirection(join, targetStub)
   if (approachDirection === targetDirection) {
     const stubDirection = segmentDirection(sourceStub, join)
+    if (!stubDirection) return compactRoute([source, sourceStub, join, targetStub, target])
     const detour = offset(join, stubDirection)
     const turn = isHorizontal(sourceDirection)
       ? { x: targetStub.x, y: detour.y }
@@ -106,12 +107,36 @@ function twoBendRoute(source: Point, sourceDirection: Exclude<CanvasConnectorDir
   const sourceHorizontal = isHorizontal(sourceDirection)
   if (sourceHorizontal) {
     if (!isHorizontal(targetDirection)) return undefined
+    if (source.y === target.y) return collinearHorizontalRoute(source, sourceDirection, target, targetDirection)
     const lane = horizontalLane(source.x, sourceDirection, target.x, targetDirection)
     return lane === undefined ? undefined : [{ ...source }, { x: lane, y: source.y }, { x: lane, y: target.y }, { ...target }]
   }
   if (isHorizontal(targetDirection)) return undefined
+  if (source.x === target.x) return collinearVerticalRoute(source, sourceDirection, target, targetDirection)
   const lane = verticalLane(source.y, sourceDirection, target.y, targetDirection)
   return lane === undefined ? undefined : [{ ...source }, { x: source.x, y: lane }, { x: target.x, y: lane }, { ...target }]
+}
+
+function collinearHorizontalRoute(source: Point, sourceDirection: 'east' | 'west', target: Point, targetDirection: 'east' | 'west'): Point[] {
+  const sourceStub = offset(source, sourceDirection)
+  const targetStub = offset(target, targetDirection)
+  const laneY = source.y - ROUTE_CLEARANCE
+  return [
+    { ...source }, sourceStub,
+    { x: sourceStub.x, y: laneY }, { x: targetStub.x, y: laneY },
+    targetStub, { ...target },
+  ]
+}
+
+function collinearVerticalRoute(source: Point, sourceDirection: 'north' | 'south', target: Point, targetDirection: 'north' | 'south'): Point[] {
+  const sourceStub = offset(source, sourceDirection)
+  const targetStub = offset(target, targetDirection)
+  const laneX = source.x - ROUTE_CLEARANCE
+  return [
+    { ...source }, sourceStub,
+    { x: laneX, y: sourceStub.y }, { x: laneX, y: targetStub.y },
+    targetStub, { ...target },
+  ]
 }
 
 function horizontalLane(sourceX: number, sourceDirection: 'east' | 'west', targetX: number, targetDirection: 'east' | 'west'): number | undefined {
@@ -141,7 +166,8 @@ function isHorizontal(direction: Exclude<CanvasConnectorDirection, 'center'>): d
   return direction === 'east' || direction === 'west'
 }
 
-function segmentDirection(from: Point, to: Point): Exclude<CanvasConnectorDirection, 'center'> {
+function segmentDirection(from: Point, to: Point): Exclude<CanvasConnectorDirection, 'center'> | undefined {
+  if (from.x === to.x && from.y === to.y) return undefined
   if (from.x === to.x) return to.y > from.y ? 'south' : 'north'
   return to.x > from.x ? 'east' : 'west'
 }

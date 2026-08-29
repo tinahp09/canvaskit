@@ -209,6 +209,41 @@ it('never immediately reverses or backtracks from source and target stubs in the
   }
 })
 
+it('uses non-reversing exterior lanes for all cardinal axial target placements', () => {
+  const directions = ['north', 'east', 'south', 'west'] as const
+  const targetPositions = [
+    { x: 0, y: -100 }, { x: 100, y: 0 }, { x: 0, y: 100 }, { x: -100, y: 0 },
+  ]
+  const controller = new ConnectorController()
+
+  for (const targetPosition of targetPositions) {
+    for (const sourcePortId of directions) {
+      for (const targetPortId of directions) {
+        let scene = addRectangle(createScene(), {
+          id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
+        })
+        scene = addRectangle(scene, {
+          id: 'target', position: targetPosition, size: { width: 20, height: 20 }, fill: '#000',
+        })
+        scene = controller.create(scene, {
+          id: 'route', sourceNodeId: 'source', sourcePortId, targetNodeId: 'target', targetPortId, routing: 'orthogonal',
+        })
+
+        const points = controller.route(scene, 'route')
+        const directionsAlongRoute = routeDirections(points)
+        expect(directionsAlongRoute[0]).toBe(sourcePortId)
+        expect(directionsAlongRoute.at(-1)).toBe(oppositeDirection(targetPortId))
+        expect(
+          directionsAlongRoute.every((direction, index) => index === 0 || direction !== oppositeDirection(directionsAlongRoute[index - 1]!)),
+          `${sourcePortId} -> ${targetPortId} at (${targetPosition.x}, ${targetPosition.y}): ${directionsAlongRoute.join(', ')}`,
+        ).toBe(true)
+        expect(routeAvoidsOpenInterior(points, { x: 0, y: 0, width: 20, height: 20 })).toBe(true)
+        expect(routeAvoidsOpenInterior(points, { ...targetPosition, width: 20, height: 20 })).toBe(true)
+      }
+    }
+  }
+})
+
 it('recomputes a connector route from moved node bounds without persisting route points', () => {
   let scene = addRectangle(createScene(), {
     id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
@@ -318,4 +353,15 @@ function routeDirections(points: readonly { x: number; y: number }[]): Array<'no
 
 function oppositeDirection(direction: 'north' | 'east' | 'south' | 'west'): 'north' | 'east' | 'south' | 'west' {
   return ({ north: 'south', east: 'west', south: 'north', west: 'east' } as const)[direction]
+}
+
+function routeAvoidsOpenInterior(points: readonly { x: number; y: number }[], rect: { x: number; y: number; width: number; height: number }): boolean {
+  return points.slice(1).every((point, index) => !segmentCrossesOpenInterior(points[index]!, point, rect))
+}
+
+function segmentCrossesOpenInterior(from: { x: number; y: number }, to: { x: number; y: number }, rect: { x: number; y: number; width: number; height: number }): boolean {
+  const right = rect.x + rect.width
+  const bottom = rect.y + rect.height
+  if (from.x === to.x) return from.x > rect.x && from.x < right && Math.max(Math.min(from.y, to.y), rect.y) < Math.min(Math.max(from.y, to.y), bottom)
+  return from.y > rect.y && from.y < bottom && Math.max(Math.min(from.x, to.x), rect.x) < Math.min(Math.max(from.x, to.x), right)
 }
