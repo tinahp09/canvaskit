@@ -28,6 +28,18 @@ it('selects nodes fully contained by a marquee rectangle', () => {
   expect(nodesInRect(scene, { x: 0, y: 0, width: 60, height: 60 }, 'contain')).toEqual(['rectangle'])
 })
 
+it('defaults existing marquee calls to contain mode', () => {
+  expect(nodesInRect(scene, { x: 40, y: 30, width: 50, height: 50 })).toEqual([])
+})
+
+it('accepts an index in the existing third argument position', () => {
+  const index = new SpatialIndex(scene.nodes)
+  const query = vi.spyOn(index, 'query')
+
+  expect(nodesInRect(scene, { x: 40, y: 30, width: 50, height: 50 }, index)).toEqual([])
+  expect(query).toHaveBeenCalled()
+})
+
 it('selects every node whose bounds intersect an intersect marquee', () => {
   expect(nodesInRect(scene, { x: 40, y: 30, width: 50, height: 50 }, 'intersect')).toEqual(['rectangle'])
   expect(nodesInRect(scene, { x: 90, y: 90, width: 20, height: 20 }, 'intersect')).toEqual(['circle'])
@@ -40,6 +52,21 @@ it('uses an index without changing fully-contained marquee selection', () => {
 
   expect(nodesInRect(scene, marquee, 'contain', index)).toEqual(nodesInRect(scene, marquee, 'contain'))
   expect(query).toHaveBeenCalled()
+})
+
+it('preserves scene order for indexed intersect marquee selection', () => {
+  const overlapping = addRectangle(addRectangle(addRectangle(createScene(), {
+    id: 'first', position: { x: 20, y: 20 }, size: { width: 20, height: 20 }, fill: '#fff',
+  }), {
+    id: 'second', position: { x: 0, y: 0 }, size: { width: 50, height: 50 }, fill: '#fff',
+  }), {
+    id: 'third', position: { x: 40, y: 40 }, size: { width: 20, height: 20 }, fill: '#fff',
+  })
+  const marquee = { x: 15, y: 15, width: 30, height: 30 }
+  const index = new SpatialIndex(overlapping.nodes)
+
+  expect(nodesInRect(overlapping, marquee, 'intersect', index)).toEqual(['first', 'second', 'third'])
+  expect(nodesInRect(overlapping, marquee, 'intersect', index)).toEqual(nodesInRect(overlapping, marquee, 'intersect'))
 })
 
 it('moves named nodes immutably in world coordinates', () => {

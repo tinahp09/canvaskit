@@ -15,7 +15,16 @@ export function hitTestNode(scene: CanvasScene, point: Point, index?: SpatialInd
   })
 }
 
-export function nodesInRect(scene: CanvasScene, rect: Rect, mode: MarqueeMode, index?: SpatialIndex): string[] {
+export function nodesInRect(scene: CanvasScene, rect: Rect, index?: SpatialIndex): string[]
+export function nodesInRect(scene: CanvasScene, rect: Rect, mode: MarqueeMode, index?: SpatialIndex): string[]
+export function nodesInRect(
+  scene: CanvasScene,
+  rect: Rect,
+  modeOrIndex: MarqueeMode | SpatialIndex = 'contain',
+  indexed?: SpatialIndex,
+): string[] {
+  const mode = typeof modeOrIndex === 'string' ? modeOrIndex : 'contain'
+  const index = typeof modeOrIndex === 'string' ? indexed : modeOrIndex
   const candidates = index?.query(rect) ?? scene.nodes
   return candidates.filter((node) => {
     const bounds = nodeBounds(node)
