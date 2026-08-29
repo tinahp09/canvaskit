@@ -13,6 +13,14 @@ export interface PasteSelectionResult {
   ids: string[]
 }
 
+export function cloneClipboard(clipboard: SceneClipboard): SceneClipboard {
+  return {
+    nodes: clipboard.nodes.map((node) => ({ ...node, position: { ...node.position } })),
+    edges: clipboard.edges.map((edge) => ({ ...edge })),
+    groups: clipboard.groups.map((group) => ({ ...group, nodeIds: [...group.nodeIds] })),
+  }
+}
+
 export function removeSelection(scene: CanvasScene, ids: readonly string[]): CanvasScene {
   const removedIds = new Set(ids)
   if (removedIds.size === 0) return scene

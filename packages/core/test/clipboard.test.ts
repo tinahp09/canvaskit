@@ -137,6 +137,29 @@ it('duplicates the selection at a twenty-pixel offset', () => {
   expect(kit.getScene().nodes[1]?.position).toEqual({ x: 20, y: 20 })
 })
 
+it('keeps the internal clipboard unchanged when a returned copy snapshot is mutated', () => {
+  const kit = new CanvasKit({ scene: addRectangle(createScene(), rectangle) })
+  kit.selection.select('a')
+
+  const returnedClipboard = kit.copy()
+  returnedClipboard.nodes[0]!.id = 'caller-modified'
+  returnedClipboard.nodes[0]!.position.x = 999
+
+  expect(kit.paste()).toEqual(['a-copy'])
+  expect(kit.getScene().nodes.at(-1)).toMatchObject({ id: 'a-copy', position: { x: 20, y: 20 } })
+})
+
+it('keeps the internal clipboard unchanged when a returned cut snapshot is mutated', () => {
+  const kit = new CanvasKit({ scene: addRectangle(createScene(), rectangle) })
+  kit.selection.select('a')
+
+  const returnedClipboard = kit.cut()
+  returnedClipboard.nodes[0]!.id = 'caller-modified'
+
+  expect(kit.paste()).toEqual(['a-copy'])
+  expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['a-copy'])
+})
+
 it('cuts selected nodes, cleans dangling relations, and restores the whole scene with one undo', () => {
   let scene = addRectangle(createScene(), rectangle)
   scene = addRectangle(scene, { ...rectangle, id: 'b', position: { x: 30, y: 0 } })

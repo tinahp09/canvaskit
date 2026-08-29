@@ -5,7 +5,7 @@ import { loadScene, serializeScene } from './serialization.js'
 import { ViewportController } from './viewport.js'
 import { SelectionController } from './selection.js'
 import { HistoryController, type SceneCommand } from './history.js'
-import { copySelection, pasteSelection, removeSelection, type SceneClipboard } from './clipboard.js'
+import { cloneClipboard, copySelection, pasteSelection, removeSelection, type SceneClipboard } from './clipboard.js'
 import type { EditorCommand } from './editor-command.js'
 import type { CanvasPlugin } from './plugin.js'
 import { EdgeRegistry, NodeRegistry } from './registry.js'
@@ -97,12 +97,12 @@ export class CanvasKit {
 
   copy(): SceneClipboard {
     this.clipboard = copySelection(this.getScene(), this.selection.get())
-    return this.clipboard
+    return cloneClipboard(this.clipboard)
   }
 
   cut(): SceneClipboard {
     const ids = this.selection.get()
-    if (ids.length === 0) return this.clipboard
+    if (ids.length === 0) return cloneClipboard(this.clipboard)
 
     const before = this.getScene()
     this.clipboard = copySelection(before, ids)
@@ -113,7 +113,7 @@ export class CanvasKit {
       undo: () => before,
     })
     this.selection.clear()
-    return this.clipboard
+    return cloneClipboard(this.clipboard)
   }
 
   paste(offset: Point = { x: 20, y: 20 }): string[] {
