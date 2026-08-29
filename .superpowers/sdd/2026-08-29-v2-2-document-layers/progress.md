@@ -49,3 +49,16 @@
   files / 199 tests, all package typechecks and builds, seven example builds,
   23 browser tests, docs, both Storybook builds, release metadata, package
   smoke, bundle budget, and the spatial-index benchmark passed.
+
+## Final review correction
+
+- SVG export now consumes the shared visible-document projection, so hidden
+  nodes and edges are omitted and nodes serialize in layer paint order.
+- Red/green regression coverage proves hidden-edge filtering, hidden-node
+  omission, and order independent of raw node-array order.
+- Fresh dependency-ordered bundle measurement updated only stale exact docs
+  baselines: Canvas renderer 8,491 B and SVG renderer 3,685 B; budgets remain
+  unchanged and pass.
+- Fresh final verification: 30 Vitest files / 200 tests, seven package
+  typechecks, dependency-ordered package builds, VitePress docs, bundle-size,
+  and 23 basic-canvas browser tests passed.

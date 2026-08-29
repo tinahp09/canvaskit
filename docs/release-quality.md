@@ -24,8 +24,8 @@ unexpected output growth fail locally.
 | `@canvaskit/geometry` | 852 B | 1,100 B |
 | `@canvaskit/plugins` | 1,900 B | 2,400 B |
 | `@canvaskit/react` | 7,197 B | 8,700 B |
-| `@canvaskit/renderer-canvas` | 8,400 B | 9,300 B |
-| `@canvaskit/renderer-svg` | 3,567 B | 4,300 B |
+| `@canvaskit/renderer-canvas` | 8,491 B | 9,300 B |
+| `@canvaskit/renderer-svg` | 3,685 B | 4,300 B |
 | `@canvaskit/vue` | 6,250 B | 7,500 B |
 
 To update a budget intentionally, rebuild first, inspect `pnpm bundle:size`,

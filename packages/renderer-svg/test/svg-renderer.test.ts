@@ -43,6 +43,36 @@ it('escapes every XML special character in node ids and attributes', () => {
   expect(svg).toContain('fill="a&amp;&lt;&gt;&quot;&apos;"')
 })
 
+it('exports only the visible document projection in layer paint order', () => {
+  const svg = renderSVG({
+    version: 3,
+    layers: [
+      { id: 'lower', name: 'Lower', visible: true, locked: false },
+      { id: 'hidden', name: 'Hidden', visible: false, locked: false },
+      { id: 'upper', name: 'Upper', visible: true, locked: false },
+    ],
+    // Deliberately the reverse of paint order: the renderer must not serialize
+    // this raw node-array order for a Scene V3 document.
+    nodes: [
+      { id: 'upper-node', layerId: 'upper', type: 'rectangle', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#00f' },
+      { id: 'hidden-node', layerId: 'hidden', type: 'rectangle', position: { x: 10, y: 0 }, size: { width: 10, height: 10 }, fill: '#f00' },
+      { id: 'lower-node', layerId: 'lower', type: 'rectangle', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#0f0' },
+    ],
+    edges: [
+      { id: 'visible-edge', type: 'line', sourceId: 'lower-node', targetId: 'upper-node' },
+      { id: 'hidden-edge', type: 'line', sourceId: 'lower-node', targetId: 'hidden-node' },
+    ],
+    groups: [],
+    viewport: { x: 0, y: 0, zoom: 1 },
+    metadata: {},
+  })
+
+  expect(svg).toContain('id="visible-edge"')
+  expect(svg).not.toContain('id="hidden-edge"')
+  expect(svg).not.toContain('id="hidden-node"')
+  expect(svg.indexOf('id="lower-node"')).toBeLessThan(svg.indexOf('id="upper-node"'))
+})
+
 it('implements the public renderer contract and retains its rendered SVG', () => {
   const renderer: Renderer = new SvgRenderer()
 

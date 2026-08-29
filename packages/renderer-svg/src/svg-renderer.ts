@@ -1,4 +1,4 @@
-import { nodeCenter, type CanvasScene, type Renderer } from '@canvaskit/core'
+import { nodeCenter, projectVisibleDocument, type CanvasScene, type Renderer } from '@canvaskit/core'
 
 const SVG_WIDTH = 1200
 const SVG_HEIGHT = 720
@@ -30,6 +30,8 @@ function transform(value: number, offset: number, zoom: number): number {
  */
 export function renderSVG(scene: CanvasScene): string {
   const { viewport } = scene
+  const projection = projectVisibleDocument(scene)
+  const nodesById = new Map(projection.nodes.map((node) => [node.id, node]))
   const x = (value: number) => transform(value, viewport.x, viewport.zoom)
   const y = (value: number) => transform(value, viewport.y, viewport.zoom)
   const scale = (value: number) => value * viewport.zoom
@@ -37,9 +39,9 @@ export function renderSVG(scene: CanvasScene): string {
     '<defs><marker id="arrowhead" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 8 4 L 0 8 z" fill="#737B88"/></marker></defs>',
   ]
 
-  for (const edge of scene.edges) {
-    const source = scene.nodes.find((node) => node.id === edge.sourceId)
-    const target = scene.nodes.find((node) => node.id === edge.targetId)
+  for (const edge of projection.edges) {
+    const source = nodesById.get(edge.sourceId)
+    const target = nodesById.get(edge.targetId)
     if (!source || !target) continue
 
     const start = nodeCenter(source)
@@ -58,7 +60,7 @@ export function renderSVG(scene: CanvasScene): string {
     }
   }
 
-  for (const node of scene.nodes) {
+  for (const node of projection.nodes) {
     if (node.type === 'rectangle') {
       elements.push(`<rect${attribute('id', node.id)} x="${x(node.position.x)}" y="${y(node.position.y)}" width="${scale(node.size.width)}" height="${scale(node.size.height)}"${attribute('fill', node.fill)}/>`)
     } else if (node.type === 'circle') {

@@ -72,3 +72,24 @@ used instead.
 No binary GIF/screenshots were created because no project release-media
 convention exists. No package version bump, tag, push, publication, deployment,
 GitHub Release, LinkedIn post, or Dev.to post was performed.
+
+## Final review correction
+
+The final independent review found that `renderSVG` still iterated raw Scene V3
+nodes and edges. A focused SVG regression was written first with visible lower
+and upper layers, a hidden middle layer, a visible edge, and a hidden-endpoint
+edge. It failed because the SVG included `hidden-edge`; the same raw traversal
+would also preserve the wrong node order.
+
+`renderSVG` now consumes `projectVisibleDocument(scene)`, including its ordered
+nodes and filtered edges, and resolves edge endpoints from that projection. The
+focused SVG/Core/Canvas test set passes (5 files, 63 tests). A fresh
+dependency-ordered build measured the final published outputs; the release
+quality table now records the previously stale Canvas renderer baseline as
+8,491 B and the changed SVG renderer baseline as 3,685 B. Both remain within
+their existing budgets.
+
+Final correction verification: full Vitest passed 30 files / 200 tests; all
+seven package typechecks passed; a fresh dependency-ordered build passed; docs
+build passed; bundle-size tests and the final report passed; and basic-canvas
+Playwright passed 23 tests with one worker.
