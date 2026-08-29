@@ -16,6 +16,31 @@ it('replaces and extends selection with scene node ids', () => {
   expect(canvas.selection.get()).toEqual(['circle'])
 })
 
+it('applies selection mutations in scene order', () => {
+  const canvas = canvasWithNodes()
+
+  canvas.selection.set(['circle', 'rectangle'])
+  expect(canvas.selection.get()).toEqual(['rectangle', 'circle'])
+
+  canvas.selection.remove(['rectangle'])
+  expect(canvas.selection.get()).toEqual(['circle'])
+
+  canvas.selection.add(['rectangle'])
+  expect(canvas.selection.get()).toEqual(['rectangle', 'circle'])
+
+  canvas.selection.toggle(['circle', 'rectangle'])
+  expect(canvas.selection.get()).toEqual([])
+})
+
+it('rejects unknown node ids for every selection mutation', () => {
+  const canvas = canvasWithNodes()
+
+  expect(() => canvas.selection.set(['missing'])).toThrow('Unknown node id: missing.')
+  expect(() => canvas.selection.add(['missing'])).toThrow('Unknown node id: missing.')
+  expect(() => canvas.selection.remove(['missing'])).toThrow('Unknown node id: missing.')
+  expect(() => canvas.selection.toggle(['missing'])).toThrow('Unknown node id: missing.')
+})
+
 it('clears and selects all scene nodes', () => {
   const canvas = canvasWithNodes()
   canvas.selection.selectAll()

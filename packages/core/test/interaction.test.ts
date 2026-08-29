@@ -25,7 +25,12 @@ it('uses an index without changing topmost hit-test selection', () => {
 })
 
 it('selects nodes fully contained by a marquee rectangle', () => {
-  expect(nodesInRect(scene, { x: 0, y: 0, width: 60, height: 60 })).toEqual(['rectangle'])
+  expect(nodesInRect(scene, { x: 0, y: 0, width: 60, height: 60 }, 'contain')).toEqual(['rectangle'])
+})
+
+it('selects every node whose bounds intersect an intersect marquee', () => {
+  expect(nodesInRect(scene, { x: 40, y: 30, width: 50, height: 50 }, 'intersect')).toEqual(['rectangle'])
+  expect(nodesInRect(scene, { x: 90, y: 90, width: 20, height: 20 }, 'intersect')).toEqual(['circle'])
 })
 
 it('uses an index without changing fully-contained marquee selection', () => {
@@ -33,7 +38,7 @@ it('uses an index without changing fully-contained marquee selection', () => {
   const query = vi.spyOn(index, 'query')
   const marquee = { x: 0, y: 0, width: 60, height: 60 }
 
-  expect(nodesInRect(scene, marquee, index)).toEqual(nodesInRect(scene, marquee))
+  expect(nodesInRect(scene, marquee, 'contain', index)).toEqual(nodesInRect(scene, marquee, 'contain'))
   expect(query).toHaveBeenCalled()
 })
 

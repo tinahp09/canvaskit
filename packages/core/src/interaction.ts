@@ -3,6 +3,8 @@ import { nodeBounds } from './bounds.js'
 import type { CanvasNode, CanvasScene } from './model.js'
 import { SpatialIndex } from './spatial-index.js'
 
+export type MarqueeMode = 'contain' | 'intersect'
+
 export function hitTestNode(scene: CanvasScene, point: Point, index?: SpatialIndex): CanvasNode | undefined {
   const candidates = index?.query({ x: point.x - 0.5, y: point.y - 0.5, width: 1, height: 1 }) ?? scene.nodes
   return [...candidates].reverse().find((node) => {
@@ -13,11 +15,17 @@ export function hitTestNode(scene: CanvasScene, point: Point, index?: SpatialInd
   })
 }
 
-export function nodesInRect(scene: CanvasScene, rect: Rect, index?: SpatialIndex): string[] {
+export function nodesInRect(scene: CanvasScene, rect: Rect, mode: MarqueeMode, index?: SpatialIndex): string[] {
   const candidates = index?.query(rect) ?? scene.nodes
   return candidates.filter((node) => {
     const bounds = nodeBounds(node)
-    return bounds.x >= rect.x && bounds.y >= rect.y && bounds.x + bounds.width <= rect.x + rect.width && bounds.y + bounds.height <= rect.y + rect.height
+    if (mode === 'contain') {
+      return bounds.x >= rect.x && bounds.y >= rect.y
+        && bounds.x + bounds.width <= rect.x + rect.width
+        && bounds.y + bounds.height <= rect.y + rect.height
+    }
+    return bounds.x < rect.x + rect.width && bounds.x + bounds.width > rect.x
+      && bounds.y < rect.y + rect.height && bounds.y + bounds.height > rect.y
   }).map((node) => node.id)
 }
 
