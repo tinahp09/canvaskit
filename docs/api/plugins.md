@@ -15,8 +15,10 @@ import {
 
 - `createGridPlugin(options)` returns a `GridPlugin`. Its `config` exposes grid display settings for a renderer or UI.
 - `createSnapPlugin(options)` returns a `SnapPlugin`. Call `snap(point)` to align a point to its configured grid.
-- `createKeyboardPlugin()` attaches Core keyboard behavior while installed.
-- `createMinimapPlugin()` returns a `MinimapPlugin`; use `getSceneSummary()` to derive a compact scene summary for your minimap UI.
+- `createKeyboardPlugin(element)` attaches Core keyboard behavior to the supplied
+  focusable `HTMLElement` while installed.
+- `createMinimapPlugin()` returns a `MinimapPlugin`; read its `summary` getter
+  after installation to derive a compact scene summary for your minimap UI.
 
 Grid and snap options are available as `GridPluginOptions` and `SnapPluginOptions`; minimap summaries use `MinimapSceneSummary`.
 

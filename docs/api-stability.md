@@ -32,3 +32,8 @@ The npm package version and scene schema version are independent. Exported scene
 ## Changing a stable API
 
 Every publishable change needs a Changeset. Changes that affect a public contract also update its API reference, runnable example where applicable, and migration guidance. Reviewers must confirm the semantic-version impact and run `pnpm test:release`; the release candidate must complete the [V1 release-candidate checklist](release-candidate-checklist.md).
+
+Consumers moving from a pre-1.0 build should follow [Upgrading to CanvasKit
+V1](upgrading-to-v1.md). Release owners must use the audited [publishing
+runbook](publishing.md) so source-only workspace ranges are rewritten and the
+exact consumer artifacts are reviewed before publication.

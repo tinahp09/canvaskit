@@ -2,6 +2,10 @@
 
 CanvasKit is a TypeScript-first engine for interactive visual editors on an infinite canvas.
 
+CanvasKit `1.0.0` is the first stable release. Package-root exports follow the
+documented `1.x` compatibility policy; start with the [V1 release
+notes](docs/release-notes-v1.md) or [upgrade guide](docs/upgrading-to-v1.md).
+
 ## Current capabilities
 
 CanvasKit provides rectangle, circle, and text scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.

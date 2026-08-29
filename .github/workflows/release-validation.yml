@@ -47,6 +47,12 @@ jobs:
       - name: Build examples
         run: pnpm --filter './examples/*' build
 
+      - name: Install browser for end-to-end tests
+        run: pnpm exec playwright install --with-deps chrome
+
+      - name: Run end-to-end tests
+        run: pnpm test:e2e
+
       - name: Run release quality gates
         run: pnpm verify:release-quality
 

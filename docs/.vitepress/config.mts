@@ -12,6 +12,7 @@ export default defineConfig({
       { text: 'Guide', link: '/getting-started' },
       { text: 'API reference', link: '/api/core' },
       { text: 'Examples', link: '/examples' },
+      { text: 'V1 release', link: '/release-notes-v1' },
     ],
     sidebar: {
       '/api/': [
@@ -44,10 +45,13 @@ export default defineConfig({
         {
           text: 'Release readiness',
           items: [
+            { text: 'CanvasKit 1.0.0', link: '/release-notes-v1' },
+            { text: 'Upgrading to V1', link: '/upgrading-to-v1' },
             { text: 'API stability', link: '/api-stability' },
             { text: 'Release quality gates', link: '/release-quality' },
             { text: 'V1 RC checklist', link: '/release-candidate-checklist' },
             { text: 'Release checklist', link: '/release-checklist' },
+            { text: 'Publishing runbook', link: '/publishing' },
             { text: 'RC feedback', link: '/rc-feedback' },
           ],
         },

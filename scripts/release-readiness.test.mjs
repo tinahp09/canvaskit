@@ -24,6 +24,10 @@ const releaseArtifacts = [
   'docs/rc-feedback.md',
   'docs/release-checklist.md',
   'docs/release-candidate-checklist.md',
+  'docs/release-notes-v1.md',
+  'docs/upgrading-to-v1.md',
+  'docs/publishing.md',
+  '.changeset/phase-nine.md',
   ...packages.map((name) => `docs/api/${name.replace('renderer-', '')}.md`),
 ]
 
@@ -185,6 +189,16 @@ test('rejects a missing release-candidate feedback artifact', async () => {
 
     assert.deepEqual(await verifyStableRelease(root), [
       'Missing release artifact: docs/rc-feedback.md.',
+    ])
+  })
+})
+
+test('rejects a stable release without its V1 release documentation', async () => {
+  await withRepository(async (root) => {
+    await rm(join(root, 'docs', 'release-notes-v1.md'))
+
+    assert.deepEqual(await verifyStableRelease(root), [
+      'Missing release artifact: docs/release-notes-v1.md.',
     ])
   })
 })

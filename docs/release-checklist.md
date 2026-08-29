@@ -10,6 +10,7 @@ Stable `1.x` candidates must also complete the [V1 release-candidate checklist](
 - [ ] Review pending Changesets; each publishable package change has the intended release level.
 - [ ] Verify package names, exports, peer dependencies, and public type declarations.
 - [ ] Review user-facing documentation, examples, migration guidance, and the changelog text.
+- [ ] Review the target-version release notes and upgrade guidance.
 - [ ] Ensure no credentials, generated output, `.pnpm-store`, `.turbo`, `node_modules`, test results, or local phase-plan artifacts are staged.
 
 ## Validate
@@ -31,7 +32,8 @@ Stable `1.x` candidates must also complete the [V1 release-candidate checklist](
 ## Review and publish
 
 - [ ] Collect release-candidate feedback with the [RC feedback template](rc-feedback.md) and resolve or explicitly defer every finding.
-- [ ] Review the final diff and generated package tarballs where publishing is enabled.
+- [ ] Follow the [publishing runbook](publishing.md), review the final diff, and
+      inspect pnpm-generated package tarballs and their consumer manifests.
 - [ ] Apply version changes and update release notes from the approved Changesets.
 - [ ] Tag and publish only after all required checks are green and the release owner approves.
 - [ ] Verify the published package metadata and installation in a fresh consumer project.
