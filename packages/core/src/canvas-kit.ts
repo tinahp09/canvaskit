@@ -1,5 +1,5 @@
 import { screenToWorld, type Point, type Rect } from '@canvaskit/geometry'
-import type { CanvasLayer, CanvasScene } from './model.js'
+import type { CanvasLayer, CanvasScene, CreateConnectorInput } from './model.js'
 import { createScene } from './scene.js'
 import { loadScene, serializeScene } from './serialization.js'
 import { ViewportController } from './viewport.js'
@@ -14,6 +14,7 @@ import { EdgeRegistry, NodeRegistry } from './registry.js'
 import { SceneSubscription, type SceneListener } from './scene-subscription.js'
 import { TransformController, type AlignmentAxis, type DistributionAxis, type TransformConstraints, type TransformHandle } from './transform.js'
 import { addLayer, groupNodes, isNodeInteractive, moveNodesToLayer, reorderLayer as reorderLayers, reorderNodeInLayer, setLayerLocked, setLayerVisibility, ungroupNodes } from './document.js'
+import { ConnectorController } from './connector.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup'
 
@@ -47,6 +48,7 @@ export class CanvasKit {
   private readonly sceneSubscription = new SceneSubscription()
   private readonly history = new HistoryController()
   private clipboard: SceneClipboard = { nodes: [], edges: [], groups: [] }
+  private selectedConnectorId: string | undefined
   private readonly pluginIds = new Set<string>()
   private readonly pluginCleanups: Array<() => void> = []
   viewport: ViewportController
@@ -60,7 +62,10 @@ export class CanvasKit {
     this.viewport = this.createViewport(this.scene)
     this.selection = new SelectionController(
       () => this.getScene(),
-      () => this.notifyScene(),
+      () => {
+        this.selectedConnectorId = undefined
+        this.notifyScene()
+      },
       (id) => this.isNodeInteractive(id),
     )
   }
@@ -71,6 +76,55 @@ export class CanvasKit {
 
   isNodeInteractive(id: string): boolean {
     return isNodeInteractive(this.getScene(), id)
+  }
+
+  /** Creates a connector when both validated endpoint nodes are interactive. */
+  createConnector(input: CreateConnectorInput): boolean {
+    const before = this.getScene()
+    const after = new ConnectorController().create(before, input)
+    const connector = after.connectors.at(-1)!
+    if (!this.isConnectorInteractive(connector, before)) return false
+    return this.executeSceneChange('create connector', before, after)
+  }
+
+  /** Replaces one connector endpoint when the resulting connector remains interactive. */
+  reconnectConnector(id: string, endpoint: 'source' | 'target', nodeId: string, portId: string): boolean {
+    if (endpoint !== 'source' && endpoint !== 'target') throw new Error(`Unknown connector endpoint: "${endpoint}".`)
+    const before = this.getScene()
+    const after = new ConnectorController().reconnect(before, id, {
+      [endpoint]: { nodeId, portId },
+    })
+    const connector = after.connectors.find((candidate) => candidate.id === id)!
+    if (!this.isConnectorInteractive(connector, before)) return false
+    return this.executeSceneChange('reconnect connector', before, after)
+  }
+
+  /** Removes an existing connector as one undoable scene mutation. */
+  removeConnector(id: string): boolean {
+    const before = this.getScene()
+    const after = new ConnectorController().remove(before, id)
+    const changed = this.executeSceneChange('remove connector', before, after)
+    if (changed && this.selectedConnectorId === id) this.selectedConnectorId = undefined
+    return changed
+  }
+
+  /** Selects an interactive connector for selection-aware commands. */
+  selectConnector(id: string): boolean {
+    const connector = this.getScene().connectors.find((candidate) => candidate.id === id)
+    if (!connector) throw new Error(`Unknown connector id: "${id}".`)
+    if (!this.isConnectorInteractive(connector)) return false
+    if (this.selectedConnectorId === id && this.selection.get().length === 0) return false
+    this.selection.clear()
+    this.selectedConnectorId = id
+    this.notifyScene()
+    return true
+  }
+
+  getSelectedConnector(): string | undefined {
+    const connector = this.selectedConnectorId === undefined
+      ? undefined
+      : this.getScene().connectors.find((candidate) => candidate.id === this.selectedConnectorId)
+    return connector && this.isConnectorInteractive(connector) ? connector.id : undefined
   }
 
   setScene(scene: CanvasScene): void {
@@ -90,6 +144,7 @@ export class CanvasKit {
     this.scene = scene
     this.viewport = this.createViewport(scene)
     this.selection.retainExisting()
+    if (this.getSelectedConnector() === undefined) this.selectedConnectorId = undefined
   }
 
   execute(command: SceneCommand): CanvasScene {
@@ -273,8 +328,7 @@ export class CanvasKit {
         this.selection.clear()
         return true
       case 'delete-selection':
-        this.deleteSelection()
-        return true
+        return this.deleteSelection()
       case 'group-selection': return this.groupSelection()
       case 'ungroup-selection': return this.ungroupSelection()
       case 'copy':
@@ -325,13 +379,17 @@ export class CanvasKit {
 
   load(json: string): void { this.setScene(loadScene(json)) }
 
-  deleteSelection(): void {
+  deleteSelection(): boolean {
     const ids = new Set(this.selection.get())
-    if (ids.size === 0) return
+    if (ids.size === 0) {
+      const connectorId = this.getSelectedConnector()
+      return connectorId === undefined ? false : this.removeConnector(connectorId)
+    }
     const before = this.getScene()
     const after = removeSelection(before, [...ids])
     this.execute({ label: 'delete selection', execute: () => after, undo: () => before })
     this.selection.clear()
+    return true
   }
 
   onPointer(listener: (event: CanvasPointerEvent) => void): () => void {
@@ -356,9 +414,17 @@ export class CanvasKit {
   private executeDocument(label: string, operation: (scene: CanvasScene) => CanvasScene): boolean {
     const before = this.getScene()
     const after = operation(before)
+    return this.executeSceneChange(label, before, after)
+  }
+
+  private executeSceneChange(label: string, before: CanvasScene, after: CanvasScene): boolean {
     if (JSON.stringify(before) === JSON.stringify(after)) return false
     this.execute({ label, execute: () => after, undo: () => before })
     return true
+  }
+
+  private isConnectorInteractive(connector: { sourceNodeId: string; targetNodeId: string }, scene = this.getScene()): boolean {
+    return isNodeInteractive(scene, connector.sourceNodeId) && isNodeInteractive(scene, connector.targetNodeId)
   }
 
   private nextGroupId(scene: CanvasScene): string {

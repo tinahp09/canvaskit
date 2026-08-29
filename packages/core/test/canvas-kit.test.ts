@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { addEdge, addGroup, addRectangle, CanvasKit, createScene, importScene, UnsupportedPersistentRotationError, type CanvasLayer, type CanvasScene } from '../src/index.js'
+import { addEdge, addGroup, addLayer, addRectangle, CanvasKit, ConnectorController, createScene, importScene, setLayerLocked, setLayerVisibility, UnsupportedPersistentRotationError, type CanvasLayer, type CanvasScene, type CreateConnectorInput } from '../src/index.js'
 
 type DocumentCommands = {
   createLayer(layer: CanvasLayer): boolean
@@ -10,6 +10,120 @@ type DocumentCommands = {
   reorderSelection(targetIndex: number): boolean
   reorderLayer(layerId: string, targetIndex: number): boolean
 }
+
+const connectorInput: CreateConnectorInput = {
+  id: 'relation',
+  sourceNodeId: 'source',
+  sourcePortId: 'east',
+  targetNodeId: 'target',
+  targetPortId: 'west',
+  routing: 'orthogonal',
+}
+
+function diagramScene(): CanvasScene {
+  let scene = addRectangle(createScene(), {
+    id: 'source', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff',
+  })
+  scene = addRectangle(scene, {
+    id: 'target', position: { x: 100, y: 0 }, size: { width: 20, height: 20 }, fill: '#000',
+  })
+  return addRectangle(scene, {
+    id: 'replacement', position: { x: 200, y: 40 }, size: { width: 20, height: 20 }, fill: '#123',
+  })
+}
+
+it('creates, reconnects, removes, and restores one connector for each history command', () => {
+  const scene = diagramScene()
+  const kit = new CanvasKit({ scene })
+
+  expect(kit.createConnector(connectorInput)).toBe(true)
+  expect(kit.getScene().connectors).toEqual([connectorInput])
+  expect(kit.undo()).toEqual(scene)
+  expect(kit.redo().connectors).toEqual([connectorInput])
+
+  expect(kit.reconnectConnector('relation', 'target', 'replacement', 'north')).toBe(true)
+  expect(kit.getScene().connectors[0]).toMatchObject({ targetNodeId: 'replacement', targetPortId: 'north' })
+  expect(kit.undo().connectors).toEqual([connectorInput])
+  expect(kit.redo().connectors[0]).toMatchObject({ targetNodeId: 'replacement', targetPortId: 'north' })
+
+  expect(kit.removeConnector('relation')).toBe(true)
+  expect(kit.getScene().connectors).toEqual([])
+  expect(kit.undo().connectors[0]).toMatchObject({ targetNodeId: 'replacement', targetPortId: 'north' })
+  expect(kit.redo().connectors).toEqual([])
+})
+
+it('does not create connector history for invalid, noninteractive, unknown, or no-op connector commands', () => {
+  const scene = diagramScene()
+  const kit = new CanvasKit({ scene: setLayerLocked(scene, 'layer-default', true) })
+
+  expect(kit.createConnector(connectorInput)).toBe(false)
+  expect(kit.getScene().connectors).toEqual([])
+  expect(kit.undo()).toEqual(kit.getScene())
+
+  const unlocked = new CanvasKit({ scene })
+  expect(() => unlocked.createConnector({ ...connectorInput, targetPortId: 'missing' })).toThrow('Connector target port "missing" does not exist on node "target".')
+  expect(unlocked.getScene()).toEqual(scene)
+  expect(unlocked.undo()).toEqual(scene)
+  expect(unlocked.removeConnector('missing')).toBe(false)
+  expect(unlocked.getScene()).toEqual(scene)
+
+  expect(unlocked.createConnector(connectorInput)).toBe(true)
+  expect(unlocked.reconnectConnector('relation', 'target', 'target', 'west')).toBe(false)
+  expect(unlocked.undo()).toEqual(scene)
+})
+
+it('rejects reconnecting to hidden or locked nodes without mutating connector history', () => {
+  let scene = new ConnectorController().create(diagramScene(), connectorInput)
+  scene = addLayer(scene, { id: 'restricted', name: 'Restricted', visible: true, locked: false })
+  scene = {
+    ...scene,
+    nodes: scene.nodes.map((node) => node.id === 'replacement' ? { ...node, layerId: 'restricted' } : node),
+  }
+  const kit = new CanvasKit({ scene: setLayerVisibility(scene, 'restricted', false) })
+
+  expect(kit.reconnectConnector('relation', 'target', 'replacement', 'north')).toBe(false)
+  expect(kit.getScene().connectors).toEqual([connectorInput])
+  expect(kit.undo()).toEqual(kit.getScene())
+
+  kit.setScene(setLayerLocked(scene, 'restricted', true))
+  expect(kit.reconnectConnector('relation', 'target', 'replacement', 'north')).toBe(false)
+  expect(kit.getScene().connectors).toEqual([connectorInput])
+})
+
+it('deletes a selected connector through the selection command and keeps node deletion relation-safe', () => {
+  const scene = new ConnectorController().create(diagramScene(), connectorInput)
+  const kit = new CanvasKit({ scene })
+
+  expect(kit.selectConnector('relation')).toBe(true)
+  expect(kit.getSelectedConnector()).toBe('relation')
+  expect(kit.executeCommand('delete-selection')).toBe(true)
+  expect(kit.getScene().connectors).toEqual([])
+  expect(kit.getSelectedConnector()).toBeUndefined()
+  expect(kit.undo()).toEqual(scene)
+
+  kit.selection.select('source')
+  expect(kit.executeCommand('delete-selection')).toBe(true)
+  expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['target', 'replacement'])
+  expect(kit.getScene().connectors).toEqual([])
+  expect(kit.undo()).toEqual(scene)
+})
+
+it('recalculates an orthogonal connector route after a history-backed transform', () => {
+  const routedInput = { ...connectorInput, targetPortId: 'east' }
+  const scene = new ConnectorController().create(diagramScene(), routedInput)
+  const kit = new CanvasKit({ scene })
+  const controller = new ConnectorController()
+  const before = controller.route(kit.getScene(), 'relation')
+
+  kit.selection.select('target')
+  expect(kit.resizeSelection('east', { x: 180, y: 10 })).toBe(true)
+  const after = controller.route(kit.getScene(), 'relation')
+
+  expect(after).not.toEqual(before)
+  expect(kit.getScene().connectors[0]).not.toHaveProperty('points')
+  expect(kit.undo()).toEqual(scene)
+  expect(controller.route(kit.getScene(), 'relation')).toEqual(before)
+})
 
 it('reports pointer coordinates in screen and world space', () => {
   const canvas = new CanvasKit()
