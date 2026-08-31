@@ -181,7 +181,8 @@ it('migrates every version 2 node into the default layer without changing its or
   const scene = importScene('{"version":2,"nodes":[{"id":"first","type":"rectangle","position":{"x":0,"y":0},"size":{"width":10,"height":10},"fill":"#fff"},{"id":"second","type":"rectangle","position":{"x":20,"y":0},"size":{"width":10,"height":10},"fill":"#000"}],"edges":[],"groups":[],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}')
 
   expect(scene).toMatchObject({
-    version: 4,
+    version: 5,
+    guides: [],
     layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }],
   })
   expect(scene.nodes.map((node) => [node.id, node.layerId])).toEqual([
