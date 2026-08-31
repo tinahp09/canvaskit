@@ -1,3 +1,5 @@
 export const PACKAGE_NAME = '@canvaskit/accessibility'
 export { createAccessibilitySnapshot } from './snapshot.js'
 export type { AccessibilityItem, AccessibilitySnapshot } from './snapshot.js'
+export { CanvasAccessibilityMirror } from './mirror.js'
+export type { CanvasAccessibilityMirrorOptions } from './mirror.js'
