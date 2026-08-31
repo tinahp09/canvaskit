@@ -1,7 +1,7 @@
 # Scene migrations
 
 CanvasKit scene documents use a versioned JSON format. The current canonical
-format is version 5.
+format is version 6.
 
 ## Version 1 to version 2
 
@@ -53,3 +53,11 @@ world-coordinate position. Transient smart-snap feedback is never serialized.
 
 Malformed JSON and invalid scene fields throw `InvalidSceneError`. Unsupported
 versions throw `UnsupportedSceneVersionError`, which is an `InvalidSceneError`.
+
+## Version 5 to version 6
+
+V2.5 adds an `assets` registry and structural rich-text runs. V5 imports become
+V6 with `assets: []`; every existing text node gains
+`runs: [{ text: node.text }]`. Existing geometry, layers, connectors, groups,
+guides, viewport, metadata, and ordering are unchanged. New image nodes must
+reference an existing asset and carry a valid normalized crop rectangle.

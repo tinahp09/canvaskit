@@ -9,7 +9,13 @@ The project is available under the [MIT License](LICENSE).
 
 ## Current capabilities
 
-CanvasKit provides rectangle, circle, and text scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
+CanvasKit provides rectangle, circle, text, and asset-backed image scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
+
+## V2.5 rich content & assets
+
+V2.5 adds Scene V6 assets, reusable image nodes, normalized fit/crop metadata,
+and structural text runs. Core remains storage-agnostic: applications supply
+their own upload, fetch, and cache strategy. See the [rich content guide](docs/guides/rich-content-assets.md), [API reference](docs/api/rich-content-assets.md), and [migration notes](docs/migrations.md).
 
 ## V2.3 diagram toolkit
 

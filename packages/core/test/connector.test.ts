@@ -46,8 +46,9 @@ it('migrates a V3 edge into a straight connector with legacy center endpoints', 
   }))
 
   expect(scene).toMatchObject({
-    version: 5,
+    version: 6,
     guides: [],
+    assets: [],
     connectors: [{
       id: 'legacy', sourceNodeId: 'source', sourcePortId: 'center',
       targetNodeId: 'target', targetPortId: 'center', routing: 'straight',

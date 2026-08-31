@@ -60,7 +60,7 @@ it('resizes text from its south handle with a uniform, centered cross-axis expan
   const resized = controller.resize(scene, ['text'], 'south', { x: 20, y: 40 })
 
   expect(resized.nodes[0]).toEqual({
-    id: 'text', layerId: 'layer-default', type: 'text', position: { x: 0, y: 40 }, text: 'hi', fontSize: 20, fill: '#123',
+    id: 'text', layerId: 'layer-default', type: 'text', position: { x: 0, y: 40 }, text: 'hi', runs: [{ text: 'hi' }], fontSize: 20, fill: '#123',
   })
   expect(controller.getOverlay(resized, ['text'])?.bounds).toEqual({ x: 0, y: 20, width: 40, height: 20 })
 })
@@ -111,7 +111,7 @@ it('projects a mixed rectangle and text selection to one uniform corner transfor
   const resized = controller.resize(scene, ['rectangle', 'text'], 'south-east', { x: 100, y: 30 })
 
   expect(resized.nodes[1]).toEqual({
-    id: 'text', layerId: 'layer-default', type: 'text', position: { x: 60, y: 20 }, text: 'hi', fontSize: 20, fill: '#123',
+    id: 'text', layerId: 'layer-default', type: 'text', position: { x: 60, y: 20 }, text: 'hi', runs: [{ text: 'hi' }], fontSize: 20, fill: '#123',
   })
   expect(controller.getOverlay(resized, ['rectangle', 'text'])?.bounds).toEqual({ x: 0, y: 0, width: 100, height: 40 })
   expect(controller.getOverlay(resized, ['rectangle', 'text'])?.handles['south-east']).toEqual({ x: 100, y: 40 })
