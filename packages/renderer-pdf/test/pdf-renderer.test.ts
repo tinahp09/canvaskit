@@ -39,3 +39,12 @@ it('renders visible primitives, routes connectors, and labels image placeholders
   expect(content).toContain(' m\n')
   expect(content).not.toContain('hidden-node')
 })
+
+it('applies persistent node rotation around each node center', () => {
+  const content = new TextDecoder().decode(renderPDF({
+    ...scene,
+    nodes: [{ id: 'rotated', layerId: 'layer-default', type: 'rectangle', position: { x: 20, y: 30 }, size: { width: 100, height: 40 }, fill: '#FF0000', rotation: Math.PI / 2 }],
+  }))
+  expect(content).toContain('q\n1 0 0 1 70 670 cm\n0 -1 1 0 0 0 cm')
+  expect(content).toContain('\nQ\n')
+})

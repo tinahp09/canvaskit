@@ -1,14 +1,14 @@
 {
   "name": "@canvaskit/vue",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "license": "MIT",
   "type": "module",
   "files": ["dist"],
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
   "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc -p tsconfig.json --noEmit" },
   "peerDependencies": {
-    "@canvaskit/core": "workspace:^1.0.0",
-    "@canvaskit/renderer-canvas": "workspace:^1.0.0",
+    "@canvaskit/core": "workspace:^2.0.0",
+    "@canvaskit/renderer-canvas": "workspace:^2.0.0",
     "vue": ">=3.3"
   }
 }

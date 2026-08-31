@@ -9,9 +9,11 @@ import { createBundleSizeReport, verifyBundleBudgets } from './bundle-size.mjs'
 const packages = [
   'core',
   'geometry',
+  'accessibility',
   'plugins',
   'react',
   'renderer-canvas',
+  'renderer-pdf',
   'renderer-svg',
   'vue',
 ]
@@ -47,11 +49,13 @@ test('reports every published package in stable package-name order using runtime
     assert.deepEqual(report, [
       { name: '@canvaskit/core', bytes: 5 },
       { name: '@canvaskit/geometry', bytes: 7 },
-      { name: '@canvaskit/plugins', bytes: 9 },
-      { name: '@canvaskit/react', bytes: 11 },
-      { name: '@canvaskit/renderer-canvas', bytes: 13 },
-      { name: '@canvaskit/renderer-svg', bytes: 15 },
-      { name: '@canvaskit/vue', bytes: 17 },
+      { name: '@canvaskit/accessibility', bytes: 9 },
+      { name: '@canvaskit/plugins', bytes: 11 },
+      { name: '@canvaskit/react', bytes: 13 },
+      { name: '@canvaskit/renderer-canvas', bytes: 15 },
+      { name: '@canvaskit/renderer-pdf', bytes: 17 },
+      { name: '@canvaskit/renderer-svg', bytes: 19 },
+      { name: '@canvaskit/vue', bytes: 21 },
     ])
   })
 })

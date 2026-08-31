@@ -12,11 +12,23 @@ export function hitTestNode(scene: CanvasScene, point: Point, index?: SpatialInd
   return [...interactiveNodesInRenderOrder(scene)].reverse().find((node) => {
     if (candidateIds && !candidateIds.has(node.id)) return false
     if (!isNodeInteractive(scene, node.id)) return false
-    if (node.type === 'rectangle' || node.type === 'image') return rectContainsPoint({ ...node.position, ...node.size }, point)
-    if (node.type === 'circle') return Math.hypot(point.x - node.position.x, point.y - node.position.y) <= node.radius
-    return point.x >= node.position.x && point.x <= node.position.x + node.text.length * node.fontSize
-      && point.y >= node.position.y - node.fontSize && point.y <= node.position.y
+    const localPoint = inverseRotatePoint(point, node)
+    if (node.type === 'rectangle' || node.type === 'image') return rectContainsPoint({ ...node.position, ...node.size }, localPoint)
+    if (node.type === 'circle') return Math.hypot(localPoint.x - node.position.x, localPoint.y - node.position.y) <= node.radius
+    return localPoint.x >= node.position.x && localPoint.x <= node.position.x + node.text.length * node.fontSize
+      && localPoint.y >= node.position.y - node.fontSize && localPoint.y <= node.position.y
   })
+}
+
+function inverseRotatePoint(point: Point, node: CanvasNode): Point {
+  if (!node.rotation) return point
+  const bounds = nodeBounds({ ...node, rotation: undefined })
+  const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+  const cosine = Math.cos(node.rotation)
+  const sine = Math.sin(node.rotation)
+  const x = point.x - center.x
+  const y = point.y - center.y
+  return { x: center.x + x * cosine + y * sine, y: center.y - x * sine + y * cosine }
 }
 
 export function nodesInRect(scene: CanvasScene, rect: Rect, index?: SpatialIndex): string[]

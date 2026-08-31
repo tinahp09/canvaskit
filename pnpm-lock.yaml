@@ -13,16 +13,16 @@ importers:
         version: 1.62.1
       '@storybook/react':
         specifier: ^8.6.18
-        version: 8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18(supports-color@7.2.0))(typescript@5.9.3)
+        version: 8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18)(typescript@5.9.3)
       '@storybook/react-vite':
         specifier: ^8.6.18
-        version: 8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.62.5)(storybook@8.6.18(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3)(vite@7.3.6)
+        version: 8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.62.5)(storybook@8.6.18)(typescript@5.9.3)(vite@7.3.6)
       '@storybook/vue3':
         specifier: ^8.6.18
-        version: 8.6.18(storybook@8.6.18(supports-color@7.2.0))(vue@3.5.41(typescript@5.9.3))
+        version: 8.6.18(storybook@8.6.18)(vue@3.5.41(typescript@5.9.3))
       '@storybook/vue3-vite':
         specifier: ^8.6.18
-        version: 8.6.18(storybook@8.6.18(supports-color@7.2.0))(vite@7.3.6)(vue@3.5.41(typescript@5.9.3))
+        version: 8.6.18(storybook@8.6.18)(vite@7.3.6)(vue@3.5.41(typescript@5.9.3))
       '@testing-library/react':
         specifier: ^16.3.2
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -37,13 +37,13 @@ importers:
         version: 18.3.7(@types/react@18.3.31)
       '@vitejs/plugin-react':
         specifier: ^5.2.0
-        version: 5.2.0(supports-color@7.2.0)(vite@7.3.6)
+        version: 5.2.0(vite@7.3.6)
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@7.3.6)(vue@3.5.41(typescript@5.9.3))
       jsdom:
         specifier: ^26.1.0
-        version: 26.1.0(supports-color@7.2.0)
+        version: 26.1.0
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -52,7 +52,7 @@ importers:
         version: 18.3.1(react@18.3.1)
       storybook:
         specifier: ^8.6.18
-        version: 8.6.18(supports-color@7.2.0)
+        version: 8.6.18
       turbo:
         specifier: ^2.5.0
         version: 2.10.11
@@ -67,7 +67,7 @@ importers:
         version: 1.6.4(@algolia/client-search@5.57.0)(@types/react@18.3.31)(postcss@8.5.26)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.3)(typescript@5.9.3)
       vitest:
         specifier: ^3.2.0
-        version: 3.2.7(jsdom@26.1.0(supports-color@7.2.0))(supports-color@7.2.0)
+        version: 3.2.7(jsdom@26.1.0)
       vue:
         specifier: ^3.5.41
         version: 3.5.41(typescript@5.9.3)
@@ -83,6 +83,9 @@ importers:
 
   examples/basic-canvas:
     dependencies:
+      '@canvaskit/accessibility':
+        specifier: workspace:*
+        version: link:../../packages/accessibility
       '@canvaskit/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -92,6 +95,9 @@ importers:
       '@canvaskit/renderer-canvas':
         specifier: workspace:*
         version: link:../../packages/renderer-canvas
+      '@canvaskit/renderer-pdf':
+        specifier: workspace:*
+        version: link:../../packages/renderer-pdf
       '@canvaskit/renderer-svg':
         specifier: workspace:*
         version: link:../../packages/renderer-svg
@@ -162,10 +168,16 @@ importers:
         specifier: workspace:*
         version: link:../../packages/renderer-canvas
 
+  packages/accessibility:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:^2.0.0
+        version: link:../core
+
   packages/core:
     dependencies:
       '@canvaskit/geometry':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^2.0.0
         version: link:../geometry
 
   packages/geometry: {}
@@ -173,16 +185,16 @@ importers:
   packages/plugins:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^2.0.0
         version: link:../core
 
   packages/react:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^2.0.0
         version: link:../core
       '@canvaskit/renderer-canvas':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^2.0.0
         version: link:../renderer-canvas
       react:
         specifier: '>=18'
@@ -192,28 +204,34 @@ importers:
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@canvaskit/plugins':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^2.0.0
         version: link:../plugins
 
   packages/renderer-canvas:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^2.0.0
+        version: link:../core
+
+  packages/renderer-pdf:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:^2.0.0
         version: link:../core
 
   packages/renderer-svg:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^2.0.0
         version: link:../core
 
   packages/vue:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^2.0.0
         version: link:../core
       '@canvaskit/renderer-canvas':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^2.0.0
         version: link:../renderer-canvas
       vue:
         specifier: '>=3.3'
@@ -772,7 +790,6 @@ packages:
     engines: {node: ^22.20 || ^24.12 || >=25}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@one-ini/wasm@0.1.1':
     resolution: {integrity: sha512-XuySG1E38YScSJoMlqovLru4KTUNSjgVTIjyh7qMX6aNN5HY5Ct5LhRJdxO79JtTzKfzV/bnWpz+zquYrISsvw==}
@@ -835,79 +852,66 @@ packages:
     resolution: {integrity: sha512-r9fGh3eFs3e/udWh5ZjXQtxiYK/xoFxQaYR/cELxac/Udkl5Th+IsFm0CX3Kl9hmUH/we7EoMpjJgeQNnE0+IA==}
     cpu: [arm]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-arm-musleabihf@4.62.5':
     resolution: {integrity: sha512-xdvFdp7OM6KLJviJT2g/YuRSUjnZgGHk4RNgwIbN7X6cPugOucV60DdHXWzsBVCUdrGb6qSXnJQrrAKMmQuj3Q==}
     cpu: [arm]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-arm64-gnu@4.62.5':
     resolution: {integrity: sha512-rRqILAndyzHzP7T9NFQrq+4HFWNhqkqkKur7eiBpfLmz01PO0JKx5Vchu3YllE4YXI/Ftgq/szrDWg5GJ0mI8g==}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-arm64-musl@4.62.5':
     resolution: {integrity: sha512-Gf4X3qVMucayUvux6aXXPgXovocSFUC0rrffDuPI/S2nHhNMhjcZxsrAFYCOF350PRreW1XwzFj3CT/3bKsWCw==}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-loong64-gnu@4.62.5':
     resolution: {integrity: sha512-+s5qA0TNM0qm8PK/a5gt/1Hpx+NV08uSuCncvhziIlQzT6AEV2fnUQo7eBtFTFO0nA9scauvoR2HusfXmQnO4w==}
     cpu: [loong64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-loong64-musl@4.62.5':
     resolution: {integrity: sha512-ybb6QvWwWJCbBWqERpc8K3pYVGIrXlG8MEQ8IIuJY6Y9KdHQxoFoNyfkAOtKn1VHu3KuLidXvwrvGR1mEjeWCw==}
     cpu: [loong64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-ppc64-gnu@4.62.5':
     resolution: {integrity: sha512-nZb1DtnOyhCmYvsC8A2CwOkopVg+IS1+fPUa7rMOAXtNw5+lLCLLPqd6XAiNrGtoQKsbvIBOwsHnBH/3wnb4HQ==}
     cpu: [ppc64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-ppc64-musl@4.62.5':
     resolution: {integrity: sha512-yMbj63Sp89ryrXLWyz+sy+fYD2HpOnMCLGbe4Oa1smclFSUukdtD/BgdiHaAetJNb74URD8U4hM+qG5KVzMEkg==}
     cpu: [ppc64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-riscv64-gnu@4.62.5':
     resolution: {integrity: sha512-mhoan3OJw2kYV/e1jtIdmvUZgyBFeA6zGWsOswmR0Tg19TQbowZuR+JMLID6spbbBN7Zee2ejrgmy3+FxGrIdA==}
     cpu: [riscv64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-riscv64-musl@4.62.5':
     resolution: {integrity: sha512-5ZTLmjWbb1VZdjuyhe83K/8QO0/h11midQCBP+X5OYn32ra7eOBoM0ZqtaY4nkgNsYgmdVhMYPoyVPTjUpHf3w==}
     cpu: [riscv64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-s390x-gnu@4.62.5':
     resolution: {integrity: sha512-m53kG+br6PGxOTmgBEM2DHSDs9RVjsyEbUwjJPJGTFm1grWOG8EKJggDCTb60unD4Tjby8fi7/m9XfkEWasVWg==}
     cpu: [s390x]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-x64-gnu@4.62.5':
     resolution: {integrity: sha512-6RHPJR1g/uvdYU8uXBnfq3nlqyZCP82Fr6NHgfGoaIeSh0YEqnX/x6uA9MmJJbnSH7swqX4F+CkGdUF+6doiQA==}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-x64-musl@4.62.5':
     resolution: {integrity: sha512-xs+OXQtEXgpXT0DmA5+U3qnRZHdCST/5HRQxS8wSPZTUZN/EMWeHuSIod32LQklTBZBV9DyfncKBQ8n5V3eFdw==}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-openbsd-x64@4.62.5':
     resolution: {integrity: sha512-e7hD+sl3s+mcLQDZ8pbudBVsdG6r5yN4w3LqG2TJ8sQHDpblWj5lrJs/3m01Cvlxbt4x13zu5thLjgypgtkYzw==}
@@ -1239,11 +1243,6 @@ packages:
 
   '@volar/typescript@2.4.15':
     resolution: {integrity: sha512-2aZ8i0cqPGjXb4BhkMsPYDkkuc2ZQ6yOpqwAuNwUoncELqoy5fRgOQtLR9gB0g902iS0NAkvpIzs27geVyVdPg==}
-    peerDependencies:
-      typescript: '*'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
 
   '@vue/compiler-core@3.5.41':
     resolution: {integrity: sha512-q0Xtv/F9w2YO/7htQhtiL+Ev2WCJbe5N2hc+XfgyKkEKqWpSxknmT8QOuGdEKNdjPq0c3F7rNpFkTo3Kfrm7pg==}
@@ -2908,20 +2907,20 @@ snapshots:
 
   '@babel/compat-data@7.29.7': {}
 
-  '@babel/core@7.29.7(supports-color@7.2.0)':
+  '@babel/core@7.29.7':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.8
       '@babel/helper-compilation-targets': 7.29.7
-      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
+      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7)
       '@babel/helpers': 7.29.7
       '@babel/parser': 7.29.8
       '@babel/template': 7.29.7
-      '@babel/traverse': 7.29.8(supports-color@7.2.0)
+      '@babel/traverse': 7.29.8
       '@babel/types': 7.29.8
       '@jridgewell/remapping': 2.3.5
       convert-source-map: 2.0.0
-      debug: 4.4.3(supports-color@7.2.0)
+      debug: 4.4.3
       gensync: 1.0.0-beta.2
       json5: 2.2.3
       semver: 6.3.1
@@ -2946,19 +2945,19 @@ snapshots:
 
   '@babel/helper-globals@7.29.7': {}
 
-  '@babel/helper-module-imports@7.29.7(supports-color@7.2.0)':
+  '@babel/helper-module-imports@7.29.7':
     dependencies:
-      '@babel/traverse': 7.29.8(supports-color@7.2.0)
+      '@babel/traverse': 7.29.8
       '@babel/types': 7.29.8
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/helper-module-transforms@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
+  '@babel/helper-module-transforms@7.29.7(@babel/core@7.29.7)':
     dependencies:
-      '@babel/core': 7.29.7(supports-color@7.2.0)
-      '@babel/helper-module-imports': 7.29.7(supports-color@7.2.0)
+      '@babel/core': 7.29.7
+      '@babel/helper-module-imports': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
-      '@babel/traverse': 7.29.8(supports-color@7.2.0)
+      '@babel/traverse': 7.29.8
     transitivePeerDependencies:
       - supports-color
 
@@ -2979,14 +2978,14 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.8
 
-  '@babel/plugin-transform-react-jsx-self@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))':
+  '@babel/plugin-transform-react-jsx-self@7.29.7(@babel/core@7.29.7)':
     dependencies:
-      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
 
-  '@babel/plugin-transform-react-jsx-source@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))':
+  '@babel/plugin-transform-react-jsx-source@7.29.7(@babel/core@7.29.7)':
     dependencies:
-      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
 
   '@babel/runtime@7.29.7': {}
@@ -2997,7 +2996,7 @@ snapshots:
       '@babel/parser': 7.29.8
       '@babel/types': 7.29.8
 
-  '@babel/traverse@7.29.8(supports-color@7.2.0)':
+  '@babel/traverse@7.29.8':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.8
@@ -3005,7 +3004,7 @@ snapshots:
       '@babel/parser': 7.29.8
       '@babel/template': 7.29.7
       '@babel/types': 7.29.8
-      debug: 4.4.3(supports-color@7.2.0)
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
@@ -3391,25 +3390,25 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
-  '@storybook/builder-vite@8.6.18(storybook@8.6.18(supports-color@7.2.0))(vite@7.3.6)':
+  '@storybook/builder-vite@8.6.18(storybook@8.6.18)(vite@7.3.6)':
     dependencies:
-      '@storybook/csf-plugin': 8.6.18(storybook@8.6.18(supports-color@7.2.0))
+      '@storybook/csf-plugin': 8.6.18(storybook@8.6.18)
       browser-assert: 1.2.1
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
       ts-dedent: 2.3.0
       vite: 7.3.6
 
-  '@storybook/components@8.6.18(storybook@8.6.18(supports-color@7.2.0))':
+  '@storybook/components@8.6.18(storybook@8.6.18)':
     dependencies:
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
 
-  '@storybook/core@8.6.18(storybook@8.6.18(supports-color@7.2.0))(supports-color@7.2.0)':
+  '@storybook/core@8.6.18(storybook@8.6.18)':
     dependencies:
-      '@storybook/theming': 8.6.18(storybook@8.6.18(supports-color@7.2.0))
+      '@storybook/theming': 8.6.18(storybook@8.6.18)
       better-opn: 3.0.2
       browser-assert: 1.2.1
       esbuild: 0.21.5
-      esbuild-register: 3.6.0(esbuild@0.21.5)(supports-color@7.2.0)
+      esbuild-register: 3.6.0(esbuild@0.21.5)
       jsdoc-type-pratt-parser: 4.8.0
       process: 0.11.10
       recast: 0.23.21
@@ -3422,40 +3421,40 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@storybook/csf-plugin@8.6.18(storybook@8.6.18(supports-color@7.2.0))':
+  '@storybook/csf-plugin@8.6.18(storybook@8.6.18)':
     dependencies:
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
       unplugin: 1.16.1
 
   '@storybook/global@5.0.0': {}
 
-  '@storybook/manager-api@8.6.18(storybook@8.6.18(supports-color@7.2.0))':
+  '@storybook/manager-api@8.6.18(storybook@8.6.18)':
     dependencies:
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
 
-  '@storybook/preview-api@8.6.18(storybook@8.6.18(supports-color@7.2.0))':
+  '@storybook/preview-api@8.6.18(storybook@8.6.18)':
     dependencies:
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
 
-  '@storybook/react-dom-shim@8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18(supports-color@7.2.0))':
+  '@storybook/react-dom-shim@8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18)':
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
 
-  '@storybook/react-vite@8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.62.5)(storybook@8.6.18(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3)(vite@7.3.6)':
+  '@storybook/react-vite@8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.62.5)(storybook@8.6.18)(typescript@5.9.3)(vite@7.3.6)':
     dependencies:
       '@joshwooding/vite-plugin-react-docgen-typescript': 0.5.0(typescript@5.9.3)(vite@7.3.6)
       '@rollup/pluginutils': 5.4.0(rollup@4.62.5)
-      '@storybook/builder-vite': 8.6.18(storybook@8.6.18(supports-color@7.2.0))(vite@7.3.6)
-      '@storybook/react': 8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18(supports-color@7.2.0))(typescript@5.9.3)
+      '@storybook/builder-vite': 8.6.18(storybook@8.6.18)(vite@7.3.6)
+      '@storybook/react': 8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18)(typescript@5.9.3)
       find-up: 5.0.0
       magic-string: 0.30.21
       react: 18.3.1
-      react-docgen: 7.1.1(supports-color@7.2.0)
+      react-docgen: 7.1.1
       react-dom: 18.3.1(react@18.3.1)
       resolve: 1.22.12
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
       tsconfig-paths: 4.2.0
       vite: 7.3.6
     transitivePeerDependencies:
@@ -3463,31 +3462,31 @@ snapshots:
       - supports-color
       - typescript
 
-  '@storybook/react@8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18(supports-color@7.2.0))(typescript@5.9.3)':
+  '@storybook/react@8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18)(typescript@5.9.3)':
     dependencies:
-      '@storybook/components': 8.6.18(storybook@8.6.18(supports-color@7.2.0))
+      '@storybook/components': 8.6.18(storybook@8.6.18)
       '@storybook/global': 5.0.0
-      '@storybook/manager-api': 8.6.18(storybook@8.6.18(supports-color@7.2.0))
-      '@storybook/preview-api': 8.6.18(storybook@8.6.18(supports-color@7.2.0))
-      '@storybook/react-dom-shim': 8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18(supports-color@7.2.0))
-      '@storybook/theming': 8.6.18(storybook@8.6.18(supports-color@7.2.0))
+      '@storybook/manager-api': 8.6.18(storybook@8.6.18)
+      '@storybook/preview-api': 8.6.18(storybook@8.6.18)
+      '@storybook/react-dom-shim': 8.6.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18)
+      '@storybook/theming': 8.6.18(storybook@8.6.18)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
     optionalDependencies:
       typescript: 5.9.3
 
-  '@storybook/theming@8.6.18(storybook@8.6.18(supports-color@7.2.0))':
+  '@storybook/theming@8.6.18(storybook@8.6.18)':
     dependencies:
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
 
-  '@storybook/vue3-vite@8.6.18(storybook@8.6.18(supports-color@7.2.0))(vite@7.3.6)(vue@3.5.41(typescript@5.9.3))':
+  '@storybook/vue3-vite@8.6.18(storybook@8.6.18)(vite@7.3.6)(vue@3.5.41(typescript@5.9.3))':
     dependencies:
-      '@storybook/builder-vite': 8.6.18(storybook@8.6.18(supports-color@7.2.0))(vite@7.3.6)
-      '@storybook/vue3': 8.6.18(storybook@8.6.18(supports-color@7.2.0))(vue@3.5.41(typescript@5.9.3))
+      '@storybook/builder-vite': 8.6.18(storybook@8.6.18)(vite@7.3.6)
+      '@storybook/vue3': 8.6.18(storybook@8.6.18)(vue@3.5.41(typescript@5.9.3))
       find-package-json: 1.2.0
       magic-string: 0.30.21
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
       typescript: 5.9.3
       vite: 7.3.6
       vue-component-meta: 2.2.12(typescript@5.9.3)
@@ -3495,15 +3494,15 @@ snapshots:
     transitivePeerDependencies:
       - vue
 
-  '@storybook/vue3@8.6.18(storybook@8.6.18(supports-color@7.2.0))(vue@3.5.41(typescript@5.9.3))':
+  '@storybook/vue3@8.6.18(storybook@8.6.18)(vue@3.5.41(typescript@5.9.3))':
     dependencies:
-      '@storybook/components': 8.6.18(storybook@8.6.18(supports-color@7.2.0))
+      '@storybook/components': 8.6.18(storybook@8.6.18)
       '@storybook/global': 5.0.0
-      '@storybook/manager-api': 8.6.18(storybook@8.6.18(supports-color@7.2.0))
-      '@storybook/preview-api': 8.6.18(storybook@8.6.18(supports-color@7.2.0))
-      '@storybook/theming': 8.6.18(storybook@8.6.18(supports-color@7.2.0))
+      '@storybook/manager-api': 8.6.18(storybook@8.6.18)
+      '@storybook/preview-api': 8.6.18(storybook@8.6.18)
+      '@storybook/theming': 8.6.18(storybook@8.6.18)
       '@vue/compiler-core': 3.5.41
-      storybook: 8.6.18(supports-color@7.2.0)
+      storybook: 8.6.18
       ts-dedent: 2.3.0
       type-fest: 2.19.0
       vue: 3.5.41(typescript@5.9.3)
@@ -3641,11 +3640,11 @@ snapshots:
 
   '@ungap/structured-clone@1.3.4': {}
 
-  '@vitejs/plugin-react@5.2.0(supports-color@7.2.0)(vite@7.3.6)':
+  '@vitejs/plugin-react@5.2.0(vite@7.3.6)':
     dependencies:
-      '@babel/core': 7.29.7(supports-color@7.2.0)
-      '@babel/plugin-transform-react-jsx-self': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))
-      '@babel/plugin-transform-react-jsx-source': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))
+      '@babel/core': 7.29.7
+      '@babel/plugin-transform-react-jsx-self': 7.29.7(@babel/core@7.29.7)
+      '@babel/plugin-transform-react-jsx-source': 7.29.7(@babel/core@7.29.7)
       '@rolldown/pluginutils': 1.0.0-rc.3
       '@types/babel__core': 7.20.5
       react-refresh: 0.18.0
@@ -3712,13 +3711,11 @@ snapshots:
 
   '@volar/source-map@2.4.15': {}
 
-  '@volar/typescript@2.4.15(typescript@5.9.3)':
+  '@volar/typescript@2.4.15':
     dependencies:
       '@volar/language-core': 2.4.15
       path-browserify: 1.0.1
       vscode-uri: 3.2.0
-    optionalDependencies:
-      typescript: 5.9.3
 
   '@vue/compiler-core@3.5.41':
     dependencies:
@@ -4030,11 +4027,9 @@ snapshots:
 
   de-indent@1.0.2: {}
 
-  debug@4.4.3(supports-color@7.2.0):
+  debug@4.4.3:
     dependencies:
       ms: 2.1.3
-    optionalDependencies:
-      supports-color: 7.2.0
 
   decimal.js@10.6.0: {}
 
@@ -4138,9 +4133,9 @@ snapshots:
     dependencies:
       es-errors: 1.3.0
 
-  esbuild-register@3.6.0(esbuild@0.21.5)(supports-color@7.2.0):
+  esbuild-register@3.6.0(esbuild@0.21.5):
     dependencies:
-      debug: 4.4.3(supports-color@7.2.0)
+      debug: 4.4.3
       esbuild: 0.21.5
     transitivePeerDependencies:
       - supports-color
@@ -4331,17 +4326,17 @@ snapshots:
 
   html-void-elements@3.0.0: {}
 
-  http-proxy-agent@7.0.2(supports-color@7.2.0):
+  http-proxy-agent@7.0.2:
     dependencies:
       agent-base: 7.1.4
-      debug: 4.4.3(supports-color@7.2.0)
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
-  https-proxy-agent@7.0.6(supports-color@7.2.0):
+  https-proxy-agent@7.0.6:
     dependencies:
       agent-base: 7.1.4
-      debug: 4.4.3(supports-color@7.2.0)
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
@@ -4485,14 +4480,14 @@ snapshots:
 
   jsdoc-type-pratt-parser@4.8.0: {}
 
-  jsdom@26.1.0(supports-color@7.2.0):
+  jsdom@26.1.0:
     dependencies:
       cssstyle: 4.6.0
       data-urls: 5.0.0
       decimal.js: 10.6.0
       html-encoding-sniffer: 4.0.0
-      http-proxy-agent: 7.0.2(supports-color@7.2.0)
-      https-proxy-agent: 7.0.6(supports-color@7.2.0)
+      http-proxy-agent: 7.0.2
+      https-proxy-agent: 7.0.6
       is-potential-custom-element-name: 1.0.1
       nwsapi: 2.2.24
       parse5: 7.3.0
@@ -4784,10 +4779,10 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
-  react-docgen@7.1.1(supports-color@7.2.0):
+  react-docgen@7.1.1:
     dependencies:
-      '@babel/core': 7.29.7(supports-color@7.2.0)
-      '@babel/traverse': 7.29.8(supports-color@7.2.0)
+      '@babel/core': 7.29.7
+      '@babel/traverse': 7.29.8
       '@babel/types': 7.29.8
       '@types/babel__core': 7.20.5
       '@types/babel__traverse': 7.28.0
@@ -4987,9 +4982,9 @@ snapshots:
       es-errors: 1.3.0
       internal-slot: 1.1.0
 
-  storybook@8.6.18(supports-color@7.2.0):
+  storybook@8.6.18:
     dependencies:
-      '@storybook/core': 8.6.18(storybook@8.6.18(supports-color@7.2.0))(supports-color@7.2.0)
+      '@storybook/core': 8.6.18(storybook@8.6.18)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -5154,10 +5149,10 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite-node@3.2.4(supports-color@7.2.0):
+  vite-node@3.2.4:
     dependencies:
       cac: 6.7.14
-      debug: 4.4.3(supports-color@7.2.0)
+      debug: 4.4.3
       es-module-lexer: 1.7.0
       pathe: 2.0.3
       vite: 7.3.6
@@ -5244,7 +5239,7 @@ snapshots:
       - typescript
       - universal-cookie
 
-  vitest@3.2.7(jsdom@26.1.0(supports-color@7.2.0))(supports-color@7.2.0):
+  vitest@3.2.7(jsdom@26.1.0):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.7
@@ -5255,7 +5250,7 @@ snapshots:
       '@vitest/spy': 3.2.7
       '@vitest/utils': 3.2.7
       chai: 5.3.3
-      debug: 4.4.3(supports-color@7.2.0)
+      debug: 4.4.3
       expect-type: 1.4.0
       magic-string: 0.30.21
       pathe: 2.0.3
@@ -5267,10 +5262,10 @@ snapshots:
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
       vite: 7.3.6
-      vite-node: 3.2.4(supports-color@7.2.0)
+      vite-node: 3.2.4
       why-is-node-running: 2.3.0
     optionalDependencies:
-      jsdom: 26.1.0(supports-color@7.2.0)
+      jsdom: 26.1.0
     transitivePeerDependencies:
       - jiti
       - less
@@ -5291,7 +5286,7 @@ snapshots:
 
   vue-component-meta@2.2.12(typescript@5.9.3):
     dependencies:
-      '@volar/typescript': 2.4.15(typescript@5.9.3)
+      '@volar/typescript': 2.4.15
       '@vue/language-core': 2.2.12(typescript@5.9.3)
       path-browserify: 1.0.1
       vue-component-type-helpers: 2.2.12

@@ -13,8 +13,7 @@ remain pending explicit release authorization.
 - History-backed selection resize, alignment, and horizontal/vertical
   distribution commands.
 - Canvas overlay rendering plus a runnable basic-canvas workflow and browser
-  coverage for resize, aspect lock, arrange commands, undo/redo, and the
-  rotation boundary.
+  coverage for resize, aspect lock, arrange commands, undo/redo, and rotation.
 
 ## Architecture
 
@@ -34,7 +33,7 @@ See the [V2.0 architecture note](/architecture/v2-transform-tools).
 ## Persistent rotation
 
 The rotate handle and `rotateSelection` now persist node angles through scene
-JSON, immutable history, Canvas, and SVG output.
+JSON, immutable history, Canvas/SVG/PDF output, and local-space hit testing.
 
 ## Breaking changes
 
@@ -43,9 +42,8 @@ schema.
 
 ## What's next
 
-V2.1 editor workflow is already available. V2.2 will expand the document and
-layers model, including the transform-capable scene work needed for persistent
-rotation.
+V2.1 editor workflow is already available. V2.2 expands the document and
+layers model.
 
 ## Release evidence
 

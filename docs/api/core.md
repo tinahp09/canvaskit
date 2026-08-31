@@ -47,7 +47,7 @@ Create and transform immutable scene values with:
   `distributeSelection(axis)` apply history-backed transforms to the current
   selection. `transform` is the shared `TransformController`; see the
   dedicated [transform tools API](/api/transform-tools) for handle positions,
-  constraints, and the V2.0 preview-only rotation boundary.
+  constraints, and persistent node rotation.
 - `createLayer(layer)`, `moveSelectionToLayer(layerId)`,
   `setLayerVisibility(layerId, visible)` (and the `setLayerVisible` alias),
   `setLayerLocked(layerId, locked)`, `reorderLayer(layerId, targetIndex)`, and
@@ -123,10 +123,9 @@ interaction paths.
 `TransformController` computes `TransformOverlay` values and immutable resize,
 alignment, and distribution scenes. `TransformHandle`, `TransformConstraints`,
 `AlignmentAxis`, and `DistributionAxis` describe its inputs.
-`UnsupportedPersistentRotationError` is thrown for a `rotate` resize request:
-the V2.0 rotation handle is visible for preview/interaction affordance only and
-does not persist into `CanvasScene`. See [Transform tools](/api/transform-tools)
-for the complete contract and examples.
+`rotateSelection(radians)` and a `rotate` resize request persist a node's
+optional `rotation` angle into `CanvasScene`. See
+[Transform tools](/api/transform-tools) for the complete contract and examples.
 
 ## Plugins and renderers
 

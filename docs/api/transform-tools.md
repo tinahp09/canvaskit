@@ -9,7 +9,6 @@ examples.
 import {
   CanvasKit,
   TransformController,
-  UnsupportedPersistentRotationError,
   type AlignmentAxis,
   type DistributionAxis,
   type TransformConstraints,
@@ -36,7 +35,7 @@ bounds and all eight resize handles plus the rotation handle:
 interface TransformOverlay {
   bounds: Rect
   handles: Readonly<Record<TransformHandle, Point>>
-  rotation: number // always 0 in V2.0
+  rotation: number
 }
 ```
 
@@ -47,9 +46,8 @@ renderer.render(scene, kit.selection.get(),
   kit.transform.getOverlay(scene, kit.selection.get()))
 ```
 
-Its dashed box, square resize handles, and rotation stem are display-only. A
-consumer owns hit testing and pointer policy; the basic-canvas example provides
-one such adapter.
+Its dashed box and handles are display-only. A consumer owns hit testing and
+pointer policy; the basic-canvas example provides one such adapter.
 
 ## Resize and constraints
 
@@ -104,4 +102,6 @@ custom command/history layers.
 Nodes may carry an optional `rotation` angle in radians. Use
 `kit.rotateSelection(radians)` or `kit.resizeSelection('rotate', point)`;
 both are immutable, history-backed operations. The basic-canvas rotate handle
-uses a drag transaction and serializes the resulting angle.
+uses a drag transaction and serializes the resulting angle. Canvas, SVG, and
+PDF exports render the angle; Core hit testing uses the inverse transform for
+rotated rectangles, images, and text. Connector ports remain axis-aligned.

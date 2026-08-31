@@ -12,8 +12,8 @@ pointer-to-geometry code.
 Rectangle, circle, and text nodes encode size differently; selections can also
 contain more than one node. Transform commands must remain immutable, preserve
 node subtype fields and graph/group relations, and integrate with undo/redo.
-Meanwhile the scene schema has no durable rotation field, so a visible rotation
-control could not be made serializable and renderer-consistent safely.
+Persistent rotation must be serializable, history-safe, renderer-consistent,
+and selectable through transformed visual geometry.
 
 ## Decision
 
@@ -37,7 +37,7 @@ CanvasKit command/history     app subscriptions / undo-redo
 ```
 
 `TransformController.getOverlay` derives a normalized union rectangle and
-world-space positions for eight resize handles plus a rotation affordance.
+world-space positions for eight resize handles plus a rotation handle.
 `resize` transforms selected nodes from that source rectangle to a constrained
 target rectangle. Rectangle-only selections support non-uniform scale. A
 selection containing a circle or text node uses a uniform projection because
@@ -55,5 +55,6 @@ renderer.
 The centralized controller adds an abstraction and intentionally constrains
 mixed-node resize to uniform scale. In return, it avoids inconsistent geometry
 between node adapters, leaves rendering framework-agnostic, and preserves
-immutable/history semantics. Rotation now uses the same immutable history path
-and is stored with the node for Canvas and SVG rendering.
+immutable/history semantics. Rotation uses the same immutable history path,
+is stored with the node, renders in Canvas/SVG/PDF, and has inverse-transform
+hit testing. Connector ports intentionally remain axis-aligned in V2.

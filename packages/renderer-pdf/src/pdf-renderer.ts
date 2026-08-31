@@ -35,22 +35,39 @@ function renderContent(scene: CanvasScene, width: number, height: number): strin
 
 function renderNode(node: CanvasNode, context: RenderContext): string {
   const { viewport } = context
+  let content: string
   if (node.type === 'rectangle') {
     const origin = pointToPDF(node.position.x, node.position.y + node.size.height, context)
-    return `${color(node.fill)} rg\n${number(origin.x)} ${number(origin.y)} ${number(node.size.width * viewport.zoom)} ${number(node.size.height * viewport.zoom)} re f`
+    content = `${color(node.fill)} rg\n${number(origin.x)} ${number(origin.y)} ${number(node.size.width * viewport.zoom)} ${number(node.size.height * viewport.zoom)} re f`
+    return rotateNodeContent(content, node, context)
   }
   if (node.type === 'circle') {
     const center = pointToPDF(node.position.x, node.position.y, context)
     const radius = node.radius * viewport.zoom
     const curve = radius * 0.5522847498
-    return `${color(node.fill)} rg\n${number(center.x + radius)} ${number(center.y)} m ${number(center.x + radius)} ${number(center.y + curve)} ${number(center.x + curve)} ${number(center.y + radius)} ${number(center.x)} ${number(center.y + radius)} c ${number(center.x - curve)} ${number(center.y + radius)} ${number(center.x - radius)} ${number(center.y + curve)} ${number(center.x - radius)} ${number(center.y)} c ${number(center.x - radius)} ${number(center.y - curve)} ${number(center.x - curve)} ${number(center.y - radius)} ${number(center.x)} ${number(center.y - radius)} c ${number(center.x + curve)} ${number(center.y - radius)} ${number(center.x + radius)} ${number(center.y - curve)} ${number(center.x + radius)} ${number(center.y)} c f`
+    content = `${color(node.fill)} rg\n${number(center.x + radius)} ${number(center.y)} m ${number(center.x + radius)} ${number(center.y + curve)} ${number(center.x + curve)} ${number(center.y + radius)} ${number(center.x)} ${number(center.y + radius)} c ${number(center.x - curve)} ${number(center.y + radius)} ${number(center.x - radius)} ${number(center.y + curve)} ${number(center.x - radius)} ${number(center.y)} c ${number(center.x - radius)} ${number(center.y - curve)} ${number(center.x - curve)} ${number(center.y - radius)} ${number(center.x)} ${number(center.y - radius)} c ${number(center.x + curve)} ${number(center.y - radius)} ${number(center.x + radius)} ${number(center.y - curve)} ${number(center.x + radius)} ${number(center.y)} c f`
+    return rotateNodeContent(content, node, context)
   }
   if (node.type === 'image') {
     const origin = pointToPDF(node.position.x, node.position.y + node.size.height, context)
-    return `0.2 0.24 0.3 RG 1 w\n${number(origin.x)} ${number(origin.y)} ${number(node.size.width * viewport.zoom)} ${number(node.size.height * viewport.zoom)} re S\n${textOperator(`Image: ${node.assetId}`, origin.x + 6, origin.y + 16, 11, '#F4F6F8')}`
+    content = `0.2 0.24 0.3 RG 1 w\n${number(origin.x)} ${number(origin.y)} ${number(node.size.width * viewport.zoom)} ${number(node.size.height * viewport.zoom)} re S\n${textOperator(`Image: ${node.assetId}`, origin.x + 6, origin.y + 16, 11, '#F4F6F8')}`
+    return rotateNodeContent(content, node, context)
   }
   const location = pointToPDF(node.position.x, node.position.y, context)
-  return textOperator(node.text, location.x, location.y, node.fontSize * viewport.zoom, node.fill)
+  return rotateNodeContent(textOperator(node.text, location.x, location.y, node.fontSize * viewport.zoom, node.fill), node, context)
+}
+
+function rotateNodeContent(content: string, node: CanvasNode, context: RenderContext): string {
+  if (!node.rotation) return content
+  const bounds = node.type === 'circle'
+    ? { x: node.position.x - node.radius, y: node.position.y - node.radius, width: node.radius * 2, height: node.radius * 2 }
+    : node.type === 'text'
+      ? { x: node.position.x, y: node.position.y - node.fontSize, width: node.text.length * node.fontSize, height: node.fontSize }
+      : { ...node.position, ...node.size }
+  const center = pointToPDF(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, context)
+  const cosine = Math.cos(-node.rotation)
+  const sine = Math.sin(-node.rotation)
+  return `q\n1 0 0 1 ${number(center.x)} ${number(center.y)} cm\n${number(cosine)} ${number(sine)} ${number(-sine)} ${number(cosine)} 0 0 cm\n1 0 0 1 ${number(-center.x)} ${number(-center.y)} cm\n${content}\nQ`
 }
 
 interface RenderContext { width: number; height: number; viewport: CanvasScene['viewport'] }

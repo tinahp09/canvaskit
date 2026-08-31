@@ -36,5 +36,5 @@ test('keeps exported whiteboard data in a labelled text control during keyboard 
 
   await page.getByRole('button', { name: 'Export whiteboard' }).click()
   await expect(page.getByRole('status')).toHaveText('Whiteboard exported.')
-  await expect(page.getByLabel('Whiteboard JSON')).toHaveValue(/"version":2/)
+  await expect(page.getByLabel('Whiteboard JSON')).toHaveValue(/"version":6/)
 })

@@ -10,6 +10,17 @@ it('hit-tests rectangle and circle nodes', () => {
   expect(hitTestNode(scene, { x: 110, y: 100 })?.id).toBe('circle')
 })
 
+it('hit-tests rotated rectangular nodes in their visual local space', () => {
+  const rotated = addRectangle(createScene(), {
+    id: 'rotated', position: { x: 0, y: 0 }, size: { width: 20, height: 10 }, fill: '#fff', rotation: Math.PI / 2,
+  })
+  const index = new SpatialIndex(rotated.nodes)
+
+  expect(hitTestNode(rotated, { x: 10, y: -4 })?.id).toBe('rotated')
+  expect(hitTestNode(rotated, { x: 10, y: -4 }, index)?.id).toBe('rotated')
+  expect(hitTestNode(rotated, { x: 2, y: 2 })).toBeUndefined()
+})
+
 it('excludes hidden and locked nodes from interactive hit and marquee results', () => {
   let layered = addLayer(createScene(), { id: 'locked', name: 'Locked', visible: true, locked: true })
   layered = addLayer(layered, { id: 'hidden', name: 'Hidden', visible: false, locked: false })

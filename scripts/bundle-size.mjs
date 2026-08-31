@@ -5,9 +5,11 @@ import { pathToFileURL } from 'node:url'
 export const PUBLISHED_PACKAGES = [
   'core',
   'geometry',
+  'accessibility',
   'plugins',
   'react',
   'renderer-canvas',
+  'renderer-pdf',
   'renderer-svg',
   'vue',
 ]
@@ -16,12 +18,14 @@ export const PUBLISHED_PACKAGES = [
 // They are deliberately rounded above the 2026-08-29 baseline to allow small,
 // intentional changes while catching accidental package growth.
 export const BUNDLE_BUDGETS = {
-  core: 68_000,
+  core: 121_500,
   geometry: 1_100,
+  accessibility: 3_000,
   plugins: 2_400,
   react: 8_700,
-  'renderer-canvas': 9_300,
-  'renderer-svg': 4_300,
+  'renderer-canvas': 15_700,
+  'renderer-pdf': 8_100,
+  'renderer-svg': 8_400,
   vue: 7_500,
 }
 

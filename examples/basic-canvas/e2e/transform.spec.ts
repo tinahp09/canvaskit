@@ -40,7 +40,7 @@ async function clickWithMouse(page: Page, screen: { x: number; y: number }) {
 async function exportScene(page: Page) {
   await page.getByRole('button', { name: 'Export scene' }).click()
   return JSON.parse(await page.getByTestId('scene-json').inputValue()) as {
-    nodes: Array<{ id: string; position: { x: number; y: number }; size?: { width: number; height: number } }>
+    nodes: Array<{ id: string; position: { x: number; y: number }; size?: { width: number; height: number }; rotation?: number }>
   }
 }
 
@@ -154,12 +154,14 @@ test('distributes selected nodes through the public command control', async ({ p
   expect(node(await exportScene(page), 'request').position.x).toBe(400)
 })
 
-test('reports deferred persistent rotation without mutating the scene', async ({ page }) => {
+test('persists a rotate-handle drag as one undoable scene change', async ({ page }) => {
   await page.goto('/')
   await dragInWorldSpace(page, { x: 195, y: 215 }, { x: 195, y: 215 })
-  const before = await exportScene(page)
   await dragInWorldSpace(page, { x: 195, y: 156 }, { x: 240, y: 140 })
 
-  await expect(page.getByRole('status')).toHaveText(/Persistent rotation is deferred/i)
-  expect(await exportScene(page)).toEqual(before)
+  expect(node(await exportScene(page), 'webhook').rotation).toBeCloseTo(0.5404, 3)
+  await page.getByRole('button', { name: 'Undo' }).click()
+  expect(node(await exportScene(page), 'webhook').rotation).toBeUndefined()
+  await page.getByRole('button', { name: 'Redo' }).click()
+  expect(node(await exportScene(page), 'webhook').rotation).toBeCloseTo(0.5404, 3)
 })

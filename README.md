@@ -2,9 +2,9 @@
 
 CanvasKit is a TypeScript-first engine for interactive visual editors on an infinite canvas.
 
-CanvasKit `1.0.0` is the first stable release. Package-root exports follow the
-documented `1.x` compatibility policy; start with the [V1 release
-notes](docs/release-notes-v1.md) or [upgrade guide](docs/upgrading-to-v1.md).
+CanvasKit `2.0.0` is the stable editor-foundation release. Package-root exports follow the
+documented compatibility policy; start with the [V2 release notes](docs/release-notes-v2.md)
+and [upgrade guide](docs/upgrading-to-v1.md).
 The project is available under the [MIT License](LICENSE).
 
 ## Current capabilities

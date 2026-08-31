@@ -8,7 +8,7 @@ test('exports a service dependency graph from the labelled architecture canvas',
   const scene = JSON.parse(await page.getByLabel('Architecture JSON').inputValue())
   expect(scene.nodes.filter((node: { type: string }) => node.type === 'rectangle').map((node: { id: string }) => node.id)).toEqual(['gateway', 'catalog', 'orders', 'database'])
   expect(scene.nodes.filter((node: { type: string }) => node.type === 'text').map((node: { text: string }) => node.text)).toEqual(['Gateway', 'Catalog', 'Orders', 'Database'])
-  expect(scene.edges.map((edge: { sourceId: string; targetId: string }) => [edge.sourceId, edge.targetId])).toEqual([
+  expect(scene.connectors.map((connector: { sourceNodeId: string; targetNodeId: string }) => [connector.sourceNodeId, connector.targetNodeId])).toEqual([
     ['gateway', 'catalog'],
     ['gateway', 'orders'],
     ['orders', 'database'],
@@ -51,7 +51,7 @@ test('connects two services selected with an additive pointer gesture', async ({
 
   await page.getByRole('button', { name: 'Export architecture' }).click()
   const scene = JSON.parse(await page.getByLabel('Architecture JSON').inputValue())
-  expect(scene.edges).toContainEqual(expect.objectContaining({ sourceId: 'catalog', targetId: 'database' }))
+  expect(scene.connectors).toContainEqual(expect.objectContaining({ sourceNodeId: 'catalog', targetNodeId: 'database' }))
 })
 
 test('keeps architecture export data in a labelled textarea after keyboard navigation', async ({ page }) => {
@@ -64,5 +64,5 @@ test('keeps architecture export data in a labelled textarea after keyboard navig
 
   await page.getByRole('button', { name: 'Export architecture' }).click()
   await expect(page.getByRole('status')).toHaveText('Architecture exported.')
-  await expect(page.getByLabel('Architecture JSON')).toHaveValue(/"version":2/)
+  await expect(page.getByLabel('Architecture JSON')).toHaveValue(/"version":6/)
 })

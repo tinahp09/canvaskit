@@ -2,13 +2,15 @@ import { access, readdir, readFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const DEFAULT_STABLE_VERSION = '1.0.0'
+const DEFAULT_STABLE_VERSION = '2.0.0'
 const PACKAGE_NAMES = [
   'core',
   'geometry',
+  'accessibility',
   'plugins',
   'react',
   'renderer-canvas',
+  'renderer-pdf',
   'renderer-svg',
   'vue',
 ]
@@ -23,7 +25,9 @@ const RELEASE_ARTIFACTS = [
   'docs/release-checklist.md',
   'docs/release-candidate-checklist.md',
   'docs/release-notes-v1.md',
+  'docs/release-notes-v2.md',
   'docs/upgrading-to-v1.md',
+  'docs/upgrading-to-v2.md',
   'docs/publishing.md',
   'CHANGELOG.md',
   'docs/api/core.md',
@@ -43,7 +47,7 @@ const IGNORED_DIRECTORIES = new Set([
   'node_modules',
   'storybook-static',
 ])
-const PACKAGE_IMPORT = /@canvaskit\/(core|geometry|plugins|react|renderer-canvas|renderer-svg|vue)(\/[\w./-]+)/g
+const PACKAGE_IMPORT = /@canvaskit\/(accessibility|core|geometry|plugins|react|renderer-canvas|renderer-pdf|renderer-svg|vue)(\/[\w./-]+)/g
 
 async function exists(path) {
   try {

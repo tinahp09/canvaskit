@@ -8,7 +8,7 @@ test('shows rectangle and text entity nodes with relationship edges', async ({ p
   const scene = JSON.parse(await page.getByLabel('ERD JSON').inputValue())
   expect(scene.nodes.filter((node: { type: string }) => node.type === 'rectangle')).toHaveLength(3)
   expect(scene.nodes.filter((node: { type: string }) => node.type === 'text')).toHaveLength(3)
-  expect(scene.edges.map((edge: { sourceId: string; targetId: string }) => [edge.sourceId, edge.targetId])).toEqual([
+  expect(scene.connectors.map((connector: { sourceNodeId: string; targetNodeId: string }) => [connector.sourceNodeId, connector.targetNodeId])).toEqual([
     ['customers', 'orders'],
     ['orders', 'order-items'],
   ])
@@ -38,7 +38,7 @@ test('connects two entities selected with an additive pointer gesture', async ({
 
   await page.getByRole('button', { name: 'Export ERD' }).click()
   const scene = JSON.parse(await page.getByLabel('ERD JSON').inputValue())
-  expect(scene.edges).toContainEqual(expect.objectContaining({ sourceId: 'customers', targetId: 'order-items' }))
+  expect(scene.connectors).toContainEqual(expect.objectContaining({ sourceNodeId: 'customers', targetNodeId: 'order-items' }))
 })
 
 test('exposes focus-visible keyboard navigation and live ERD export feedback', async ({ page }) => {
@@ -53,5 +53,5 @@ test('exposes focus-visible keyboard navigation and live ERD export feedback', a
 
   await page.getByRole('button', { name: 'Export ERD' }).click()
   await expect(page.getByRole('status')).toHaveText('ERD exported.')
-  await expect(page.getByLabel('ERD JSON')).toHaveValue(/"version":2/)
+  await expect(page.getByLabel('ERD JSON')).toHaveValue(/"version":6/)
 })

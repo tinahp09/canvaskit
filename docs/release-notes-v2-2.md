@@ -38,11 +38,11 @@ directly must support `layers` and node `layerId`; use the documented migration
 API rather than assuming a flat V2 node model. There is no package-version bump
 or published release in this candidate.
 
-## Persistent rotation boundary
+## Rotation update
 
-The V2.0 rotation handle remains preview-only. V2.2 adds document layers but
-does not serialize a rotation property, so `UnsupportedPersistentRotationError`
-continues to protect scenes from a partial persistent rotation mutation.
+V2 subsequently completed persistent rotation: node angles serialize, participate
+in history, render in Canvas/SVG/PDF, and use local-space hit testing. This
+historical V2.2 snapshot remains compatible with that optional node property.
 
 ## What's next
 

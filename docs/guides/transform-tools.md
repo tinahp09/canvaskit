@@ -65,7 +65,9 @@ palette.
 
 Drag the rotate handle or call `rotateSelection(radians)` for an undoable
 rotation. The angle is saved on the node, preserved in scene JSON, and applied
-by Canvas and SVG renderers.
+by Canvas, SVG, and PDF renderers. Hit testing converts pointers to the node's
+local space first, so rotated rectangles, images, and text remain selectable.
+Connector ports intentionally remain axis-aligned in V2.
 
 ## Demonstration and verification
 
@@ -77,7 +79,7 @@ pnpm --filter @canvaskit/basic-canvas dev
 
 Its V2.0 workflow selects nodes, draws overlay handles, performs a resize
 drag, uses Shift-at-pointerdown for aspect lock, invokes alignment/distribution
-controls, and reports the deferred persistent-rotation boundary. The browser
+controls, and persists rotate-handle drags as one history transaction. The browser
 coverage in `examples/basic-canvas/e2e/transform.spec.ts` verifies those
 interactions, undo/redo, high-zoom handle targeting, and no-console-error
 behavior.

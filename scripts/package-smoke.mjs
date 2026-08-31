@@ -10,7 +10,8 @@ import { PUBLISHED_PACKAGES } from './bundle-size.mjs'
 const execFile = promisify(executeFile)
 const REQUIRED_PACKED_FILES = ['dist/index.d.ts', 'dist/index.js', 'package.json']
 const PUBLISHED_PACKAGE_NAMES = new Set(PUBLISHED_PACKAGES.map((name) => `@canvaskit/${name}`))
-const DEFAULT_STABLE_VERSION = '1.0.0'
+const DEFAULT_STABLE_VERSION = '2.0.0'
+const PNPM_BINARY = process.env.CANVASKIT_PNPM_BIN ?? 'pnpm'
 
 export function verifyPackedPackage(packageName, packedPackage) {
   const errors = []
@@ -77,7 +78,7 @@ export function verifyPackedManifest(packageName, manifest, options = {}) {
 
 async function packPackage(root, packageName, outputDirectory, options) {
   const packageDirectory = resolve(root, 'packages', packageName)
-  const { stdout } = await execFile('pnpm', ['pack', '--json', '--pack-destination', outputDirectory], {
+  const { stdout } = await execFile(PNPM_BINARY, ['pack', '--json', '--pack-destination', outputDirectory], {
     cwd: packageDirectory,
     env: {
       ...process.env,
@@ -162,15 +163,17 @@ async function verifyFreshConsumer(root, outputDirectory, archivePaths) {
   await writeFile(resolve(sourceDirectory, 'index.ts'), [
     "import * as core from '@canvaskit/core'",
     "import * as geometry from '@canvaskit/geometry'",
+    "import * as accessibility from '@canvaskit/accessibility'",
     "import * as plugins from '@canvaskit/plugins'",
     "import * as react from '@canvaskit/react'",
     "import * as canvasRenderer from '@canvaskit/renderer-canvas'",
+    "import * as pdfRenderer from '@canvaskit/renderer-pdf'",
     "import * as svgRenderer from '@canvaskit/renderer-svg'",
     "import * as vue from '@canvaskit/vue'",
     '',
-    'const packageRoots = [core, geometry, plugins, react, canvasRenderer, svgRenderer, vue]',
+    'const packageRoots = [core, geometry, accessibility, plugins, react, canvasRenderer, pdfRenderer, svgRenderer, vue]',
     "if (packageRoots.some((packageRoot) => typeof packageRoot !== 'object')) throw new Error('package root import failed')",
-    "console.log('Imported all 7 packed package roots.')",
+    "console.log('Imported all 9 packed package roots.')",
     '',
   ].join('\n'))
 

@@ -2,10 +2,10 @@
 
 ## Code
 
-- [x] Features complete / feature freeze confirmed (V2.7 Plugin Platform)
-- [x] Tests passing (2026-08-31 candidate: 37 unit files / 249 tests and 10 basic-canvas browser tests)
-- [x] Performance checked (2026-08-31 spatial-index benchmark remains in the verified unit suite; V2.7 adds no hot-path spatial algorithm)
-- [x] Breaking changes documented (no Scene schema change; existing plugins remain compatible)
+- [x] Features complete / feature freeze confirmed (CanvasKit V2)
+- [x] Tests passing (2026-08-31: 37 unit files / 251 tests and 49 browser tests)
+- [x] Performance checked (2026-08-31 spatial-index benchmark and nine package budgets verified; V2 adds no unbounded hot-path algorithm)
+- [x] Breaking changes documented (all public packages move to 2.0.0; Scene V6 remains compatible)
 
 ## Documentation
 
@@ -22,17 +22,17 @@
 
 ## Release
 
-- [ ] Version bumped (V2.7 is a milestone candidate; package publication/versioning needs release-owner approval)
-- [ ] CHANGELOG updated (deferred with the approved package version)
-- [x] Release notes written (candidate: `docs/release-notes-v2-7.md`)
-- [ ] GitHub Release created
+- [x] Version bumped (all nine public packages: 2.0.0)
+- [x] CHANGELOG updated (`CHANGELOG.md`)
+- [x] Release notes written (V2 milestone notes in `docs/release-notes-v2*.md`)
+- [ ] GitHub Release created (pending this authorized publication)
 
 ## Public
 
 - [ ] LinkedIn post published
 - [ ] Dev.to article published when applicable
 
-> V2.7 candidate gates are verified with direct local binaries because the installed
+> V2 release gates are verified with direct local binaries because the installed
 > `pnpm` wrapper attempted an unavailable registry fetch and non-interactive
 > modules-directory purge. Publishing packages, creating a GitHub Release,
 > deploying a demo, and posting publicly require explicit user approval at the

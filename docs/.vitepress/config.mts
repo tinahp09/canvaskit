@@ -28,7 +28,7 @@ export default defineConfig({
       { text: 'Plugin platform API', link: '/api/plugin-platform' },
       { text: 'Editor workflow API', link: '/api/editor-workflow' },
       { text: 'Examples', link: '/examples' },
-      { text: 'V1 release', link: '/release-notes-v1' },
+      { text: 'V2 release', link: '/release-notes-v2' },
     ],
     sidebar: {
       '/api/': [
@@ -78,6 +78,7 @@ export default defineConfig({
           text: 'Release readiness',
           items: [
             { text: 'CanvasKit 1.0.0', link: '/release-notes-v1' },
+            { text: 'CanvasKit 2.0.0', link: '/release-notes-v2' },
             { text: 'CanvasKit V2.0 transform tools', link: '/release-notes-v2' },
             { text: 'CanvasKit V2.2 document & layers', link: '/release-notes-v2-2' },
             { text: 'CanvasKit V2.3 diagram toolkit', link: '/release-notes-v2-3' },
@@ -99,6 +100,7 @@ export default defineConfig({
             { text: 'V2.6 release asset manifest', link: '/release-assets-v2-6' },
             { text: 'V2.7 release asset manifest', link: '/release-assets-v2-7' },
             { text: 'Upgrading to V1', link: '/upgrading-to-v1' },
+            { text: 'Upgrading to V2', link: '/upgrading-to-v2' },
             { text: 'API stability', link: '/api-stability' },
             { text: 'Release quality gates', link: '/release-quality' },
             { text: 'V1 RC checklist', link: '/release-candidate-checklist' },

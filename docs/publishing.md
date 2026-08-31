@@ -1,6 +1,6 @@
 # Publishing runbook
 
-This runbook is for an authorized CanvasKit release owner. It covers the seven
+This runbook is for an authorized CanvasKit release owner. It covers the nine
 public packages and deliberately separates validation, publication, and
 post-publication checks. Never publish from an unreviewed working tree, and
 never place npm credentials or one-time passwords in logs, issues, release
@@ -8,12 +8,13 @@ notes, or shell history.
 
 ## Release scope and order
 
-Publish one version across the package suite. For `1.0.0`, publish in dependency
+Publish one version across the package suite. For `2.0.0`, publish in dependency
 order:
 
 1. `@canvaskit/geometry`
 2. `@canvaskit/core`
-3. `@canvaskit/renderer-canvas`, `@canvaskit/renderer-svg`, and
+3. `@canvaskit/renderer-canvas`, `@canvaskit/renderer-svg`,
+   `@canvaskit/renderer-pdf`, `@canvaskit/accessibility`, and
    `@canvaskit/plugins`
 4. `@canvaskit/react` and `@canvaskit/vue`
 
@@ -28,13 +29,13 @@ manifest still contains a `workspace:` range.
   commit.
 - Confirm control of the `@canvaskit` npm scope, public-package permission,
   registry URL, and required npm two-factor-authentication method.
-- Confirm `1.0.0` does not already exist for any package. Published npm versions
+- Confirm `2.0.0` does not already exist for any package. Published npm versions
   are immutable; never attempt to overwrite one.
 - Use Node `22.22.2` and pnpm `10.0.0`, matching release CI.
 - Start from the reviewed commit with no staged or unstaged files, generated
   output, local caches, credentials, or phase-plan artifacts.
 
-The Phase 9 metadata commit already sets every publishable manifest to `1.0.0`.
+The V2 release metadata sets every publishable manifest to `2.0.0`.
 Phase 1 through Phase 9 Changesets have been consumed into `CHANGELOG.md` and
 the V1 release notes and removed from `.changeset/`. For later releases, apply
 every pending Changeset to the package versions and lockfile, incorporate its
@@ -44,7 +45,7 @@ consumed Markdown file. The final release audit rejects pending Changesets.
 For a later stable candidate, set `CANVASKIT_RELEASE_VERSION` to the exact
 target version when running release-readiness and package smoke commands. The
 audits derive source workspace ranges and packed consumer ranges from that
-version instead of assuming `1.0.0`.
+version instead of assuming `2.0.0`.
 
 ## 2. Reproduce the release gates
 
@@ -74,9 +75,9 @@ clean install.
 
 `pnpm publish:dry-run` first builds the clean workspace, then creates temporary
 tarballs, checks required JavaScript and declaration entry points, inspects each
-packed manifest, installs all seven archives into a new consumer, typechecks and
+packed manifest, installs all nine archives into a new consumer, typechecks and
 builds that consumer, imports every package root, and removes all temporary
-output. For the release-owner review, pack all seven packages into a new
+output. For the release-owner review, pack all nine packages into a new
 temporary directory and retain the checksum report with the release evidence:
 
 ```sh
@@ -85,6 +86,8 @@ pnpm --filter @canvaskit/geometry pack --pack-destination "$CANVASKIT_PACK_DIR"
 pnpm --filter @canvaskit/core pack --pack-destination "$CANVASKIT_PACK_DIR"
 pnpm --filter @canvaskit/renderer-canvas pack --pack-destination "$CANVASKIT_PACK_DIR"
 pnpm --filter @canvaskit/renderer-svg pack --pack-destination "$CANVASKIT_PACK_DIR"
+pnpm --filter @canvaskit/renderer-pdf pack --pack-destination "$CANVASKIT_PACK_DIR"
+pnpm --filter @canvaskit/accessibility pack --pack-destination "$CANVASKIT_PACK_DIR"
 pnpm --filter @canvaskit/plugins pack --pack-destination "$CANVASKIT_PACK_DIR"
 pnpm --filter @canvaskit/react pack --pack-destination "$CANVASKIT_PACK_DIR"
 pnpm --filter @canvaskit/vue pack --pack-destination "$CANVASKIT_PACK_DIR"
@@ -100,7 +103,7 @@ For every tarball, confirm:
   present;
 - the root export maps JavaScript and declarations correctly;
 - no dependency field contains a `workspace:` range; and
-- internal dependency and peer ranges resolve to `^1.0.0`.
+- internal dependency and peer ranges resolve to `^2.0.0`.
 
 Install the tarballs in a new consumer project with the required framework
 peers, import every package root, and run a production typecheck/build before
@@ -116,12 +119,14 @@ pnpm --filter @canvaskit/geometry publish --access public
 pnpm --filter @canvaskit/core publish --access public
 pnpm --filter @canvaskit/renderer-canvas publish --access public
 pnpm --filter @canvaskit/renderer-svg publish --access public
+pnpm --filter @canvaskit/renderer-pdf publish --access public
+pnpm --filter @canvaskit/accessibility publish --access public
 pnpm --filter @canvaskit/plugins publish --access public
 pnpm --filter @canvaskit/react publish --access public
 pnpm --filter @canvaskit/vue publish --access public
 ```
 
-Do not create or push `v1.0.0` until every registry and consumer check in the
+Do not create or push `v2.0.0` until every registry and consumer check in the
 next section passes. Record each registry response and stop if any package
 fails; do not rerun a successful publish or bypass pnpm's git checks.
 
@@ -133,8 +138,8 @@ versions into a brand-new project and repeat the package-root import and
 production build smoke test. Confirm the documentation and release notes point
 to the same version and known V1 boundaries.
 
-Only after all seven packages and the fresh consumer pass may the release owner
-create and push the signed or annotated `v1.0.0` tag and publish the release
+Only after all nine packages and the fresh consumer pass may the release owner
+create and push the signed or annotated `v2.0.0` tag and publish the release
 announcement.
 
 ## Failure and recovery
@@ -144,7 +149,7 @@ announcement.
   versions exist, and have the release owner decide whether the identical
   remaining artifacts may continue. Do not create the git tag while the suite
   is partial.
-- **Bad published artifact:** do not overwrite `1.0.0`. Deprecate the affected
+- **Bad published artifact:** do not overwrite `2.0.0`. Deprecate the affected
   version when appropriate, prepare a reviewed patch release, and communicate
   user impact and mitigation.
 - **Credential or security exposure:** stop, revoke or rotate the credential,
