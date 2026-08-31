@@ -80,16 +80,21 @@ export class CanvasRenderer {
     }
 
     for (const node of visibleNodes) {
-      this.context.fillStyle = node.fill
       const x = node.position.x * viewport.zoom + viewport.x
       const y = node.position.y * viewport.zoom + viewport.y
       if (node.type === 'rectangle') {
+        this.context.fillStyle = node.fill
         this.context.fillRect(x, y, node.size.width * viewport.zoom, node.size.height * viewport.zoom)
       } else if (node.type === 'circle') {
+        this.context.fillStyle = node.fill
         this.context.beginPath()
         this.context.arc(x, y, node.radius * viewport.zoom, 0, Math.PI * 2)
         this.context.fill()
+      } else if (node.type === 'image') {
+        this.context.fillStyle = '#334155'
+        this.context.fillRect(x, y, node.size.width * viewport.zoom, node.size.height * viewport.zoom)
       } else {
+        this.context.fillStyle = node.fill
         this.context.font = `${node.fontSize * viewport.zoom}px sans-serif`
         this.context.fillText(node.text, x, y)
       }
@@ -97,7 +102,7 @@ export class CanvasRenderer {
 
     for (const node of visibleNodes) {
       if (!selectedNodeIds.includes(node.id)) continue
-      const point = node.type === 'rectangle'
+      const point = node.type === 'rectangle' || node.type === 'image'
         ? { x: node.position.x + node.size.width, y: node.position.y + node.size.height / 2 }
         : node.type === 'circle'
           ? { x: node.position.x + node.radius, y: node.position.y }

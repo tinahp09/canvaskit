@@ -36,6 +36,7 @@ function transform(value: number, offset: number, zoom: number): number {
 export function renderSVG(scene: CanvasScene, selectedConnectorId?: string): string {
   const { viewport } = scene
   const projection = projectVisibleDocument(scene)
+  const assetsById = new Map((scene.assets ?? []).map((asset) => [asset.id, asset]))
   const nodesById = new Map(projection.nodes.map((node) => [node.id, node]))
   const x = (value: number) => transform(value, viewport.x, viewport.zoom)
   const y = (value: number) => transform(value, viewport.y, viewport.zoom)
@@ -84,6 +85,9 @@ export function renderSVG(scene: CanvasScene, selectedConnectorId?: string): str
       elements.push(`<rect${attribute('id', node.id)} x="${x(node.position.x)}" y="${y(node.position.y)}" width="${scale(node.size.width)}" height="${scale(node.size.height)}"${attribute('fill', node.fill)}/>`)
     } else if (node.type === 'circle') {
       elements.push(`<circle${attribute('id', node.id)} cx="${x(node.position.x)}" cy="${y(node.position.y)}" r="${scale(node.radius)}"${attribute('fill', node.fill)}/>`)
+    } else if (node.type === 'image') {
+      const asset = assetsById.get(node.assetId)
+      if (asset) elements.push(`<image${attribute('id', node.id)} href="${escapeXML(asset.source)}" x="${x(node.position.x)}" y="${y(node.position.y)}" width="${scale(node.size.width)}" height="${scale(node.size.height)}" preserveAspectRatio="${node.fit === 'fill' ? 'none' : node.fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'}"/>`)
     } else {
       elements.push(`<text${attribute('id', node.id)} x="${x(node.position.x)}" y="${y(node.position.y)}"${attribute('fill', node.fill)} font-size="${scale(node.fontSize)}">${escapeXML(node.text)}</text>`)
     }

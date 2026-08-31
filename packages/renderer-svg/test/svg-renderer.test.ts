@@ -108,3 +108,14 @@ it('does not export active-looking port affordances for locked nodes', () => {
 
   expect(svg).not.toContain('id="port-locked-east"')
 })
+
+it('serializes a V6 image node with an escaped asset source and fit mode', () => {
+  const svg = renderSVG({
+    version: 6,
+    nodes: [{ id: 'logo-node', layerId: 'layer-default', type: 'image', position: { x: 20, y: 30 }, size: { width: 160, height: 80 }, assetId: 'logo', fit: 'cover', crop: { x: 0, y: 0, width: 1, height: 1 } }],
+    connectors: [], groups: [], guides: [], assets: [{ id: 'logo', kind: 'image', source: 'https://cdn.test/a?x=1&y=2', mimeType: 'image/png', width: 80, height: 40 }],
+    layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }], viewport: { x: 0, y: 0, zoom: 1 }, metadata: {},
+  })
+
+  expect(svg).toContain('<image id="logo-node" href="https://cdn.test/a?x=1&amp;y=2" x="20" y="30" width="160" height="80" preserveAspectRatio="xMidYMid slice"/>')
+})

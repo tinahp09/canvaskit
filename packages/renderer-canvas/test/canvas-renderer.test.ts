@@ -161,6 +161,17 @@ it('draws active horizontal and vertical smart-layout guides in viewport coordin
   expect(lineTo).toHaveBeenCalledWith(800, 180)
 })
 
+it('draws an image node as a viewport-transformed asset box', () => {
+  const fillRect = vi.fn()
+  const context = { clearRect: vi.fn(), fillRect, beginPath: vi.fn(), arc: vi.fn(), fill: vi.fn(), fillStyle: '' } as unknown as CanvasRenderingContext2D
+  const element = { getContext: () => context, width: 800, height: 600 } as unknown as HTMLCanvasElement
+  new CanvasRenderer(element).render({
+    version: 6, nodes: [{ id: 'logo-node', layerId: 'layer-default', type: 'image', position: { x: 20, y: 30 }, size: { width: 160, height: 80 }, assetId: 'logo', fit: 'contain', crop: { x: 0, y: 0, width: 1, height: 1 } }],
+    connectors: [], groups: [], guides: [], assets: [{ id: 'logo', kind: 'image', source: 'data:image/png;base64,AA==', mimeType: 'image/png', width: 80, height: 40 }], layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }], viewport: { x: 10, y: 20, zoom: 2 }, metadata: {},
+  })
+  expect(fillRect).toHaveBeenCalledWith(50, 80, 320, 160)
+})
+
 it('draws an arrowhead and a Bezier edge', () => {
   const moveTo = vi.fn(); const lineTo = vi.fn(); const bezierCurveTo = vi.fn()
   const context = { clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, arc: vi.fn(), bezierCurveTo, stroke: vi.fn(), fill: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1 } as unknown as CanvasRenderingContext2D
