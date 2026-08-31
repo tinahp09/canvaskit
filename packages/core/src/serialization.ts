@@ -1,4 +1,4 @@
-import { SCENE_VERSION, type CanvasConnector, type CanvasLayer, type CanvasNode, type CanvasScene, type RectangleNode } from './model.js'
+import { SCENE_VERSION, type CanvasConnector, type CanvasGuide, type CanvasLayer, type CanvasNode, type CanvasScene, type RectangleNode } from './model.js'
 import { InvalidSceneError, migrateScene, UnsupportedSceneVersionError } from './migrations.js'
 import { findNodePort } from './ports.js'
 
@@ -24,9 +24,9 @@ export const loadScene = importScene
 function parseCanonicalScene(value: unknown): CanvasScene {
   if (!isRecord(value)) throw new InvalidSceneError('Scene must be an object.')
   if (value.version !== SCENE_VERSION) throw new UnsupportedSceneVersionError(value.version)
-  if (Object.hasOwn(value, 'edges')) throw new InvalidSceneError('Version 4 scenes must use connectors instead of edges.')
+  if (Object.hasOwn(value, 'edges')) throw new InvalidSceneError('Version 5 scenes must use connectors instead of edges.')
   if (!Array.isArray(value.nodes)) throw new InvalidSceneError('Scene nodes must be an array.')
-  if (!Array.isArray(value.connectors) || !Array.isArray(value.groups) || !Array.isArray(value.layers)) throw new InvalidSceneError('Scene graph state is invalid.')
+  if (!Array.isArray(value.connectors) || !Array.isArray(value.groups) || !Array.isArray(value.layers) || !Array.isArray(value.guides)) throw new InvalidSceneError('Scene graph state is invalid.')
   if (!isTransform(value.viewport)) throw new InvalidSceneError('Scene viewport is invalid.')
   if (!isRecord(value.metadata)) throw new InvalidSceneError('Scene metadata must be an object.')
 
@@ -36,6 +36,7 @@ function parseCanonicalScene(value: unknown): CanvasScene {
     connectors: value.connectors.map(parseConnector),
     groups: value.groups.map(parseGroup),
     layers: value.layers.map(parseLayer),
+    guides: value.guides.map(parseGuide),
     viewport: value.viewport,
     metadata: value.metadata,
   }
@@ -43,6 +44,10 @@ function parseCanonicalScene(value: unknown): CanvasScene {
   return scene
 }
 function parseLayer(value: unknown): CanvasLayer { if (!isRecord(value) || typeof value.id !== 'string' || typeof value.name !== 'string' || typeof value.visible !== 'boolean' || typeof value.locked !== 'boolean') throw new InvalidSceneError('Scene contains an invalid layer.'); return { id: value.id, name: value.name, visible: value.visible, locked: value.locked } }
+function parseGuide(value: unknown): CanvasGuide {
+  if (!isRecord(value) || typeof value.id !== 'string' || !['horizontal', 'vertical'].includes(String(value.axis)) || typeof value.position !== 'number' || !Number.isFinite(value.position)) throw new InvalidSceneError('Scene contains an invalid guide.')
+  return { id: value.id, axis: value.axis as CanvasGuide['axis'], position: value.position }
+}
 function parseConnector(value: unknown): CanvasConnector {
   if (!isRecord(value) || typeof value.id !== 'string'
     || typeof value.sourceNodeId !== 'string' || typeof value.sourcePortId !== 'string'
@@ -100,6 +105,7 @@ function assertCanonicalReferences(scene: CanvasScene): void {
   const nodeIds = uniqueIds(scene.nodes, 'node')
   uniqueIds(scene.connectors, 'connector')
   uniqueIds(scene.groups, 'group')
+  uniqueIds(scene.guides, 'guide')
   const layerIds = uniqueIds(scene.layers, 'layer')
   if (layerIds.size === 0) throw new InvalidSceneError('Scene must contain at least one layer.')
   if (scene.nodes.some((node) => !layerIds.has(node.layerId))) throw new InvalidSceneError('Scene nodes must reference existing layers.')

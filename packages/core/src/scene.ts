@@ -10,6 +10,7 @@ export function createScene(): CanvasScene {
     connectors: [],
     groups: [],
     layers: [{ id: DEFAULT_LAYER_ID, name: 'Default', visible: true, locked: false }],
+    guides: [],
     viewport: { x: 0, y: 0, zoom: 1 },
     metadata: {},
   }

@@ -1,6 +1,6 @@
 import type { Point, Size, ViewportTransform } from '@canvaskit/geometry'
 
-export const SCENE_VERSION = 4 as const
+export const SCENE_VERSION = 5 as const
 export const DEFAULT_LAYER_ID = 'layer-default'
 
 export interface RectangleNode {
@@ -29,6 +29,8 @@ export interface CanvasConnector {
 }
 export interface CanvasGroup { id: string; nodeIds: string[] }
 export interface CanvasLayer { id: string; name: string; visible: boolean; locked: boolean }
+export type GuideAxis = 'horizontal' | 'vertical'
+export interface CanvasGuide { id: string; axis: GuideAxis; position: number }
 
 export interface CanvasScene {
   version: typeof SCENE_VERSION
@@ -36,6 +38,7 @@ export interface CanvasScene {
   connectors: CanvasConnector[]
   groups: CanvasGroup[]
   layers: CanvasLayer[]
+  guides: CanvasGuide[]
   viewport: ViewportTransform
   metadata: Record<string, unknown>
 }

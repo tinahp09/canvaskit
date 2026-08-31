@@ -39,7 +39,11 @@ export function migrateScene(value: unknown): unknown {
   if (scene.version === 3) {
     const connectors = migrateLegacyEdges(scene.edges)
     const { edges: _legacyEdges, ...withoutEdges } = scene
-    scene = { ...withoutEdges, version: SCENE_VERSION, connectors }
+    scene = { ...withoutEdges, version: 4, connectors }
+  }
+
+  if (scene.version === 4) {
+    scene = { ...scene, version: SCENE_VERSION, guides: [] }
   }
 
   if (scene.version === SCENE_VERSION) return scene
