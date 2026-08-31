@@ -61,20 +61,11 @@ The example app exposes representative align and distribution controls. A
 production UI can use its own toolbar, menu, keyboard mapping, or command
 palette.
 
-## Rotation is preview-only
+## Persistent rotation
 
-V2.0 renders a rotation affordance so applications can show a consistent
-transform overlay. It does **not** persist a rotation. The node schema,
-serializers, SVG/Canvas renderers, and export pipeline do not yet share a
-rotation contract. Thus `overlay.rotation` is `0` and requesting
-`resizeSelection('rotate', point)` throws
-`UnsupportedPersistentRotationError` without changing the scene.
-
-Show application feedback or a transient custom preview when the handle is
-pressed, then leave document state untouched. Persistent rotation is planned
-for V2.2, alongside a transform-capable scene model. Do not store an ad-hoc
-`rotation` field in V2.0 scene JSON: import/serialization compatibility would
-not be guaranteed.
+Drag the rotate handle or call `rotateSelection(radians)` for an undoable
+rotation. The angle is saved on the node, preserved in scene JSON, and applied
+by Canvas and SVG renderers.
 
 ## Demonstration and verification
 

@@ -61,12 +61,9 @@ V2.0 adds a headless transform pipeline for selection bounds, eight resize
 handles, min-size and aspect-ratio constraints, multi-selection alignment and
 distribution, and a Canvas overlay. Begin with the [transform tools
 guide](docs/guides/transform-tools.md) or [API
-reference](docs/api/transform-tools.md). The overlay includes a rotation handle,
-but persistent rotation is deliberately **preview-only** in V2.0: the current
-scene schema and serializers do not store a rotation value, so asking Core to
-persist it throws `UnsupportedPersistentRotationError` without changing the
-scene. V2.2 introduces document layers but does not add a rotation field, so
-persistent rotation remains deferred to a later transform-capable scene model.
+reference](docs/api/transform-tools.md). The overlay includes a persistent
+rotation handle; rotation is history-backed, serialized with the node, and
+rendered by Canvas and SVG.
 
 ## V2.1 editor workflow
 

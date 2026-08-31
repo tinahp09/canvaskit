@@ -31,13 +31,10 @@ See the [V2.0 architecture note](/architecture/v2-transform-tools).
 - Invalid, empty, or degenerate selections are safe no-ops for non-rotation
   resize commands.
 
-## Rotation boundary
+## Persistent rotation
 
-The rotation handle is an intentional preview affordance only. Persistent
-rotation is not in the V2.0 scene schema or serializer/rendering contract;
-`resizeSelection('rotate', point)` throws
-`UnsupportedPersistentRotationError` without mutating the scene. Durable
-rotation is deferred to V2.2.
+The rotate handle and `rotateSelection` now persist node angles through scene
+JSON, immutable history, Canvas, and SVG output.
 
 ## Breaking changes
 

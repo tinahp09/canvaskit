@@ -99,24 +99,9 @@ lower-level `TransformController.align(scene, ids, axis)` and
 `TransformController.distribute(scene, ids, axis)` return immutable scenes for
 custom command/history layers.
 
-## Rotation boundary in V2.0
+## Persistent rotation
 
-The `rotate` handle is intentionally preview-only in V2.0. `CanvasScene` has
-no rotation property and its renderer and serializers therefore cannot make
-rotation durable. `overlay.rotation` is always `0`; Core does not calculate or
-persist a transformed angle. Calling a persistent rotation operation is an
-explicit error, rather than a partial mutation:
-
-```ts
-try {
-  kit.resizeSelection('rotate', { x: 320, y: 80 })
-} catch (error) {
-  if (error instanceof UnsupportedPersistentRotationError) {
-    // Keep the scene unchanged; render application-specific preview feedback.
-  }
-}
-```
-
-The basic-canvas demo displays this deferred-state message when its visible
-rotation handle is pressed. Persistent node rotation, scene serialization, and
-renderer support are deferred together to V2.2.
+Nodes may carry an optional `rotation` angle in radians. Use
+`kit.rotateSelection(radians)` or `kit.resizeSelection('rotate', point)`;
+both are immutable, history-backed operations. The basic-canvas rotate handle
+uses a drag transaction and serializes the resulting angle.

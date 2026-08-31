@@ -55,7 +55,5 @@ renderer.
 The centralized controller adds an abstraction and intentionally constrains
 mixed-node resize to uniform scale. In return, it avoids inconsistent geometry
 between node adapters, leaves rendering framework-agnostic, and preserves
-immutable/history semantics. Rotation is visibly represented but not persisted:
-V2.0 throws `UnsupportedPersistentRotationError` rather than writing an
-unsupported partial document state. V2.2 can add rotation only when the scene
-model, serialization, and every renderer support the same contract.
+immutable/history semantics. Rotation now uses the same immutable history path
+and is stored with the node for Canvas and SVG rendering.

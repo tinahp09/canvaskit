@@ -28,13 +28,6 @@ export interface TransformOverlay {
 export type AlignmentAxis = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom'
 export type DistributionAxis = 'horizontal' | 'vertical'
 
-export class UnsupportedPersistentRotationError extends Error {
-  constructor() {
-    super('Persistent rotation is not supported in the current scene model.')
-    this.name = 'UnsupportedPersistentRotationError'
-  }
-}
-
 const ROTATION_HANDLE_OFFSET = 24
 
 export class TransformController {
@@ -57,10 +50,14 @@ export class TransformController {
     point: Point,
     constraints: TransformConstraints = {},
   ): CanvasScene {
-    if (handle === 'rotate') throw new UnsupportedPersistentRotationError()
-
     const nodes = selectedNodes(scene, ids)
     if (!nodes) return scene
+
+    if (handle === 'rotate') {
+      const bounds = unionBounds(nodes)
+      const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+      return this.rotate(scene, ids, Math.atan2(point.y - centre.y, point.x - centre.x) + Math.PI / 2)
+    }
 
     const sourceBounds = unionBounds(nodes)
     if (sourceBounds.width === 0 || sourceBounds.height === 0) return scene
