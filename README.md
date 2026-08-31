@@ -17,6 +17,12 @@ V2.5 adds Scene V6 assets, reusable image nodes, normalized fit/crop metadata,
 and structural text runs. Core remains storage-agnostic: applications supply
 their own upload, fetch, and cache strategy. See the [rich content guide](docs/guides/rich-content-assets.md), [API reference](docs/api/rich-content-assets.md), and [migration notes](docs/migrations.md).
 
+## V2.6 export & accessibility
+
+V2.6 adds deterministic vector PDF export and a host-owned ARIA mirror for
+visible canvas content. See the [guide](docs/guides/export-accessibility.md)
+and [API reference](docs/api/export-accessibility.md).
+
 ## V2.3 diagram toolkit
 
 V2.3 adds serializable Scene V4 connectors, derived node ports, deterministic
