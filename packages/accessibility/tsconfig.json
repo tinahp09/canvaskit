@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist", "baseUrl": ".", "paths": { "@canvaskit/core": ["../core/dist/index.d.ts"] } },
+  "include": ["src"]
+}
