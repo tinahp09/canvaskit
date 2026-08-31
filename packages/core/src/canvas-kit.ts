@@ -16,6 +16,7 @@ import { TransformController, type AlignmentAxis, type DistributionAxis, type Tr
 import { addLayer, groupNodes, isNodeInteractive, moveNodesToLayer, reorderLayer as reorderLayers, reorderNodeInLayer, setLayerLocked, setLayerVisibility, ungroupNodes } from './document.js'
 import { ConnectorController } from './connector.js'
 import { LayoutController, type AutoLayoutOptions, type SnapOptions, type SnapResult } from './layout.js'
+import { ContentController, type CreateImageInput } from './content.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel'
 
@@ -59,6 +60,7 @@ export class CanvasKit {
   readonly nodes = new NodeRegistry()
   readonly edges = new EdgeRegistry()
   readonly layout = new LayoutController()
+  readonly content = new ContentController()
 
   constructor(options: CanvasKitOptions = {}) {
     this.scene = options.scene ?? createScene()
@@ -258,6 +260,11 @@ export class CanvasKit {
   createGuide(guide: CanvasGuide): boolean {
     return this.executeDocument('create guide', (scene) => this.layout.createGuide(scene, guide))
   }
+
+  addAsset(asset: import('./model.js').CanvasAsset): boolean { return this.executeDocument('add asset', (scene) => this.content.addAsset(scene, asset)) }
+  removeAsset(id: string): boolean { return this.executeDocument('remove asset', (scene) => this.content.removeAsset(scene, id)) }
+  addImage(input: CreateImageInput): boolean { return this.executeDocument('add image', (scene) => this.content.addImage(scene, input)) }
+  updateImage(id: string, patch: Partial<Pick<CreateImageInput, 'fit' | 'crop'>>): boolean { return this.executeDocument('update image', (scene) => this.content.updateImage(scene, id, patch)) }
 
   moveGuide(id: string, position: number): boolean {
     return this.executeDocument('move guide', (scene) => this.layout.moveGuide(scene, id, position))
