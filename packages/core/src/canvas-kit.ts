@@ -1,5 +1,5 @@
 import { screenToWorld, type Point, type Rect } from '@canvaskit/geometry'
-import type { CanvasLayer, CanvasScene, CreateConnectorInput } from './model.js'
+import type { CanvasGuide, CanvasLayer, CanvasScene, CreateConnectorInput } from './model.js'
 import { createScene } from './scene.js'
 import { loadScene, serializeScene } from './serialization.js'
 import { ViewportController } from './viewport.js'
@@ -15,6 +15,7 @@ import { SceneSubscription, type SceneListener } from './scene-subscription.js'
 import { TransformController, type AlignmentAxis, type DistributionAxis, type TransformConstraints, type TransformHandle } from './transform.js'
 import { addLayer, groupNodes, isNodeInteractive, moveNodesToLayer, reorderLayer as reorderLayers, reorderNodeInLayer, setLayerLocked, setLayerVisibility, ungroupNodes } from './document.js'
 import { ConnectorController } from './connector.js'
+import { LayoutController, type AutoLayoutOptions, type SnapOptions, type SnapResult } from './layout.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel'
 
@@ -49,6 +50,7 @@ export class CanvasKit {
   private readonly history = new HistoryController()
   private clipboard: SceneClipboard = { nodes: [], edges: [], groups: [] }
   private selectedConnectorId: string | undefined
+  private activeLayoutGuides: CanvasGuide[] = []
   private readonly pluginIds = new Set<string>()
   private readonly pluginCleanups: Array<() => void> = []
   viewport: ViewportController
@@ -56,6 +58,7 @@ export class CanvasKit {
   readonly transform = new TransformController()
   readonly nodes = new NodeRegistry()
   readonly edges = new EdgeRegistry()
+  readonly layout = new LayoutController()
 
   constructor(options: CanvasKitOptions = {}) {
     this.scene = options.scene ?? createScene()
@@ -64,6 +67,7 @@ export class CanvasKit {
       () => this.getScene(),
       () => {
         this.selectedConnectorId = undefined
+        this.activeLayoutGuides = []
         this.notifyScene()
       },
       (id) => this.isNodeInteractive(id),
@@ -133,6 +137,7 @@ export class CanvasKit {
     const hasConnectorSelection = this.selectedConnectorId !== undefined
     if (!hasNodeSelection && !hasConnectorSelection) return false
     this.selectedConnectorId = undefined
+    this.activeLayoutGuides = []
     if (hasNodeSelection) this.selection.clear()
     else this.notifyScene()
     return true
@@ -155,6 +160,7 @@ export class CanvasKit {
     this.scene = scene
     this.viewport = this.createViewport(scene)
     this.selection.retainExisting()
+    this.activeLayoutGuides = []
     if (this.getSelectedConnector() === undefined) this.selectedConnectorId = undefined
   }
 
@@ -247,6 +253,36 @@ export class CanvasKit {
     if (ids.length < 2) return false
     const before = this.getScene()
     return this.executeTransform('distribute selection', before, this.transform.distribute(before, ids, axis))
+  }
+
+  createGuide(guide: CanvasGuide): boolean {
+    return this.executeDocument('create guide', (scene) => this.layout.createGuide(scene, guide))
+  }
+
+  moveGuide(id: string, position: number): boolean {
+    return this.executeDocument('move guide', (scene) => this.layout.moveGuide(scene, id, position))
+  }
+
+  removeGuide(id: string): boolean {
+    return this.executeDocument('remove guide', (scene) => this.layout.removeGuide(scene, id))
+  }
+
+  layoutSelection(options: AutoLayoutOptions): boolean {
+    const ids = this.selection.get()
+    if (ids.length === 0) return false
+    const before = this.getScene()
+    return this.executeSceneChange('layout selection', before, this.layout.autoLayout(before, ids, options))
+  }
+
+  snapSelection(proposedDelta: Point, options?: SnapOptions): SnapResult {
+    const result = this.layout.snapTranslation(this.getScene(), this.selection.get(), proposedDelta, options)
+    this.activeLayoutGuides = [...result.activeGuides]
+    this.notifyScene()
+    return result
+  }
+
+  getActiveLayoutGuides(): readonly CanvasGuide[] {
+    return this.activeLayoutGuides
   }
 
   createLayer(layer: CanvasLayer): boolean {

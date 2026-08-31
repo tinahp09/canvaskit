@@ -134,6 +134,29 @@ it('reports pointer coordinates in screen and world space', () => {
   })
 })
 
+it('records guide and selection-layout mutations in history while keeping snap feedback transient', () => {
+  const scene = addRectangle(addRectangle(createScene(), {
+    id: 'a', position: { x: 80, y: 120 }, size: { width: 20, height: 20 }, fill: '#fff',
+  }), {
+    id: 'b', position: { x: 180, y: 220 }, size: { width: 20, height: 20 }, fill: '#fff',
+  })
+  const kit = new CanvasKit({ scene })
+
+  expect(kit.createGuide({ id: 'guide-x', axis: 'vertical', position: 100 })).toBe(true)
+  expect(kit.getScene().guides).toEqual([{ id: 'guide-x', axis: 'vertical', position: 100 }])
+  expect(kit.undo()).toEqual(scene)
+  expect(kit.redo().guides).toHaveLength(1)
+
+  kit.selection.set(['a', 'b'])
+  expect(kit.layoutSelection({ direction: 'horizontal', origin: { x: 10, y: 20 }, gap: { x: 5, y: 5 } })).toBe(true)
+  expect(kit.getScene().nodes.map((node) => node.position)).toEqual([{ x: 10, y: 20 }, { x: 35, y: 20 }])
+  expect(kit.undo().nodes.map((node) => node.position)).toEqual(scene.nodes.map((node) => node.position))
+
+  expect(kit.snapSelection({ x: 9, y: 0 }, { tolerance: 12 }).activeGuides).toEqual([{ id: 'guide-x', axis: 'vertical', position: 100 }])
+  expect(kit.getActiveLayoutGuides()).toEqual([{ id: 'guide-x', axis: 'vertical', position: 100 }])
+  expect(kit.toJSON()).not.toContain('activeGuides')
+})
+
 it('applies marquee results with explicit selection semantics', () => {
   const scene = addRectangle(addRectangle(createScene(), {
     id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
