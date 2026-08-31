@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { addEdge, addGroup, addLayer, addRectangle, CanvasKit, ConnectorController, createScene, importScene, setLayerLocked, setLayerVisibility, UnsupportedPersistentRotationError, type CanvasLayer, type CanvasScene, type CreateConnectorInput } from '../src/index.js'
+import { addEdge, addGroup, addLayer, addRectangle, CanvasKit, ConnectorController, createScene, importScene, setLayerLocked, setLayerVisibility, type CanvasLayer, type CanvasScene, type CreateConnectorInput } from '../src/index.js'
 
 type DocumentCommands = {
   createLayer(layer: CanvasLayer): boolean
@@ -426,25 +426,26 @@ it('returns false when resize selection cannot alter the scene', () => {
   expect(kit.undo()).toEqual(scene)
 })
 
-it('preserves the controller typed rotation error without recording history', () => {
+it('rotates the selected nodes with undo and redo history', () => {
   const scene = addRectangle(createScene(), {
     id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
   })
   const kit = new CanvasKit({ scene })
   kit.selection.select('rectangle')
 
-  expect(() => kit.resizeSelection('rotate', { x: 25, y: 0 })).toThrow(UnsupportedPersistentRotationError)
-  expect(kit.getScene()).toEqual(scene)
+  expect(kit.rotateSelection(Math.PI / 2)).toBe(true)
+  expect(kit.getScene().nodes[0]).toMatchObject({ rotation: Math.PI / 2 })
   expect(kit.undo()).toEqual(scene)
+  expect(kit.redo().nodes[0]).toMatchObject({ rotation: Math.PI / 2 })
 })
 
-it('forwards the typed rotation error before treating an empty selection as a no-op', () => {
+it('treats empty rotation selection as a no-op', () => {
   const scene = addRectangle(createScene(), {
     id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
   })
   const kit = new CanvasKit({ scene })
 
-  expect(() => kit.resizeSelection('rotate', { x: 25, y: 0 })).toThrow(UnsupportedPersistentRotationError)
+  expect(kit.rotateSelection(Math.PI / 2)).toBe(false)
   expect(kit.getScene()).toEqual(scene)
   expect(kit.undo()).toEqual(scene)
 })

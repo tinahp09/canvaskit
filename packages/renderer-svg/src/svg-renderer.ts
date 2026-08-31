@@ -41,6 +41,16 @@ export function renderSVG(scene: CanvasScene, selectedConnectorId?: string): str
   const x = (value: number) => transform(value, viewport.x, viewport.zoom)
   const y = (value: number) => transform(value, viewport.y, viewport.zoom)
   const scale = (value: number) => value * viewport.zoom
+  const nodeRotation = (node: CanvasScene['nodes'][number]) => {
+    const radians = node.rotation ?? 0
+    if (radians === 0) return ''
+    const centre = node.type === 'rectangle' || node.type === 'image'
+      ? { x: node.position.x + node.size.width / 2, y: node.position.y + node.size.height / 2 }
+      : node.type === 'circle'
+        ? node.position
+        : { x: node.position.x, y: node.position.y - node.fontSize / 2 }
+    return attribute('transform', `rotate(${radians * 180 / Math.PI} ${x(centre.x)} ${y(centre.y)})`)
+  }
   const elements: string[] = [
     '<defs><marker id="arrowhead" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 8 4 L 0 8 z" fill="#737B88"/></marker><marker id="arrowhead-selected" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 8 4 L 0 8 z" fill="#2563EB"/></marker></defs>',
   ]
@@ -82,14 +92,14 @@ export function renderSVG(scene: CanvasScene, selectedConnectorId?: string): str
 
   for (const node of projection.nodes) {
     if (node.type === 'rectangle') {
-      elements.push(`<rect${attribute('id', node.id)} x="${x(node.position.x)}" y="${y(node.position.y)}" width="${scale(node.size.width)}" height="${scale(node.size.height)}"${attribute('fill', node.fill)}/>`)
+      elements.push(`<rect${attribute('id', node.id)} x="${x(node.position.x)}" y="${y(node.position.y)}" width="${scale(node.size.width)}" height="${scale(node.size.height)}"${attribute('fill', node.fill)}${nodeRotation(node)}/>`)
     } else if (node.type === 'circle') {
-      elements.push(`<circle${attribute('id', node.id)} cx="${x(node.position.x)}" cy="${y(node.position.y)}" r="${scale(node.radius)}"${attribute('fill', node.fill)}/>`)
+      elements.push(`<circle${attribute('id', node.id)} cx="${x(node.position.x)}" cy="${y(node.position.y)}" r="${scale(node.radius)}"${attribute('fill', node.fill)}${nodeRotation(node)}/>`)
     } else if (node.type === 'image') {
       const asset = assetsById.get(node.assetId)
-      if (asset) elements.push(`<image${attribute('id', node.id)} href="${escapeXML(asset.source)}" x="${x(node.position.x)}" y="${y(node.position.y)}" width="${scale(node.size.width)}" height="${scale(node.size.height)}" preserveAspectRatio="${node.fit === 'fill' ? 'none' : node.fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'}"/>`)
+      if (asset) elements.push(`<image${attribute('id', node.id)} href="${escapeXML(asset.source)}" x="${x(node.position.x)}" y="${y(node.position.y)}" width="${scale(node.size.width)}" height="${scale(node.size.height)}" preserveAspectRatio="${node.fit === 'fill' ? 'none' : node.fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'}"${nodeRotation(node)}/>`)
     } else {
-      elements.push(`<text${attribute('id', node.id)} x="${x(node.position.x)}" y="${y(node.position.y)}"${attribute('fill', node.fill)} font-size="${scale(node.fontSize)}">${escapeXML(node.text)}</text>`)
+      elements.push(`<text${attribute('id', node.id)} x="${x(node.position.x)}" y="${y(node.position.y)}"${attribute('fill', node.fill)} font-size="${scale(node.fontSize)}"${nodeRotation(node)}>${escapeXML(node.text)}</text>`)
     }
   }
 

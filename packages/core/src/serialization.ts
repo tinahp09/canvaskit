@@ -70,19 +70,19 @@ function parseConnector(value: unknown): CanvasConnector {
 }
 function parseGroup(value: unknown) { if (!isRecord(value) || typeof value.id !== 'string' || !Array.isArray(value.nodeIds) || !value.nodeIds.every((id) => typeof id === 'string')) throw new InvalidSceneError('Scene contains an invalid group.'); return { id: value.id, nodeIds: value.nodeIds as string[] } }
 function parseNode(value: unknown): CanvasNode {
-  if (isRecord(value) && value.type === 'circle' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.radius === 'number' && typeof value.fill === 'string') return { id: value.id, layerId: value.layerId, type: 'circle', position: value.position, radius: value.radius, fill: value.fill }
-  if (isRecord(value) && value.type === 'text' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.text === 'string' && Array.isArray(value.runs) && value.runs.every((run) => isRecord(run) && typeof run.text === 'string' && (run.bold === undefined || typeof run.bold === 'boolean') && (run.italic === undefined || typeof run.italic === 'boolean')) && typeof value.fill === 'string' && typeof value.fontSize === 'number') return { id: value.id, layerId: value.layerId, type: 'text', position: value.position, text: value.text, runs: value.runs as never, fill: value.fill, fontSize: value.fontSize }
-  if (isRecord(value) && value.type === 'image' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && isSize(value.size) && typeof value.assetId === 'string' && ['contain', 'cover', 'fill'].includes(String(value.fit)) && isCrop(value.crop)) return { id: value.id, layerId: value.layerId, type: 'image', position: value.position, size: value.size, assetId: value.assetId, fit: value.fit as never, crop: value.crop }
+  if (isRecord(value) && value.type === 'circle' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.radius === 'number' && typeof value.fill === 'string' && isRotation(value.rotation)) return { id: value.id, layerId: value.layerId, type: 'circle', position: value.position, radius: value.radius, fill: value.fill, ...(value.rotation === undefined ? {} : { rotation: value.rotation }) }
+  if (isRecord(value) && value.type === 'text' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.text === 'string' && Array.isArray(value.runs) && value.runs.every((run) => isRecord(run) && typeof run.text === 'string' && (run.bold === undefined || typeof run.bold === 'boolean') && (run.italic === undefined || typeof run.italic === 'boolean')) && typeof value.fill === 'string' && typeof value.fontSize === 'number' && isRotation(value.rotation)) return { id: value.id, layerId: value.layerId, type: 'text', position: value.position, text: value.text, runs: value.runs as never, fill: value.fill, fontSize: value.fontSize, ...(value.rotation === undefined ? {} : { rotation: value.rotation }) }
+  if (isRecord(value) && value.type === 'image' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && isSize(value.size) && typeof value.assetId === 'string' && ['contain', 'cover', 'fill'].includes(String(value.fit)) && isCrop(value.crop) && isRotation(value.rotation)) return { id: value.id, layerId: value.layerId, type: 'image', position: value.position, size: value.size, assetId: value.assetId, fit: value.fit as never, crop: value.crop, ...(value.rotation === undefined ? {} : { rotation: value.rotation }) }
   return parseRectangle(value)
 }
 
 function parseRectangle(value: unknown): RectangleNode {
   if (!isRecord(value) || value.type !== 'rectangle' || typeof value.id !== 'string' || typeof value.layerId !== 'string'
-    || !isPoint(value.position) || !isSize(value.size) || typeof value.fill !== 'string') {
+    || !isPoint(value.position) || !isSize(value.size) || typeof value.fill !== 'string' || !isRotation(value.rotation)) {
     throw new InvalidSceneError('Scene contains an invalid rectangle node.')
   }
 
-  return { id: value.id, layerId: value.layerId, type: 'rectangle', position: value.position, size: value.size, fill: value.fill }
+  return { id: value.id, layerId: value.layerId, type: 'rectangle', position: value.position, size: value.size, fill: value.fill, ...(value.rotation === undefined ? {} : { rotation: value.rotation }) }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -100,6 +100,7 @@ function isCrop(value: unknown): value is { x: number; y: number; width: number;
   if (!isRecord(value) || typeof value.x !== 'number' || typeof value.y !== 'number' || typeof value.width !== 'number' || typeof value.height !== 'number') return false
   return Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.width) && Number.isFinite(value.height) && value.x >= 0 && value.y >= 0 && value.width > 0 && value.height > 0 && value.x + value.width <= 1 && value.y + value.height <= 1
 }
+function isRotation(value: unknown): value is number | undefined { return value === undefined || typeof value === 'number' && Number.isFinite(value) }
 
 function isTransform(value: unknown): value is { x: number; y: number; zoom: number } {
   return isRecord(value)

@@ -247,6 +247,11 @@ export class CanvasKit {
     return this.executeTransform('resize selection', before, after)
   }
 
+  rotateSelection(radians: number): boolean {
+    const before = this.getScene()
+    return this.executeTransform('rotate selection', before, this.transform.rotate(before, this.selection.get(), radians))
+  }
+
   alignSelection(axis: AlignmentAxis): boolean {
     const ids = this.selection.get()
     if (ids.length < 2) return false

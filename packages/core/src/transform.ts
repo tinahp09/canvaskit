@@ -80,6 +80,16 @@ export class TransformController {
     }
   }
 
+  rotate(scene: CanvasScene, ids: readonly string[], radians: number): CanvasScene {
+    if (!Number.isFinite(radians)) throw new Error('Rotation angle must be finite.')
+    const nodes = selectedNodes(scene, ids)
+    if (!nodes || radians === 0) return scene
+    const bounds = unionBounds(nodes)
+    const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+    const selectedIds = new Set(nodes.map((node) => node.id))
+    return { ...scene, nodes: scene.nodes.map((node) => selectedIds.has(node.id) ? rotateNode(node, centre, radians) : node) }
+  }
+
   align(scene: CanvasScene, ids: readonly string[], axis: AlignmentAxis): CanvasScene {
     const nodes = selectedNodes(scene, ids)
     if (!nodes) return scene
@@ -135,6 +145,23 @@ export class TransformController {
 
     return translateSelectedNodes(scene, moves)
   }
+}
+
+function rotateNode(node: CanvasNode, centre: Point, radians: number): CanvasNode {
+  const bounds = normalizeRect(nodeBounds(node))
+  const anchor = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+  const sin = Math.sin(radians); const cos = Math.cos(radians)
+  const rotated = { x: centre.x + (anchor.x - centre.x) * cos - (anchor.y - centre.y) * sin, y: centre.y + (anchor.x - centre.x) * sin + (anchor.y - centre.y) * cos }
+  const rotation = normalizeAngle((node.rotation ?? 0) + radians)
+  if (node.type === 'rectangle' || node.type === 'image') return { ...node, position: { x: rotated.x - bounds.width / 2, y: rotated.y - bounds.height / 2 }, rotation }
+  if (node.type === 'circle') return { ...node, position: rotated, rotation }
+  return { ...node, position: { x: rotated.x - bounds.width / 2, y: rotated.y + bounds.height / 2 }, rotation }
+}
+
+function normalizeAngle(value: number): number {
+  const full = Math.PI * 2
+  const normalized = value % full
+  return normalized < 0 ? normalized + full : normalized
 }
 
 function translateSelectedNodes(scene: CanvasScene, moves: ReadonlyMap<string, Point>): CanvasScene {

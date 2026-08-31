@@ -136,11 +136,17 @@ it('leaves a degenerate selection untouched rather than producing non-finite geo
   expect(controller.resize(scene, ['empty-text'], 'east', { x: 40, y: 30 })).toBe(scene)
 })
 
-it('rejects persistent rotation without mutating the scene', () => {
+it('rotates selected nodes around their common centre and persists the angle', () => {
   const scene = addRectangle(createScene(), {
-    id: 'rectangle', position: { x: 10, y: 20 }, size: { width: 30, height: 40 }, fill: '#fff',
+    id: 'left', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
   })
+  const withRight = addRectangle(scene, { id: 'right', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
 
-  expect(() => controller.resize(scene, ['rectangle'], 'rotate', { x: 20, y: 0 })).toThrow(UnsupportedPersistentRotationError)
-  expect(scene.nodes[0]).toMatchObject({ position: { x: 10, y: 20 }, size: { width: 30, height: 40 } })
+  const rotated = controller.rotate(withRight, ['left', 'right'], Math.PI / 2)
+
+  expect(rotated.nodes).toMatchObject([
+    { id: 'left', position: { x: 10, y: -10 }, rotation: Math.PI / 2 },
+    { id: 'right', position: { x: 10, y: 10 }, rotation: Math.PI / 2 },
+  ])
+  expect(withRight.nodes).not.toHaveProperty('0.rotation')
 })

@@ -10,13 +10,14 @@ export interface RectangleNode {
   position: Point
   size: Size
   fill: string
+  rotation?: number
 }
-export interface CircleNode { id: string; layerId: string; type: 'circle'; position: Point; radius: number; fill: string }
+export interface CircleNode { id: string; layerId: string; type: 'circle'; position: Point; radius: number; fill: string; rotation?: number }
 export interface TextRun { text: string; bold?: boolean; italic?: boolean }
-export interface TextNode { id: string; layerId: string; type: 'text'; position: Point; text: string; runs: TextRun[]; fill: string; fontSize: number }
+export interface TextNode { id: string; layerId: string; type: 'text'; position: Point; text: string; runs: TextRun[]; fill: string; fontSize: number; rotation?: number }
 export type ImageFit = 'contain' | 'cover' | 'fill'
 export interface ImageCrop { x: number; y: number; width: number; height: number }
-export interface ImageNode { id: string; layerId: string; type: 'image'; position: Point; size: Size; assetId: string; fit: ImageFit; crop: ImageCrop }
+export interface ImageNode { id: string; layerId: string; type: 'image'; position: Point; size: Size; assetId: string; fit: ImageFit; crop: ImageCrop; rotation?: number }
 export type CanvasNode = RectangleNode | CircleNode | TextNode | ImageNode
 export interface CanvasEdge { id: string; type: 'line' | 'arrow' | 'bezier'; sourceId: string; targetId: string }
 export type PortDirection = 'north' | 'east' | 'south' | 'west'

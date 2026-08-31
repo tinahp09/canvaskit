@@ -113,6 +113,7 @@ let connectorDrag: ConnectorDrag | undefined
 let resizeHandle: Exclude<TransformHandle, 'rotate'> | undefined
 let resizePreservesAspect = false
 let resizeTransactionActive = false
+let rotatePointerAngle: number | undefined
 const status = app.querySelector<HTMLParagraphElement>('#scene-status')!
 const pluginDiagnostics = app.querySelector<HTMLOutputElement>('#plugin-diagnostics')!
 kit.use(createCommandPlugin({ id: 'show-diagnostics', label: 'Show plugin diagnostics', run: (canvas) => { pluginDiagnostics.value = JSON.stringify(canvas.getDiagnostics()); status.textContent = 'Plugin diagnostics shown.' } }))
@@ -318,8 +319,12 @@ kit.onPointer((event) => {
     if (event.button !== undefined && event.button !== 0) return
     const transformHandle = transformHandleAt(event.screen)
     if (transformHandle === 'rotate') {
-      status.textContent = 'Persistent rotation is deferred in V2.0; the rotation handle is preview-only.'
-      redraw()
+      const overlay = kit.transform.getOverlay(kit.getScene(), kit.selection.get())
+      if (!overlay) return
+      const centre = { x: overlay.bounds.x + overlay.bounds.width / 2, y: overlay.bounds.y + overlay.bounds.height / 2 }
+      rotatePointerAngle = Math.atan2(event.world.y - centre.y, event.world.x - centre.x)
+      kit.beginTransaction('rotate selection')
+      resizeTransactionActive = true
       return
     }
     if (transformHandle) {
@@ -367,6 +372,14 @@ kit.onPointer((event) => {
         selection: event.modifiers?.shiftKey ? 'add' : 'replace',
       }
     }
+  } else if (event.type === 'pointermove' && rotatePointerAngle !== undefined && (event.buttons === undefined || (event.buttons & 1) !== 0)) {
+    const overlay = kit.transform.getOverlay(kit.getScene(), kit.selection.get())
+    if (overlay) {
+      const centre = { x: overlay.bounds.x + overlay.bounds.width / 2, y: overlay.bounds.y + overlay.bounds.height / 2 }
+      const nextAngle = Math.atan2(event.world.y - centre.y, event.world.x - centre.x)
+      kit.rotateSelection(nextAngle - rotatePointerAngle)
+      rotatePointerAngle = nextAngle
+    }
   } else if (event.type === 'pointermove' && resizeHandle && (event.buttons === undefined || (event.buttons & 1) !== 0)) {
     kit.resizeSelection(resizeHandle, event.world, { preserveAspectRatio: resizePreservesAspect })
   } else if (event.type === 'pointermove' && dragStart && (event.buttons === undefined || (event.buttons & 1) !== 0)) {
@@ -382,6 +395,7 @@ kit.onPointer((event) => {
       resizeTransactionActive = false
     }
     resizeHandle = undefined
+    rotatePointerAngle = undefined
     resizePreservesAspect = false
     connectorDrag = undefined
     connectionSource = undefined
@@ -394,6 +408,7 @@ kit.onPointer((event) => {
       resizeTransactionActive = false
     }
     resizeHandle = undefined
+    rotatePointerAngle = undefined
     resizePreservesAspect = false
     if (connectorDrag) {
       const target = portAt(event.world)

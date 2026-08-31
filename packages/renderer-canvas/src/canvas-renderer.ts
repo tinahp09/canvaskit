@@ -82,6 +82,18 @@ export class CanvasRenderer {
     for (const node of visibleNodes) {
       const x = node.position.x * viewport.zoom + viewport.x
       const y = node.position.y * viewport.zoom + viewport.y
+      const rotation = node.rotation ?? 0
+      if (rotation !== 0) {
+        const centre = node.type === 'rectangle' || node.type === 'image'
+          ? { x: x + node.size.width * viewport.zoom / 2, y: y + node.size.height * viewport.zoom / 2 }
+          : node.type === 'circle'
+            ? { x, y }
+            : { x, y: y - node.fontSize * viewport.zoom / 2 }
+        this.context.save()
+        this.context.translate(centre.x, centre.y)
+        this.context.rotate(rotation)
+        this.context.translate(-centre.x, -centre.y)
+      }
       if (node.type === 'rectangle') {
         this.context.fillStyle = node.fill
         this.context.fillRect(x, y, node.size.width * viewport.zoom, node.size.height * viewport.zoom)
@@ -98,6 +110,7 @@ export class CanvasRenderer {
         this.context.font = `${node.fontSize * viewport.zoom}px sans-serif`
         this.context.fillText(node.text, x, y)
       }
+      if (rotation !== 0) this.context.restore()
     }
 
     for (const node of visibleNodes) {
