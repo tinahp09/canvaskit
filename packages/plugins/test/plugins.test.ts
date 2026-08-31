@@ -1,6 +1,6 @@
 import { addRectangle, CanvasKit, createScene } from '@canvaskit/core'
 import { expect, it, vi } from 'vitest'
-import { createGridPlugin, createKeyboardPlugin, createMinimapPlugin, createSnapPlugin } from '../src/index.js'
+import { createCommandPlugin, createGridPlugin, createKeyboardPlugin, createMinimapPlugin, createSnapPlugin } from '../src/index.js'
 
 class FakeKeyboardTarget {
   readonly addEventListener = vi.fn((type: string, listener: EventListener) => this.listeners.set(type, listener))
@@ -56,4 +56,14 @@ it('derives a readonly scene summary through minimap plugin state without a rend
   expect(plugin.summary).toEqual({ nodeCount: 1, edgeCount: 0, groupCount: 0, viewport: { x: 0, y: 0, zoom: 1 } })
   expect(Object.isFrozen(plugin.summary)).toBe(true)
   expect(Object.isFrozen(plugin.summary?.viewport)).toBe(true)
+})
+
+it('registers a trusted command through the plugin lifecycle and cleans it up', () => {
+  const canvas = new CanvasKit()
+  const run = vi.fn()
+  canvas.use(createCommandPlugin({ id: 'show-diagnostics', label: 'Show diagnostics', run }))
+  canvas.executeRegisteredCommand('show-diagnostics')
+  expect(run).toHaveBeenCalledWith(canvas)
+  canvas.dispose()
+  expect(() => canvas.executeRegisteredCommand('show-diagnostics')).toThrow('Unknown registered command')
 })

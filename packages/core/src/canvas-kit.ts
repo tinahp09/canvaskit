@@ -17,6 +17,7 @@ import { addLayer, groupNodes, isNodeInteractive, moveNodesToLayer, reorderLayer
 import { ConnectorController } from './connector.js'
 import { LayoutController, type AutoLayoutOptions, type SnapOptions, type SnapResult } from './layout.js'
 import { ContentController, type CreateImageInput } from './content.js'
+import { ExtensionRegistry, type CanvasCommandDefinition, type CanvasNodeDefinition, type CanvasToolDefinition, type InspectorSection } from './extensions.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel'
 
@@ -54,6 +55,8 @@ export class CanvasKit {
   private activeLayoutGuides: CanvasGuide[] = []
   private readonly pluginIds = new Set<string>()
   private readonly pluginCleanups: Array<() => void> = []
+  private activeToolId: string | undefined
+  private lastExtensionError: string | undefined
   viewport: ViewportController
   readonly selection: SelectionController
   readonly transform = new TransformController()
@@ -61,6 +64,7 @@ export class CanvasKit {
   readonly edges = new EdgeRegistry()
   readonly layout = new LayoutController()
   readonly content = new ContentController()
+  readonly extensions = new ExtensionRegistry()
 
   constructor(options: CanvasKitOptions = {}) {
     this.scene = options.scene ?? createScene()
@@ -422,7 +426,31 @@ export class CanvasKit {
     }
   }
 
+  registerCommand(definition: CanvasCommandDefinition): () => void { return this.extensions.registerCommand(definition) }
+  registerTool(definition: CanvasToolDefinition): () => void { return this.extensions.registerTool(definition) }
+  registerNodeDefinition(definition: CanvasNodeDefinition): () => void { return this.extensions.registerNode(definition) }
+  registerInspector(definition: InspectorSection): () => void { return this.extensions.registerInspector(definition) }
+  executeRegisteredCommand(id: string): void {
+    const command = this.extensions.getCommand(id)
+    if (!command) throw new Error(`Unknown registered command: "${id}".`)
+    try { command.run(this); this.lastExtensionError = undefined } catch (error) { this.lastExtensionError = error instanceof Error ? error.message : String(error); throw error }
+  }
+  activateTool(id: string | undefined): void {
+    if (id === this.activeToolId) return
+    const next = id === undefined ? undefined : this.extensions.getTool(id)
+    if (id !== undefined && !next) throw new Error(`Unknown registered tool: "${id}".`)
+    const previous = this.activeToolId === undefined ? undefined : this.extensions.getTool(this.activeToolId)
+    previous?.deactivate?.(this)
+    this.activeToolId = id
+    next?.activate?.(this)
+  }
+  getDiagnostics(): { plugins: string[]; activeToolId?: string; commands: string[]; tools: string[]; nodes: string[]; inspectors: string[]; lastExtensionError?: string } {
+    const snapshot = this.extensions.snapshot()
+    return Object.freeze({ plugins: [...this.pluginIds], ...(this.activeToolId === undefined ? {} : { activeToolId: this.activeToolId }), commands: snapshot.commands.map((item) => item.id), tools: snapshot.tools.map((item) => item.id), nodes: snapshot.nodes.map((item) => item.id), inspectors: snapshot.inspectors.map((item) => item.id), ...(this.lastExtensionError === undefined ? {} : { lastExtensionError: this.lastExtensionError }) })
+  }
+
   dispose(): void {
+    this.activateTool(undefined)
     while (this.pluginCleanups.length > 0) {
       this.pluginCleanups.pop()?.()
     }
