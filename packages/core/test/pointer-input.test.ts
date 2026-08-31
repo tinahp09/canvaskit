@@ -70,7 +70,7 @@ it('captures a primary pointer and releases it after pointer cancellation', () =
 
   expect(element.capturedPointers).toEqual([7])
   expect(element.releasedPointers).toEqual([7])
-  expect(received).toContainEqual({ type: 'pointerup', screen: { x: 20, y: 20 }, world: { x: 20, y: 20 }, button: 0, buttons: 0 })
+  expect(received).toContainEqual({ type: 'pointercancel', screen: { x: 20, y: 20 }, world: { x: 20, y: 20 }, button: 0, buttons: 0 })
 })
 
 it('pans with a middle-button drag', () => {

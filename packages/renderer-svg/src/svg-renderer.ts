@@ -1,10 +1,11 @@
-import { ConnectorController, deriveNodePorts, nodeCenter, projectVisibleDocument, type CanvasEdge, type CanvasScene, type Renderer } from '@canvaskit/core'
+import { ConnectorController, deriveNodePorts, isNodeInteractive, nodeCenter, projectVisibleDocument, type CanvasEdge, type CanvasScene, type Renderer } from '@canvaskit/core'
 
 interface Point { x: number; y: number }
 
 const SVG_WIDTH = 1200
 const SVG_HEIGHT = 720
 const EDGE_STROKE = '#737B88'
+const SELECTED_CONNECTOR_STROKE = '#2563EB'
 
 type CompatibleCanvasScene = CanvasScene & { edges?: readonly CanvasEdge[] }
 
@@ -32,7 +33,7 @@ function transform(value: number, offset: number, zoom: number): number {
  * SVG exports use the fixed 1200×720 logical canvas viewBox. Scene viewport
  * translation and zoom are applied directly to every exported shape and edge.
  */
-export function renderSVG(scene: CanvasScene): string {
+export function renderSVG(scene: CanvasScene, selectedConnectorId?: string): string {
   const { viewport } = scene
   const projection = projectVisibleDocument(scene)
   const nodesById = new Map(projection.nodes.map((node) => [node.id, node]))
@@ -40,7 +41,7 @@ export function renderSVG(scene: CanvasScene): string {
   const y = (value: number) => transform(value, viewport.y, viewport.zoom)
   const scale = (value: number) => value * viewport.zoom
   const elements: string[] = [
-    '<defs><marker id="arrowhead" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 8 4 L 0 8 z" fill="#737B88"/></marker></defs>',
+    '<defs><marker id="arrowhead" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 8 4 L 0 8 z" fill="#737B88"/></marker><marker id="arrowhead-selected" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 8 4 L 0 8 z" fill="#2563EB"/></marker></defs>',
   ]
 
   for (const edge of legacyEdges(scene)) {
@@ -68,10 +69,13 @@ export function renderSVG(scene: CanvasScene): string {
   for (const connector of projection.connectors) {
     const route = connectorController.route(scene, connector).map((point) => ({ x: x(point.x), y: y(point.y) }))
     const path = route.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
-    elements.push(`<path${attribute('id', `connector-${connector.id}`)}${attribute('d', path)} fill="none" stroke="${EDGE_STROKE}" stroke-width="1.5" marker-end="url(#arrowhead)"/>`)
+    const selected = connector.id === selectedConnectorId
+    const stroke = selected ? SELECTED_CONNECTOR_STROKE : EDGE_STROKE
+    const marker = selected ? 'arrowhead-selected' : 'arrowhead'
+    elements.push(`<path${attribute('id', `connector-${connector.id}`)}${attribute('d', path)} fill="none" stroke="${stroke}" stroke-width="${selected ? 2.5 : 1.5}" marker-end="url(#${marker})"/>`)
     if (connector.label) {
       const label = pointAlongRoute(route)
-      elements.push(`<text${attribute('id', `connector-label-${connector.id}`)} x="${label.x}" y="${label.y}" fill="${EDGE_STROKE}" font-size="12" text-anchor="middle">${escapeXML(connector.label)}</text>`)
+      elements.push(`<text${attribute('id', `connector-label-${connector.id}`)} x="${label.x}" y="${label.y}" fill="${stroke}" font-size="12" text-anchor="middle">${escapeXML(connector.label)}</text>`)
     }
   }
 
@@ -86,6 +90,7 @@ export function renderSVG(scene: CanvasScene): string {
   }
 
   for (const node of projection.nodes) {
+    if (!isNodeInteractive(scene, node.id)) continue
     for (const port of deriveNodePorts(node)) {
       elements.push(`<circle${attribute('id', `port-${node.id}-${port.id}`)} cx="${x(port.position.x)}" cy="${y(port.position.y)}" r="4" fill="#F4F6F8" stroke="${EDGE_STROKE}" stroke-width="1"/>`)
     }
@@ -122,7 +127,7 @@ export class SvgRenderer implements Renderer {
     return this.renderedSVG
   }
 
-  render(scene: CanvasScene): void {
-    this.renderedSVG = renderSVG(scene)
+  render(scene: CanvasScene, selectedConnectorId?: string): void {
+    this.renderedSVG = renderSVG(scene, selectedConnectorId)
   }
 }

@@ -48,7 +48,7 @@ export class CanvasRenderer {
       if (edge.type === 'bezier') this.context.bezierCurveTo(ax + (bx - ax) / 2, ay, ax + (bx - ax) / 2, by, bx, by)
       else this.context.lineTo(bx, by)
       this.context.strokeStyle = CONNECTOR_STROKE; this.context.lineWidth = 1.5; this.context.stroke()
-      if (edge.type === 'arrow') this.drawArrowhead(ax, ay, bx, by)
+      if (edge.type === 'arrow') this.drawArrowhead(ax, ay, bx, by, CONNECTOR_STROKE)
     }
 
     const connectorController = new ConnectorController()
@@ -66,12 +66,15 @@ export class CanvasRenderer {
       this.context.stroke()
       const previous = screenRoute.at(-2)
       const target = screenRoute.at(-1)
-      if (previous && target) this.drawArrowhead(previous.x, previous.y, target.x, target.y)
+      const connectorStroke = connector.id === selectedConnectorId ? SELECTED_CONNECTOR_STROKE : CONNECTOR_STROKE
+      if (previous && target) this.drawArrowhead(previous.x, previous.y, target.x, target.y, connectorStroke)
       if (connector.label) {
         const label = pointAlongRoute(screenRoute)
-        this.context.fillStyle = connector.id === selectedConnectorId ? SELECTED_CONNECTOR_STROKE : CONNECTOR_STROKE
+        this.context.fillStyle = connectorStroke
         this.context.font = '12px sans-serif'
+        this.context.textAlign = 'center'
         this.context.fillText(connector.label, label.x, label.y)
+        this.context.textAlign = 'start'
       }
     }
 
@@ -161,11 +164,12 @@ export class CanvasRenderer {
     this.context.stroke()
   }
 
-  private drawArrowhead(ax: number, ay: number, bx: number, by: number): void {
+  private drawArrowhead(ax: number, ay: number, bx: number, by: number, color: string): void {
     const angle = Math.atan2(by - ay, bx - ax); const size = 8
     this.context.beginPath(); this.context.moveTo(bx, by)
     this.context.lineTo(bx - size * Math.cos(angle - Math.PI / 6), by - size * Math.sin(angle - Math.PI / 6))
     this.context.lineTo(bx - size * Math.cos(angle + Math.PI / 6), by - size * Math.sin(angle + Math.PI / 6))
+    this.context.fillStyle = color
     this.context.fill()
   }
 }

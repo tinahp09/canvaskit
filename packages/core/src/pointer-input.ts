@@ -68,7 +68,7 @@ export function attachPointerInput(element: HTMLElement, canvas: CanvasKit): () 
   }
   const onPointerCancel = (event: PointerEvent) => {
     lastPanPoint = undefined
-    emit('pointerup', event, screenPoint(event), 0, 0)
+    emit('pointercancel', event, screenPoint(event), 0, 0)
     releasePointer(event)
   }
   const onWheel = (event: WheelEvent) => {

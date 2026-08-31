@@ -5,7 +5,7 @@ import { createGridPlugin, createSnapPlugin } from '@canvaskit/plugins'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<header><strong>CanvasKit V2.3 — Diagram Toolkit</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><span class="toolbar-divider" aria-hidden="true"></span><button id="align-left">Align left</button><button id="align-center">Align center</button><button id="distribute-horizontal">Distribute horizontal</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><span class="workflow-hint">Drag between visible port dots to connect; drag a selected connector endpoint to reconnect. Shift-click adds; Cmd/Ctrl-click toggles; drag empty space to marquee.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset><fieldset class="layer-controls"><legend>Layers</legend><label>Active layer <select id="active-layer" aria-label="Active layer"></select></label><button id="add-layer">Add layer</button><button id="move-selection-to-layer">Move selected nodes to active layer</button><button id="toggle-layer-visibility">Hide active layer</button><button id="toggle-layer-lock">Lock active layer</button><button id="move-layer-backward">Move active layer backward</button><button id="move-layer-forward">Move active layer forward</button><button id="group-selection">Group selected nodes</button><button id="ungroup-selection">Ungroup selected nodes</button></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
+app.innerHTML = `<header><strong>CanvasKit V2.3 — Diagram Toolkit</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><span class="toolbar-divider" aria-hidden="true"></span><button id="align-left">Align left</button><button id="align-center">Align center</button><button id="distribute-horizontal">Distribute horizontal</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><span class="workflow-hint" id="diagram-instructions">Drag between visible port dots to connect; drag a selected connector endpoint to reconnect. Keyboard users can choose source and target ports, create or reconnect a connector, then use Escape to cancel and Delete to remove the selected connector.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset><fieldset class="layer-controls"><legend>Layers</legend><label>Active layer <select id="active-layer" aria-label="Active layer"></select></label><button id="add-layer">Add layer</button><button id="move-selection-to-layer">Move selected nodes to active layer</button><button id="toggle-layer-visibility">Hide active layer</button><button id="toggle-layer-lock">Lock active layer</button><button id="move-layer-backward">Move active layer backward</button><button id="move-layer-forward">Move active layer forward</button><button id="group-selection">Group selected nodes</button><button id="ungroup-selection">Ungroup selected nodes</button></fieldset><fieldset class="connector-controls"><legend>Diagram connectors</legend><label>Source port <select id="connector-source-port" aria-label="Source port"></select></label><label>Target port <select id="connector-target-port" aria-label="Target port"></select></label><button id="create-connector">Create connector</button><label>Selected connector <select id="selected-connector" aria-label="Selected connector"></select></label><button id="reconnect-connector">Reconnect selected connector target</button><button id="cancel-connector" aria-keyshortcuts="Escape">Cancel connector interaction</button></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-describedby="diagram-instructions" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
 const canvasElement = app.querySelector('canvas')!
 canvasElement.width = 1200
 canvasElement.height = 720
@@ -46,7 +46,6 @@ const syncLayerControls = () => {
   app.querySelector<HTMLButtonElement>('#move-layer-backward')!.disabled = layerIndex <= 0
   app.querySelector<HTMLButtonElement>('#move-layer-forward')!.disabled = layerIndex < 0 || layerIndex >= scene.layers.length - 1
 }
-kit.subscribe(() => { syncLayerControls(); redraw() })
 activeLayer.onchange = () => { activeLayerId = activeLayer.value; syncLayerControls() }
 const nextLayerId = () => {
   const existing = new Set(kit.getScene().layers.map((layer) => layer.id))
@@ -111,12 +110,91 @@ const nextConnectorId = () => {
 const portAt = (world: { x: number; y: number }): PortHit | undefined => {
   const scene = kit.getScene()
   const tolerance = PORT_HIT_RADIUS / Math.max(Math.abs(scene.viewport.zoom), 0.001)
-  const hit = projectVisibleDocument(scene).nodes
+  const hit = [...projectVisibleDocument(scene).nodes]
+    .reverse()
     .filter((node) => isNodeInteractive(scene, node.id))
     .flatMap((node) => deriveNodePorts(node).map((port) => ({ nodeId: node.id, port })))
     .find(({ port }) => Math.hypot(world.x - port.position.x, world.y - port.position.y) <= tolerance)
   return hit && { nodeId: hit.nodeId, portId: hit.port.id }
 }
+const sourcePort = app.querySelector<HTMLSelectElement>('#connector-source-port')!
+const targetPort = app.querySelector<HTMLSelectElement>('#connector-target-port')!
+const selectedConnector = app.querySelector<HTMLSelectElement>('#selected-connector')!
+const reconnectConnectorButton = app.querySelector<HTMLButtonElement>('#reconnect-connector')!
+reconnectConnectorButton.setAttribute('aria-label', 'Retarget selected connector')
+const portValue = (port: PortHit) => JSON.stringify(port)
+const readPortValue = (value: string): PortHit | undefined => {
+  try {
+    const port = JSON.parse(value) as Partial<PortHit>
+    return typeof port.nodeId === 'string' && typeof port.portId === 'string' ? { nodeId: port.nodeId, portId: port.portId } : undefined
+  } catch { return undefined }
+}
+const interactivePorts = () => [...projectVisibleDocument(kit.getScene()).nodes]
+  .filter((node) => kit.isNodeInteractive(node.id))
+  .flatMap((node) => deriveNodePorts(node).map((port) => ({ nodeId: node.id, portId: port.id })))
+const syncConnectorControls = () => {
+  const currentSource = sourcePort.value
+  const currentTarget = targetPort.value
+  const ports = interactivePorts()
+  const portOptions = ports.map((port) => {
+    const option = document.createElement('option')
+    option.value = portValue(port)
+    option.textContent = `${port.nodeId} — ${port.portId}`
+    return option
+  })
+  sourcePort.replaceChildren(...portOptions.map((option) => option.cloneNode(true)))
+  targetPort.replaceChildren(...portOptions)
+  sourcePort.value = ports.some((port) => portValue(port) === currentSource) ? currentSource : (sourcePort.options[0]?.value ?? '')
+  targetPort.value = ports.some((port) => portValue(port) === currentTarget) ? currentTarget : (targetPort.options[0]?.value ?? '')
+  const selectedId = kit.getSelectedConnector()
+  const empty = document.createElement('option')
+  empty.value = ''
+  empty.textContent = 'None selected'
+  selectedConnector.replaceChildren(empty, ...kit.getScene().connectors.filter((connector) => kit.getSelectedConnector() === connector.id || kit.isConnectorInteractive(connector)).map((connector) => {
+    const option = document.createElement('option')
+    option.value = connector.id
+    option.textContent = connector.label ? `${connector.id} — ${connector.label}` : connector.id
+    return option
+  }))
+  selectedConnector.value = selectedId ?? ''
+  reconnectConnectorButton.disabled = selectedId === undefined || targetPort.value === ''
+}
+const abortConnectorInteraction = () => {
+  connectorDrag = undefined
+  connectionSource = undefined
+  status.textContent = 'Connector interaction cancelled.'
+  redraw()
+}
+app.querySelector<HTMLButtonElement>('#create-connector')!.onclick = () => {
+  const source = readPortValue(sourcePort.value)
+  const target = readPortValue(targetPort.value)
+  if (!source || !target || (source.nodeId === target.nodeId && source.portId === target.portId)) {
+    status.textContent = 'Choose two different visible, unlocked ports.'
+    return
+  }
+  const id = nextConnectorId()
+  if (kit.createConnector({ id, sourceNodeId: source.nodeId, sourcePortId: source.portId, targetNodeId: target.nodeId, targetPortId: target.portId, routing: 'orthogonal', label: 'Diagram connection' })) {
+    kit.selectConnector(id)
+    status.textContent = `Connector ${id} created and selected.`
+  } else status.textContent = 'Connector endpoints must be visible and unlocked.'
+}
+selectedConnector.onchange = () => {
+  if (selectedConnector.value) kit.selectConnector(selectedConnector.value)
+  else kit.clearSelection()
+}
+reconnectConnectorButton.onclick = () => {
+  const target = readPortValue(targetPort.value)
+  const id = kit.getSelectedConnector()
+  if (!id || !target) return
+  if (kit.reconnectConnector(id, 'target', target.nodeId, target.portId)) status.textContent = `Connector ${id} target reconnected.`
+  else status.textContent = 'Connector target must be visible and unlocked.'
+}
+app.querySelector<HTMLButtonElement>('#cancel-connector')!.onclick = abortConnectorInteraction
+canvasElement.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') abortConnectorInteraction()
+})
+kit.subscribe(() => { syncLayerControls(); syncConnectorControls(); redraw() })
+syncConnectorControls()
 const connectionSourceAt = (screen: { x: number; y: number }) => kit.selection.get().map((id) => kit.getScene().nodes.find((node) => node.id === id)).find((node) => {
   if (!node) return false
   if (!kit.isNodeInteractive(node.id)) return false
@@ -208,6 +286,17 @@ kit.onPointer((event) => {
     const after = moveNodes(before, ids, { x: snapped.x - dragStart.x, y: snapped.y - dragStart.y })
     kit.execute({ label: 'move selection', execute: () => after, undo: () => before })
     dragStart = snapped
+  } else if (event.type === 'pointercancel') {
+    if (resizeTransactionActive) {
+      kit.commitTransaction()
+      resizeTransactionActive = false
+    }
+    resizeHandle = undefined
+    resizePreservesAspect = false
+    connectorDrag = undefined
+    connectionSource = undefined
+    dragStart = undefined
+    marquee = undefined
   } else if (event.type === 'pointerup') {
     if (event.button !== undefined && event.button !== 0) return
     if (resizeTransactionActive) {
@@ -280,7 +369,7 @@ app.querySelector<HTMLButtonElement>('#distribute-horizontal')!.onclick = () => 
 app.querySelector<HTMLButtonElement>('#export')!.onclick = () => { json.value = exportScene(kit.getScene()); status.textContent = 'Scene exported.' }
 app.querySelector<HTMLButtonElement>('#export-svg')!.onclick = () => {
   try {
-    exportPreview.value = renderSVG(kit.getScene())
+    exportPreview.value = renderSVG(kit.getScene(), kit.getSelectedConnector())
     status.textContent = 'SVG exported.'
   } catch {
     status.textContent = 'SVG export failed.'

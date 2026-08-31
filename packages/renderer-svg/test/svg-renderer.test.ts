@@ -82,7 +82,7 @@ it('implements the public renderer contract and retains its rendered SVG', () =>
 })
 
 it('serializes visible connector routes, direction, endpoint ports, and labels', () => {
-  const svg = renderSVG({
+  const selectedSvg = renderSVG({
     version: 4,
     nodes: [
       { id: 'source', layerId: 'layer-default', type: 'rectangle', position: { x: 120, y: 180 }, size: { width: 150, height: 70 }, fill: '#7C7FF2' },
@@ -90,11 +90,21 @@ it('serializes visible connector routes, direction, endpoint ports, and labels',
     ],
     connectors: [{ id: 'request-flow', sourceNodeId: 'source', sourcePortId: 'east', targetNodeId: 'target', targetPortId: 'west', routing: 'orthogonal', label: 'request <body>' }],
     groups: [], layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }], viewport: { x: 0, y: 0, zoom: 1 }, metadata: {},
+  }, 'request-flow')
+
+  expect(selectedSvg).toContain('<path id="connector-request-flow" d="M 270 215 L 290 215 L 290 195 L 380 195 L 380 215 L 400 215" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrowhead-selected)"/>')
+  expect(selectedSvg).toContain('<circle id="port-source-east" cx="270" cy="215" r="4"')
+  expect(selectedSvg).toContain('<circle id="port-target-west" cx="400" cy="215" r="4"')
+  expect(selectedSvg).toContain('<text id="connector-label-request-flow" x="335" y="195" fill="#2563EB" font-size="12" text-anchor="middle">')
+  expect(selectedSvg).toContain('request &lt;body&gt;</text>')
+})
+
+it('does not export active-looking port affordances for locked nodes', () => {
+  const svg = renderSVG({
+    version: 4,
+    nodes: [{ id: 'locked', layerId: 'locked-layer', type: 'rectangle', position: { x: 20, y: 20 }, size: { width: 30, height: 20 }, fill: '#fff' }],
+    connectors: [], groups: [], layers: [{ id: 'locked-layer', name: 'Locked', visible: true, locked: true }], viewport: { x: 0, y: 0, zoom: 1 }, metadata: {},
   })
 
-  expect(svg).toContain('<path id="connector-request-flow" d="M 270 215 L 290 215 L 290 195 L 380 195 L 380 215 L 400 215" fill="none" stroke="#737B88" stroke-width="1.5" marker-end="url(#arrowhead)"/>')
-  expect(svg).toContain('<circle id="port-source-east" cx="270" cy="215" r="4"')
-  expect(svg).toContain('<circle id="port-target-west" cx="400" cy="215" r="4"')
-  expect(svg).toContain('<text id="connector-label-request-flow" x="335" y="195"')
-  expect(svg).toContain('request &lt;body&gt;</text>')
+  expect(svg).not.toContain('id="port-locked-east"')
 })

@@ -197,10 +197,13 @@ it('draws a selected transform overlay in viewport coordinates', () => {
 })
 
 it('draws resolved orthogonal connectors, endpoint ports, labels, and a selected arrowhead', () => {
-  const moveTo = vi.fn(); const lineTo = vi.fn(); const arc = vi.fn(); const fillText = vi.fn()
+  const moveTo = vi.fn(); const lineTo = vi.fn(); const arc = vi.fn(); const fills: string[] = []; const labelAlignments: string[] = []
+  const fillText = vi.fn((..._args: unknown[]) => labelAlignments.push(context.textAlign))
   const context = {
-    clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, arc, fillText, fill: vi.fn(), stroke: vi.fn(),
-    fillStyle: '', strokeStyle: '', lineWidth: 1, font: '',
+    clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, arc,
+    fillText,
+    fill: vi.fn(() => fills.push(context.fillStyle)), stroke: vi.fn(),
+    fillStyle: '', strokeStyle: '', lineWidth: 1, font: '', textAlign: 'start',
   } as unknown as CanvasRenderingContext2D
   const element = { getContext: () => context, width: 800, height: 600 } as unknown as HTMLCanvasElement
   const scene: CanvasScene = {
@@ -219,6 +222,8 @@ it('draws resolved orthogonal connectors, endpoint ports, labels, and a selected
   expect(lineTo).toHaveBeenCalledWith(290, 215)
   expect(lineTo).toHaveBeenCalledWith(400, 215)
   expect(fillText).toHaveBeenCalledWith('request', 335, 195)
+  expect(fills[0]).toBe('#2563EB')
+  expect(labelAlignments).toEqual(['center'])
   expect(arc).toHaveBeenCalledWith(195, 180, 4, 0, Math.PI * 2)
   expect(arc).toHaveBeenCalledWith(400, 215, 4, 0, Math.PI * 2)
 })

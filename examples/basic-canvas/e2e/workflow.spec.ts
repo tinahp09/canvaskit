@@ -93,16 +93,21 @@ test('middle-pan only changes the viewport in backing-store coordinates', async 
 test('zooms around the backing-store wheel anchor', async ({ page }) => {
   await page.goto('/')
   const canvas = page.locator('canvas')
-  await canvas.evaluate((element) => {
+  const anchor = await canvas.evaluate((element) => {
     const bounds = element.getBoundingClientRect()
     const point = { x: bounds.left + 600 * bounds.width / element.width, y: bounds.top + 360 * bounds.height / element.height }
-    element.dispatchEvent(new WheelEvent('wheel', { bubbles: true, clientX: point.x, clientY: point.y, deltaY: -100 }))
+    const event = new WheelEvent('wheel', { bubbles: true, clientX: point.x, clientY: point.y, deltaY: -100 })
+    element.dispatchEvent(event)
+    return {
+      x: (event.clientX - bounds.left) * element.width / bounds.width,
+      y: (event.clientY - bounds.top) * element.height / bounds.height,
+    }
   })
   const scene = await exportScene(page)
   const zoom = Math.exp(0.1)
   expect(scene.viewport.zoom).toBeCloseTo(zoom)
-  expect(scene.viewport.x).toBeCloseTo(600 - 600 * zoom)
-  expect(scene.viewport.y).toBeCloseTo(360 - 360 * zoom)
+  expect(scene.viewport.x).toBeCloseTo(anchor.x - anchor.x * zoom)
+  expect(scene.viewport.y).toBeCloseTo(anchor.y - anchor.y * zoom)
 })
 
 test('uses internal keyboard clipboard, duplicate, cut, and undo without system clipboard access', async ({ page }) => {

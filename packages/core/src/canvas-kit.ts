@@ -16,7 +16,7 @@ import { TransformController, type AlignmentAxis, type DistributionAxis, type Tr
 import { addLayer, groupNodes, isNodeInteractive, moveNodesToLayer, reorderLayer as reorderLayers, reorderNodeInLayer, setLayerLocked, setLayerVisibility, ungroupNodes } from './document.js'
 import { ConnectorController } from './connector.js'
 
-export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup'
+export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel'
 
 export interface CanvasPointerModifiers {
   shiftKey: boolean
