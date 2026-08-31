@@ -28,10 +28,12 @@ CanvasKit supports rectangles, circles, text, edges, groups, pan and zoom,
 selection, clipboard editing, undo and redo, versioned scene JSON, plus V2.0
 selection transforms: resize constraints, alignment, distribution, and Canvas
 overlays. V2.2 adds ordered document layers, group metadata, layer visibility,
-locking, and history-backed document commands. Use it as the engine beneath
-whiteboards, diagrams, workflow editors, or architecture maps.
+locking, and history-backed document commands. V2.3 adds Scene V4 ports and
+connectors with deterministic straight/orthogonal routes, labels, arrows, and
+relation commands. Use it as the engine beneath whiteboards, diagrams,
+workflow editors, or architecture maps.
 
 Start with the [getting-started guide](/getting-started), the [transform tools
 guide](/guides/transform-tools), [document & layers guide](/guides/document-layers),
-inspect the [product examples](/examples), or browse the package-level [API
-reference](/api/core).
+[diagram toolkit guide](/guides/diagram-toolkit), inspect the [product
+examples](/examples), or browse the package-level [API reference](/api/core).

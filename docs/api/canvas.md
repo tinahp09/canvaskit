@@ -8,15 +8,21 @@ import { CanvasRenderer, exportPNG, RenderScheduler } from '@canvaskit/renderer-
 
 ## `CanvasRenderer`
 
-Create a renderer with a canvas element, then call `render(scene, selection?)` whenever Core publishes a new scene:
+Create a renderer with a canvas element, then call `render(scene, selection?, overlay?, selectedConnectorId?)` whenever Core publishes a new scene:
 
 ```ts
 const renderer = new CanvasRenderer(element)
-const result = renderer.render(canvas.getScene(), canvas.selection.get())
+const result = renderer.render(canvas.getScene(), canvas.selection.get(), undefined, canvas.getSelectedConnector())
 console.log(result.visibleNodeCount)
 ```
 
-The renderer accounts for the scene viewport and applies viewport culling. Its result exposes the count of nodes drawn in the active viewport. Edges that cross the visible canvas remain eligible for rendering; see the [performance guide](/performance) for the exact visibility semantics.
+The renderer accounts for the scene viewport and applies viewport culling. Its
+result exposes the count of nodes drawn in the active viewport. V2.3 resolves
+and paints visible connectors before nodes, including deterministic route
+segments, directional arrowheads, labels, selected state, and ports for
+interactive endpoints. See the [diagram toolkit API](/api/diagram-toolkit) for
+the relation contract and the [performance guide](/performance) for visibility
+semantics.
 
 ## `exportPNG(element)`
 

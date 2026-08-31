@@ -11,20 +11,23 @@ This page is the curated inventory of every public export from the package root.
 ## Package identity and scene model
 
 - `PACKAGE_NAME` is the package identifier and `SCENE_VERSION` is the current scene-document version.
-- `CanvasScene` is a versioned document with ordered `layers`, `nodes`, `edges`,
-  `groups`, `viewport`, and `metadata`. The current `SCENE_VERSION` is `3`.
+- `CanvasScene` is a versioned document with ordered `layers`, `nodes`,
+  `connectors`, `groups`, `viewport`, and `metadata`. The current
+  `SCENE_VERSION` is `4`.
 - `CanvasNode` is the union of `RectangleNode`, `CircleNode`, and `TextNode`.
 - Every `CanvasNode` has a `layerId`. `CanvasLayer` has `id`, `name`, `visible`,
   and `locked`; `DEFAULT_LAYER_ID` is `'layer-default'` for Core-created scenes.
-- `CanvasEdge` connects node IDs as a `line`, `arrow`, or `bezier`; `CanvasGroup`
-  collects node IDs without becoming a nested transform container.
-- `CreateRectangleInput`, `CreateCircleInput`, `CreateTextInput`, `CreateEdgeInput`,
-  and `CreateGroupInput` are the corresponding immutable-scene creation inputs.
+- `CanvasConnector` connects named derived ports with `straight` or
+  `orthogonal` routing; `CanvasGroup` collects node IDs without becoming a
+  nested transform container. `CanvasEdge` remains a legacy migration type.
+- `CreateRectangleInput`, `CreateCircleInput`, `CreateTextInput`,
+  `CreateConnectorInput`, `CreateEdgeInput`, and `CreateGroupInput` are the
+  corresponding immutable-scene creation inputs.
 
 Create and transform immutable scene values with:
 
 - `createScene()`;
-- `addRectangle`, `addCircle`, `addText`, `addEdge`, and `addGroup`;
+- `addRectangle`, `addCircle`, `addText`, `addConnector`, `addEdge`, and `addGroup`;
 - `connectNodes(scene, sourceId, targetId, type?)` and `removeEdge(scene, edgeId)`; and
 - `translateNode(node, id, offset)`.
 
@@ -52,6 +55,9 @@ Create and transform immutable scene values with:
   they change the scene. `groupSelection()` and `ungroupSelection()` are also
   history-backed. See [Document & layers](/api/document-layers) for their
   validation and interaction contracts.
+- `createConnector(input)`, `reconnectConnector(id, endpoint, nodeId, portId)`,
+  `removeConnector(id)`, `selectConnector(id)`, and `getSelectedConnector()`
+  provide history-backed relation editing. See [Diagram toolkit](/api/diagram-toolkit).
 - `toJSON()` serializes the current scene and `load(json)` validates and replaces it.
 - `createPointerEvent(screen, type)` turns a screen point into a `CanvasPointerEvent`, including its world point, and delivers it to pointer listeners.
 - `onPointer(listener)` subscribes to `CanvasPointerEvent` values; `subscribe(listener)` receives each scene snapshot as a `SceneListener`. Both return cleanup functions.
@@ -62,7 +68,8 @@ The instance exposes five public controllers: `viewport`, `selection`,
 
 ### Pointer and scene subscription types
 
-- `CanvasPointerEventType` is `'pointerdown' | 'pointermove' | 'pointerup'`.
+- `CanvasPointerEventType` is `'pointerdown' | 'pointermove' | 'pointerup' |
+  'pointercancel'`.
 - `CanvasPointerEvent` contains `type`, screen-space `screen`, and transformed world-space `world` points.
 - `SceneListener` receives an immutable `CanvasScene` snapshot after observable scene or selection changes.
 
@@ -92,7 +99,7 @@ The instance exposes five public controllers: `viewport`, `selection`,
 `ungroupNodes` are immutable lower-level document operations. They validate
 layer and node references and preserve all relation invariants. Use
 `projectVisibleDocument(scene)` when a renderer needs the canonical layer paint
-order; it omits hidden-layer nodes and edges whose endpoints are not both
+order; it omits hidden-layer nodes and connectors whose endpoints are not both
 visible. `interactiveNodesInRenderOrder(scene)` and
 `isNodeInteractive(scene, nodeId)` additionally exclude locked content for
 interaction paths.
@@ -102,7 +109,8 @@ interaction paths.
 - `attachPointerInput(element, canvas)` forwards DOM pointer events and their
   modifiers to a `CanvasKit`; `attachKeyboardInput(element, canvas)` adds the
   editor workflow shortcuts. Each returns a cleanup function.
-- `hitTestNode(scene, point, index?)`, `hitTestEdge(scene, point, tolerance?)`,
+- `hitTestNode(scene, point, index?)`, `hitTestConnector(scene, point, tolerance?)`,
+  `hitTestEdge(scene, point, tolerance?)`,
   `nodesInRect(scene, rect, mode?, index?)`, and `moveNodes(scene, ids, delta)`
   support custom editor interaction. `MarqueeMode` selects `contain` or
   `intersect` bounds matching.

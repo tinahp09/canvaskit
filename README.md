@@ -11,6 +11,16 @@ The project is available under the [MIT License](LICENSE).
 
 CanvasKit provides rectangle, circle, and text scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
 
+## V2.3 diagram toolkit
+
+V2.3 adds serializable Scene V4 connectors, derived node ports, deterministic
+straight/orthogonal routes, labels, arrows, and history-backed relation
+commands. Imports from V1–V3 migrate safely; exported JSON uses `connectors`
+rather than legacy `edges`. The basic-canvas example supports pointer and
+keyboard-accessible create/select/retarget/delete flows. See the [diagram
+toolkit guide](docs/guides/diagram-toolkit.md), [API
+reference](docs/api/diagram-toolkit.md), and [migration notes](docs/migrations.md).
+
 ## V2.2 document & layers
 
 V2.2 adds ordered document layers, durable metadata-only groups, layer
