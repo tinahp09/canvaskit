@@ -1,11 +1,13 @@
 import { CanvasKit, addCircle, addConnector, addRectangle, addText, attachKeyboardInput, attachPointerInput, deriveNodePorts, hitTestConnector, hitTestNode, importScene, isNodeInteractive, createScene, exportScene, moveNodes, projectVisibleDocument, type MarqueeMode, type SelectionMode, type TransformHandle } from '@canvaskit/core'
 import { CanvasRenderer, exportPNG } from '@canvaskit/renderer-canvas'
+import { CanvasAccessibilityMirror, createAccessibilitySnapshot } from '@canvaskit/accessibility'
+import { exportPDFDataURL } from '@canvaskit/renderer-pdf'
 import { renderSVG } from '@canvaskit/renderer-svg'
 import { createGridPlugin, createSnapPlugin } from '@canvaskit/plugins'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<header><strong>CanvasKit V2.3 — Diagram Toolkit</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><span class="toolbar-divider" aria-hidden="true"></span><button id="align-left">Align left</button><button id="align-center">Align center</button><button id="distribute-horizontal">Distribute horizontal</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button></div><span class="workflow-hint" id="diagram-instructions">Drag between visible port dots to connect; drag a selected connector endpoint to reconnect. Keyboard users can choose source and target ports, create or reconnect a connector, then use Escape to cancel and Delete to remove the selected connector.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset><fieldset class="layer-controls"><legend>Layers</legend><label>Active layer <select id="active-layer" aria-label="Active layer"></select></label><button id="add-layer">Add layer</button><button id="move-selection-to-layer">Move selected nodes to active layer</button><button id="toggle-layer-visibility">Hide active layer</button><button id="toggle-layer-lock">Lock active layer</button><button id="move-layer-backward">Move active layer backward</button><button id="move-layer-forward">Move active layer forward</button><button id="group-selection">Group selected nodes</button><button id="ungroup-selection">Ungroup selected nodes</button></fieldset><fieldset class="connector-controls"><legend>Diagram connectors</legend><label>Source port <select id="connector-source-port" aria-label="Source port"></select></label><label>Target port <select id="connector-target-port" aria-label="Target port"></select></label><button id="create-connector">Create connector</button><label>Selected connector <select id="selected-connector" aria-label="Selected connector"></select></label><button id="reconnect-connector">Reconnect selected connector target</button><button id="cancel-connector" aria-keyshortcuts="Escape">Cancel connector interaction</button></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-describedby="diagram-instructions" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
+app.innerHTML = `<header><strong>CanvasKit V2.6 — Export & Accessibility</strong><div class="toolbar" aria-label="Editor controls"><button id="circle">Add circle</button><button id="text">Add text</button><button id="connect">Connect selected</button><button id="undo">Undo</button><button id="redo">Redo</button><button id="copy">Copy</button><button id="cut">Cut</button><button id="paste">Paste</button><button id="duplicate">Duplicate</button><span class="toolbar-divider" aria-hidden="true"></span><button id="align-left">Align left</button><button id="align-center">Align center</button><button id="distribute-horizontal">Distribute horizontal</button><button id="export">Export scene</button><button id="import">Import scene</button><button id="export-svg">Export SVG</button><button id="export-png">Export PNG</button><button id="export-pdf">Export PDF</button></div><span class="workflow-hint" id="diagram-instructions">Drag between visible port dots to connect; drag a selected connector endpoint to reconnect. Keyboard users can choose source and target ports, create or reconnect a connector, then use Escape to cancel and Delete to remove the selected connector.</span><fieldset class="plugin-controls"><legend>Plugins</legend><label><input id="show-grid" type="checkbox" checked> Show grid</label><label><input id="snap-to-grid" type="checkbox" checked> Snap to grid</label></fieldset><fieldset class="layer-controls"><legend>Layers</legend><label>Active layer <select id="active-layer" aria-label="Active layer"></select></label><button id="add-layer">Add layer</button><button id="move-selection-to-layer">Move selected nodes to active layer</button><button id="toggle-layer-visibility">Hide active layer</button><button id="toggle-layer-lock">Lock active layer</button><button id="move-layer-backward">Move active layer backward</button><button id="move-layer-forward">Move active layer forward</button><button id="group-selection">Group selected nodes</button><button id="ungroup-selection">Ungroup selected nodes</button></fieldset><fieldset class="connector-controls"><legend>Diagram connectors</legend><label>Source port <select id="connector-source-port" aria-label="Source port"></select></label><label>Target port <select id="connector-target-port" aria-label="Target port"></select></label><button id="create-connector">Create connector</button><label>Selected connector <select id="selected-connector" aria-label="Selected connector"></select></label><button id="reconnect-connector">Reconnect selected connector target</button><button id="cancel-connector" aria-keyshortcuts="Escape">Cancel connector interaction</button></fieldset></header><canvas role="application" aria-label="CanvasKit example" aria-describedby="diagram-instructions" aria-keyshortcuts="Control+A Meta+A Control+C Meta+C Control+X Meta+X Control+V Meta+V Control+D Meta+D Delete Backspace Escape" tabindex="0"></canvas><section class="data-panels" aria-label="Scene and export data"><textarea data-testid="scene-json" aria-label="Scene JSON"></textarea><textarea data-testid="export-preview" aria-label="Export preview" readonly></textarea></section><p id="scene-status" role="status" aria-live="polite"></p>`
 const canvasElement = app.querySelector('canvas')!
 canvasElement.width = 1200
 canvasElement.height = 720
@@ -20,6 +22,8 @@ app.querySelector('header')!.append(assetControls)
 const workflow = addRectangle(addRectangle(addRectangle(createScene(), { id: 'webhook', position: { x: 120, y: 180 }, size: { width: 150, height: 70 }, fill: '#7C7FF2' }), { id: 'request', position: { x: 400, y: 180 }, size: { width: 150, height: 70 }, fill: '#60A5FA' }), { id: 'database', position: { x: 680, y: 180 }, size: { width: 150, height: 70 }, fill: '#34D399' })
 const diagram = addConnector(addConnector(workflow, { id: 'webhook-request', sourceNodeId: 'webhook', sourcePortId: 'east', targetNodeId: 'request', targetPortId: 'west', routing: 'orthogonal', label: 'Webhook request' }), { id: 'request-database', sourceNodeId: 'request', sourcePortId: 'east', targetNodeId: 'database', targetPortId: 'west', routing: 'orthogonal', label: 'Store record' })
 const kit = new CanvasKit({ scene: diagram })
+const accessibilityMirror = new CanvasAccessibilityMirror(app, { label: 'Canvas content' })
+const syncAccessibilityMirror = () => accessibilityMirror.update(createAccessibilitySnapshot(kit.getScene(), kit.selection.get()))
 const gridPlugin = createGridPlugin({ size: 20, style: 'dots', color: '#3A414D' })
 const snapPlugin = createSnapPlugin({ gridSize: 20 })
 kit.use(gridPlugin)
@@ -271,7 +275,7 @@ app.querySelector<HTMLButtonElement>('#cancel-connector')!.onclick = abortConnec
 canvasElement.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') abortConnectorInteraction()
 })
-kit.subscribe(() => { syncLayerControls(); syncConnectorControls(); syncLayoutControls(); redraw() })
+kit.subscribe(() => { syncLayerControls(); syncConnectorControls(); syncLayoutControls(); syncAccessibilityMirror(); redraw() })
 syncConnectorControls()
 syncLayoutControls()
 const connectionSourceAt = (screen: { x: number; y: number }) => kit.selection.get().map((id) => kit.getScene().nodes.find((node) => node.id === id)).find((node) => {
@@ -434,6 +438,7 @@ kit.onPointer((event) => {
   redraw()
 })
 redraw()
+syncAccessibilityMirror()
 const json = app.querySelector<HTMLTextAreaElement>('[data-testid="scene-json"]')!
 const exportPreview = app.querySelector<HTMLTextAreaElement>('[data-testid="export-preview"]')!
 app.querySelector<HTMLButtonElement>('#undo')!.onclick = () => { kit.undo(); redraw() }
@@ -460,6 +465,14 @@ app.querySelector<HTMLButtonElement>('#export-png')!.onclick = () => {
     status.textContent = 'PNG exported.'
   } catch {
     status.textContent = 'PNG export failed.'
+  }
+}
+app.querySelector<HTMLButtonElement>('#export-pdf')!.onclick = () => {
+  try {
+    exportPreview.value = exportPDFDataURL(kit.getScene())
+    status.textContent = 'PDF exported.'
+  } catch {
+    status.textContent = 'PDF export failed.'
   }
 }
 app.querySelector<HTMLButtonElement>('#import')!.onclick = () => {

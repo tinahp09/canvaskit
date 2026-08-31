@@ -172,3 +172,10 @@ test('adds an image asset and image node through labelled controls with undo', a
   await page.getByRole('button', { name: 'Undo' }).click()
   expect((await exportScene(page)).nodes.some((node: { type: string }) => node.type === 'image')).toBe(false)
 })
+
+test('exports PDF and exposes the canvas contents through an ARIA mirror', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Export PDF' }).click()
+  await expect(page.getByTestId('export-preview')).toHaveValue(/^data:application\/pdf;base64,/)
+  await expect(page.getByRole('list', { name: 'Canvas content' })).toContainText('Rectangle: webhook')
+})
