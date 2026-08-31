@@ -28,6 +28,7 @@ async function exportScene(page: Page) {
   await page.getByRole('button', { name: 'Export scene' }).click()
   return JSON.parse(await page.getByTestId('scene-json').inputValue()) as {
     nodes: Array<{ id: string; position: { x: number; y: number } }>
+    guides: Array<{ id: string; axis: string; position: number }>
     viewport: { x: number; y: number; zoom: number }
   }
 }
@@ -108,6 +109,23 @@ test('zooms around the backing-store wheel anchor', async ({ page }) => {
   expect(scene.viewport.zoom).toBeCloseTo(zoom)
   expect(scene.viewport.x).toBeCloseTo(anchor.x - anchor.x * zoom)
   expect(scene.viewport.y).toBeCloseTo(anchor.y - anchor.y * zoom)
+})
+
+test('creates history-backed guides and lays selected nodes out through labelled controls', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Add vertical guide' }).click()
+  expect((await exportScene(page)).guides).toEqual([{ id: 'guide-1', axis: 'vertical', position: 300 }])
+  await page.getByRole('button', { name: 'Undo' }).click()
+  expect((await exportScene(page)).guides).toEqual([])
+
+  await dragInWorldSpace(page, { x: 195, y: 215 }, { x: 195, y: 215 })
+  await dragInWorldSpace(page, { x: 475, y: 215 }, { x: 475, y: 215 }, { modifiers: { shiftKey: true } })
+  await page.getByRole('combobox', { name: 'Layout direction' }).selectOption('grid')
+  await page.getByRole('button', { name: 'Apply auto layout' }).click()
+  const laidOut = await exportScene(page)
+  expect(laidOut.nodes.slice(0, 2).map((node) => node.position)).toEqual([{ x: 80, y: 120 }, { x: 254, y: 120 }])
+  await page.getByRole('button', { name: 'Undo' }).click()
+  expect((await exportScene(page)).nodes.slice(0, 2).map((node) => node.position)).toEqual([{ x: 120, y: 180 }, { x: 400, y: 180 }])
 })
 
 test('uses internal keyboard clipboard, duplicate, cut, and undo without system clipboard access', async ({ page }) => {

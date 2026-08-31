@@ -137,6 +137,30 @@ it('draws graph edges between node centers', () => {
   expect(lineTo).toHaveBeenCalledWith(110, 10)
 })
 
+it('draws active horizontal and vertical smart-layout guides in viewport coordinates', () => {
+  const moveTo = vi.fn(); const lineTo = vi.fn(); const setLineDash = vi.fn()
+  const context = {
+    clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, arc: vi.fn(), fill: vi.fn(), stroke: vi.fn(),
+    setLineDash, fillStyle: '', strokeStyle: '', lineWidth: 1,
+  } as unknown as CanvasRenderingContext2D
+  const element = { getContext: () => context, width: 800, height: 600 } as unknown as HTMLCanvasElement
+  const scene: CanvasScene = {
+    version: 5, nodes: [], connectors: [], groups: [], layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }], guides: [],
+    viewport: { x: 10, y: 20, zoom: 2 }, metadata: {},
+  }
+
+  new CanvasRenderer(element).render(scene, [], undefined, undefined, [
+    { id: 'guide-x', axis: 'vertical', position: 100 },
+    { id: 'guide-y', axis: 'horizontal', position: 80 },
+  ])
+
+  expect(setLineDash).toHaveBeenCalledWith([4, 4])
+  expect(moveTo).toHaveBeenCalledWith(210, 0)
+  expect(lineTo).toHaveBeenCalledWith(210, 600)
+  expect(moveTo).toHaveBeenCalledWith(0, 180)
+  expect(lineTo).toHaveBeenCalledWith(800, 180)
+})
+
 it('draws an arrowhead and a Bezier edge', () => {
   const moveTo = vi.fn(); const lineTo = vi.fn(); const bezierCurveTo = vi.fn()
   const context = { clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo, lineTo, arc: vi.fn(), bezierCurveTo, stroke: vi.fn(), fill: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1 } as unknown as CanvasRenderingContext2D

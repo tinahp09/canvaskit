@@ -9,6 +9,10 @@ app.innerHTML = `<header><strong>CanvasKit V2.3 — Diagram Toolkit</strong><div
 const canvasElement = app.querySelector('canvas')!
 canvasElement.width = 1200
 canvasElement.height = 720
+const layoutControls = document.createElement('fieldset')
+layoutControls.className = 'layer-controls layout-controls'
+layoutControls.innerHTML = '<legend>Smart layout</legend><label>Guide position <input id="layout-guide-position" aria-label="Guide position" type="number" value="300"></label><button id="add-vertical-guide">Add vertical guide</button><button id="add-horizontal-guide">Add horizontal guide</button><label>Guide <select id="layout-guide" aria-label="Layout guide"></select></label><button id="remove-layout-guide">Remove guide</button><label>Layout <select id="layout-direction" aria-label="Layout direction"><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option><option value="grid">Grid</option></select></label><label>Columns <input id="layout-columns" aria-label="Layout columns" type="number" min="1" value="2"></label><label>Gap <input id="layout-gap" aria-label="Layout gap" type="number" min="0" value="24"></label><button id="apply-layout">Apply auto layout</button><button id="preview-snap">Preview smart snap</button></fieldset>'
+app.querySelector('header')!.append(layoutControls)
 const workflow = addRectangle(addRectangle(addRectangle(createScene(), { id: 'webhook', position: { x: 120, y: 180 }, size: { width: 150, height: 70 }, fill: '#7C7FF2' }), { id: 'request', position: { x: 400, y: 180 }, size: { width: 150, height: 70 }, fill: '#60A5FA' }), { id: 'database', position: { x: 680, y: 180 }, size: { width: 150, height: 70 }, fill: '#34D399' })
 const diagram = addConnector(addConnector(workflow, { id: 'webhook-request', sourceNodeId: 'webhook', sourcePortId: 'east', targetNodeId: 'request', targetPortId: 'west', routing: 'orthogonal', label: 'Webhook request' }), { id: 'request-database', sourceNodeId: 'request', sourcePortId: 'east', targetNodeId: 'database', targetPortId: 'west', routing: 'orthogonal', label: 'Store record' })
 const kit = new CanvasKit({ scene: diagram })
@@ -19,7 +23,7 @@ kit.use(snapPlugin)
 const renderer = new CanvasRenderer(canvasElement)
 const redraw = () => {
   const scene = kit.getScene()
-  renderer.render(scene, kit.selection.get(), kit.transform.getOverlay(scene, kit.selection.get()), kit.getSelectedConnector())
+  renderer.render(scene, kit.selection.get(), kit.transform.getOverlay(scene, kit.selection.get()), kit.getSelectedConnector(), kit.getActiveLayoutGuides())
 }
 attachPointerInput(canvasElement, kit)
 attachKeyboardInput(canvasElement, kit)
@@ -98,6 +102,47 @@ let resizeHandle: Exclude<TransformHandle, 'rotate'> | undefined
 let resizePreservesAspect = false
 let resizeTransactionActive = false
 const status = app.querySelector<HTMLParagraphElement>('#scene-status')!
+const guidePosition = app.querySelector<HTMLInputElement>('#layout-guide-position')!
+const layoutGuide = app.querySelector<HTMLSelectElement>('#layout-guide')!
+const layoutDirection = app.querySelector<HTMLSelectElement>('#layout-direction')!
+const layoutColumns = app.querySelector<HTMLInputElement>('#layout-columns')!
+const layoutGap = app.querySelector<HTMLInputElement>('#layout-gap')!
+const syncLayoutControls = () => {
+  const current = layoutGuide.value
+  layoutGuide.replaceChildren(...kit.getScene().guides.map((guide) => {
+    const option = document.createElement('option')
+    option.value = guide.id
+    option.textContent = `${guide.axis} @ ${guide.position}`
+    return option
+  }))
+  layoutGuide.value = kit.getScene().guides.some((guide) => guide.id === current) ? current : (layoutGuide.options[0]?.value ?? '')
+}
+const nextGuideId = () => {
+  const ids = new Set(kit.getScene().guides.map((guide) => guide.id))
+  let number = 1
+  while (ids.has(`guide-${number}`)) number += 1
+  return `guide-${number}`
+}
+const addGuide = (axis: 'horizontal' | 'vertical') => {
+  const position = Number(guidePosition.value)
+  if (!Number.isFinite(position)) { status.textContent = 'Guide position must be finite.'; return }
+  if (kit.createGuide({ id: nextGuideId(), axis, position })) status.textContent = `${axis} guide added.`
+}
+app.querySelector<HTMLButtonElement>('#add-vertical-guide')!.onclick = () => addGuide('vertical')
+app.querySelector<HTMLButtonElement>('#add-horizontal-guide')!.onclick = () => addGuide('horizontal')
+app.querySelector<HTMLButtonElement>('#remove-layout-guide')!.onclick = () => {
+  if (layoutGuide.value && kit.removeGuide(layoutGuide.value)) status.textContent = 'Guide removed.'
+}
+app.querySelector<HTMLButtonElement>('#apply-layout')!.onclick = () => {
+  const columns = Number(layoutColumns.value)
+  const gap = Number(layoutGap.value)
+  if (kit.layoutSelection({ direction: layoutDirection.value as 'horizontal' | 'vertical' | 'grid', columns, gap: { x: gap, y: gap }, origin: { x: 80, y: 120 } })) status.textContent = 'Auto layout applied.'
+  else status.textContent = 'Select visible unlocked nodes to lay out.'
+}
+app.querySelector<HTMLButtonElement>('#preview-snap')!.onclick = () => {
+  const result = kit.snapSelection({ x: 9, y: 0 })
+  status.textContent = result.activeGuides.length > 0 ? 'Smart snap preview visible.' : 'No snap target nearby.'
+}
 const CONNECTION_HANDLE_OFFSET = 16
 const TRANSFORM_HANDLE_HIT_RADIUS = 8
 const PORT_HIT_RADIUS = 8
@@ -193,8 +238,9 @@ app.querySelector<HTMLButtonElement>('#cancel-connector')!.onclick = abortConnec
 canvasElement.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') abortConnectorInteraction()
 })
-kit.subscribe(() => { syncLayerControls(); syncConnectorControls(); redraw() })
+kit.subscribe(() => { syncLayerControls(); syncConnectorControls(); syncLayoutControls(); redraw() })
 syncConnectorControls()
+syncLayoutControls()
 const connectionSourceAt = (screen: { x: number; y: number }) => kit.selection.get().map((id) => kit.getScene().nodes.find((node) => node.id === id)).find((node) => {
   if (!node) return false
   if (!kit.isNodeInteractive(node.id)) return false

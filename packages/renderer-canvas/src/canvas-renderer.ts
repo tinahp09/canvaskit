@@ -1,4 +1,4 @@
-import { ConnectorController, deriveNodePorts, isNodeInteractive, nodeCenter, projectVisibleDocument, SpatialIndex, type CanvasEdge, type CanvasScene, type TransformOverlay } from '@canvaskit/core'
+import { ConnectorController, deriveNodePorts, isNodeInteractive, nodeCenter, projectVisibleDocument, SpatialIndex, type CanvasEdge, type CanvasGuide, type CanvasScene, type TransformOverlay } from '@canvaskit/core'
 
 interface Point { x: number; y: number }
 
@@ -25,6 +25,7 @@ export class CanvasRenderer {
     selectedNodeIds: readonly string[] = [],
     transformOverlay?: TransformOverlay,
     selectedConnectorId?: string,
+    activeLayoutGuides: readonly CanvasGuide[] = [],
   ): { visibleNodeCount: number } {
     this.context.clearRect(0, 0, this.element.width, this.element.height)
     const { viewport } = scene
@@ -125,6 +126,7 @@ export class CanvasRenderer {
     }
 
     if (transformOverlay) this.drawTransformOverlay(transformOverlay, viewport)
+    if (activeLayoutGuides.length > 0) this.drawLayoutGuides(activeLayoutGuides, viewport)
 
     return { visibleNodeCount: visibleNodes.length }
   }
@@ -162,6 +164,25 @@ export class CanvasRenderer {
     this.context.arc(rotation.x, rotation.y, 5, 0, Math.PI * 2)
     this.context.fill()
     this.context.stroke()
+  }
+
+  private drawLayoutGuides(guides: readonly CanvasGuide[], viewport: CanvasScene['viewport']): void {
+    this.context.strokeStyle = '#60A5FA'
+    this.context.lineWidth = 1
+    this.context.setLineDash([4, 4])
+    for (const guide of guides) {
+      const position = guide.position * viewport.zoom + (guide.axis === 'vertical' ? viewport.x : viewport.y)
+      this.context.beginPath()
+      if (guide.axis === 'vertical') {
+        this.context.moveTo(position, 0)
+        this.context.lineTo(position, this.element.height)
+      } else {
+        this.context.moveTo(0, position)
+        this.context.lineTo(this.element.width, position)
+      }
+      this.context.stroke()
+    }
+    this.context.setLineDash([])
   }
 
   private drawArrowhead(ax: number, ay: number, bx: number, by: number, color: string): void {
