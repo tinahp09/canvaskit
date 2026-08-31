@@ -66,7 +66,7 @@ test('clears history after importing a different version 2 scene', async ({ page
   }
   await page.getByTestId('scene-json').fill(JSON.stringify(importedScene))
   await page.getByRole('button', { name: 'Import scene' }).click()
-  await expect(page.getByRole('status')).toHaveText('Scene imported.')
+  await expect(page.locator('#scene-status')).toHaveText('Scene imported.')
   expect(await exportScene(page)).toEqual(migratedScene)
 
   await page.getByRole('button', { name: 'Undo' }).click()
@@ -84,7 +84,7 @@ test('edits and exports the Diagram Toolkit workflow', async ({ page }) => {
   await page.getByRole('button', { name: 'Export scene' }).click()
   await expect(page.getByTestId('scene-json')).toHaveValue(/circle/)
   await page.getByRole('button', { name: 'Import scene' }).click()
-  await expect(page.getByRole('status')).toHaveText('Scene imported.')
+  await expect(page.locator('#scene-status')).toHaveText('Scene imported.')
 })
 
 test('connects nodes by dragging from a connection handle', async ({ page }) => {
@@ -114,7 +114,7 @@ test('shows import errors without changing the scene', async ({ page }) => {
   const before = await page.getByTestId('scene-json').inputValue()
   await page.getByTestId('scene-json').fill('{')
   await page.getByRole('button', { name: 'Import scene' }).click()
-  await expect(page.getByRole('status')).toHaveText(/Import failed:/)
+  await expect(page.locator('#scene-status')).toHaveText(/Import failed:/)
   await page.getByRole('button', { name: 'Export scene' }).click()
   await expect(page.getByTestId('scene-json')).toHaveValue(before)
 })
@@ -137,11 +137,11 @@ test('exports escaped SVG and PNG data through accessible export controls', asyn
 
   await page.getByRole('button', { name: 'Export SVG' }).click()
   await expect(page.getByTestId('export-preview')).toHaveValue(/&lt;script&gt;alert\(1\)&lt;\/script&gt;/)
-  await expect(page.getByRole('status')).toHaveText('SVG exported.')
+  await expect(page.locator('#scene-status')).toHaveText('SVG exported.')
 
   await page.getByRole('button', { name: 'Export PNG' }).click()
   await expect(page.getByTestId('export-preview')).toHaveValue(/^data:image\/png;base64,/)
-  await expect(page.getByRole('status')).toHaveText('PNG exported.')
+  await expect(page.locator('#scene-status')).toHaveText('PNG exported.')
 })
 
 test('supports keyboard focus and labelled navigation through the editor workflow', async ({ page }) => {
@@ -158,7 +158,7 @@ test('supports keyboard focus and labelled navigation through the editor workflo
   await expect(page.getByLabel('Export preview')).toHaveAttribute('readonly', '')
 
   await page.getByRole('button', { name: 'Export scene' }).click()
-  await expect(page.getByRole('status')).toHaveText('Scene exported.')
+  await expect(page.locator('#scene-status')).toHaveText('Scene exported.')
 })
 
 test('adds an image asset and image node through labelled controls with undo', async ({ page }) => {

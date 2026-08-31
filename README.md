@@ -23,6 +23,11 @@ V2.6 adds deterministic vector PDF export and a host-owned ARIA mirror for
 visible canvas content. See the [guide](docs/guides/export-accessibility.md)
 and [API reference](docs/api/export-accessibility.md).
 
+## V2.7 plugin platform
+
+V2.7 adds stable headless registrations for commands, tools, node definitions,
+inspector sections, and diagnostics. See the [plugin platform guide](docs/guides/plugin-platform.md).
+
 ## V2.3 diagram toolkit
 
 V2.3 adds serializable Scene V4 connectors, derived node ports, deterministic
