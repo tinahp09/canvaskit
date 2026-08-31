@@ -78,7 +78,7 @@ test('clears history after importing a different version 2 scene', async ({ page
 
 test('edits and exports the Diagram Toolkit workflow', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByText('CanvasKit V2.3 — Diagram Toolkit')).toBeVisible()
+  await expect(page.getByText('CanvasKit V2.7 — Plugin Platform')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Connect selected' })).toBeVisible()
   await page.getByRole('button', { name: 'Add circle' }).click()
   await page.getByRole('button', { name: 'Export scene' }).click()
@@ -178,4 +178,11 @@ test('exports PDF and exposes the canvas contents through an ARIA mirror', async
   await page.getByRole('button', { name: 'Export PDF' }).click()
   await expect(page.getByTestId('export-preview')).toHaveValue(/^data:application\/pdf;base64,/)
   await expect(page.getByRole('list', { name: 'Canvas content' })).toContainText('Rectangle: webhook')
+})
+
+test('runs an extension command and exposes plugin diagnostics', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Show plugin diagnostics' }).click()
+  await expect(page.locator('#plugin-diagnostics')).toHaveText(/"plugins"/)
+  await expect(page.locator('#scene-status')).toHaveText('Plugin diagnostics shown.')
 })
