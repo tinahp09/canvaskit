@@ -54,12 +54,13 @@ test('clears history after importing a different version 2 scene', async ({ page
     metadata: { source: 'durable-editing-test' },
   }
   const migratedScene = {
-    version: 5,
+    version: 6,
     nodes: [{ id: 'imported-node', layerId: 'layer-default', type: 'rectangle', position: { x: 20, y: 30 }, size: { width: 160, height: 80 }, fill: '#F97316' }],
     connectors: [],
     groups: [],
     layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }],
     guides: [],
+    assets: [],
     viewport: { x: 0, y: 0, zoom: 1 },
     metadata: { source: 'durable-editing-test' },
   }
@@ -158,4 +159,16 @@ test('supports keyboard focus and labelled navigation through the editor workflo
 
   await page.getByRole('button', { name: 'Export scene' }).click()
   await expect(page.getByRole('status')).toHaveText('Scene exported.')
+})
+
+test('adds an image asset and image node through labelled controls with undo', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('textbox', { name: 'Image asset URL' }).fill('https://cdn.test/logo.png')
+  await page.getByRole('button', { name: 'Add image asset' }).click()
+  await page.getByRole('button', { name: 'Add image node' }).click()
+  const exported = await exportScene(page)
+  expect(exported.assets).toContainEqual(expect.objectContaining({ id: 'asset-1', source: 'https://cdn.test/logo.png' }))
+  expect(exported.nodes).toContainEqual(expect.objectContaining({ type: 'image', assetId: 'asset-1' }))
+  await page.getByRole('button', { name: 'Undo' }).click()
+  expect((await exportScene(page)).nodes.some((node: { type: string }) => node.type === 'image')).toBe(false)
 })

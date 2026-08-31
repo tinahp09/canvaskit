@@ -13,6 +13,10 @@ const layoutControls = document.createElement('fieldset')
 layoutControls.className = 'layer-controls layout-controls'
 layoutControls.innerHTML = '<legend>Smart layout</legend><label>Guide position <input id="layout-guide-position" aria-label="Guide position" type="number" value="300"></label><button id="add-vertical-guide">Add vertical guide</button><button id="add-horizontal-guide">Add horizontal guide</button><label>Guide <select id="layout-guide" aria-label="Layout guide"></select></label><button id="remove-layout-guide">Remove guide</button><label>Layout <select id="layout-direction" aria-label="Layout direction"><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option><option value="grid">Grid</option></select></label><label>Columns <input id="layout-columns" aria-label="Layout columns" type="number" min="1" value="2"></label><label>Gap <input id="layout-gap" aria-label="Layout gap" type="number" min="0" value="24"></label><button id="apply-layout">Apply auto layout</button><button id="preview-snap">Preview smart snap</button></fieldset>'
 app.querySelector('header')!.append(layoutControls)
+const assetControls = document.createElement('fieldset')
+assetControls.className = 'layer-controls asset-controls'
+assetControls.innerHTML = '<legend>Assets</legend><label>Image asset URL <input id="image-asset-url" aria-label="Image asset URL" type="url" placeholder="https://example.com/image.png"></label><button id="add-image-asset">Add image asset</button><button id="add-image-node">Add image node</button>'
+app.querySelector('header')!.append(assetControls)
 const workflow = addRectangle(addRectangle(addRectangle(createScene(), { id: 'webhook', position: { x: 120, y: 180 }, size: { width: 150, height: 70 }, fill: '#7C7FF2' }), { id: 'request', position: { x: 400, y: 180 }, size: { width: 150, height: 70 }, fill: '#60A5FA' }), { id: 'database', position: { x: 680, y: 180 }, size: { width: 150, height: 70 }, fill: '#34D399' })
 const diagram = addConnector(addConnector(workflow, { id: 'webhook-request', sourceNodeId: 'webhook', sourcePortId: 'east', targetNodeId: 'request', targetPortId: 'west', routing: 'orthogonal', label: 'Webhook request' }), { id: 'request-database', sourceNodeId: 'request', sourcePortId: 'east', targetNodeId: 'database', targetPortId: 'west', routing: 'orthogonal', label: 'Store record' })
 const kit = new CanvasKit({ scene: diagram })
@@ -102,6 +106,35 @@ let resizeHandle: Exclude<TransformHandle, 'rotate'> | undefined
 let resizePreservesAspect = false
 let resizeTransactionActive = false
 const status = app.querySelector<HTMLParagraphElement>('#scene-status')!
+const imageAssetURL = app.querySelector<HTMLInputElement>('#image-asset-url')!
+const nextAssetId = () => {
+  const ids = new Set(kit.getScene().assets.map((asset) => asset.id))
+  let number = 1
+  while (ids.has(`asset-${number}`)) number += 1
+  return `asset-${number}`
+}
+const nextImageNodeId = () => {
+  const ids = new Set(kit.getScene().nodes.map((node) => node.id))
+  let number = 1
+  while (ids.has(`image-${number}`)) number += 1
+  return `image-${number}`
+}
+app.querySelector<HTMLButtonElement>('#add-image-asset')!.onclick = () => {
+  const source = imageAssetURL.value.trim()
+  if (!source) { status.textContent = 'Enter an image asset URL.'; return }
+  const id = nextAssetId()
+  if (kit.addAsset({ id, kind: 'image', source, mimeType: 'image/png', width: 160, height: 80 })) {
+    status.textContent = `Image asset ${id} added.`
+  }
+}
+app.querySelector<HTMLButtonElement>('#add-image-node')!.onclick = () => {
+  const asset = kit.getScene().assets.at(-1)
+  if (!asset || asset.kind !== 'image') { status.textContent = 'Add an image asset first.'; return }
+  const id = nextImageNodeId()
+  if (kit.addImage({ id, assetId: asset.id, position: { x: 280, y: 380 }, size: { width: 160, height: 80 }, fit: 'contain' })) {
+    status.textContent = `Image node ${id} added.`
+  }
+}
 const guidePosition = app.querySelector<HTMLInputElement>('#layout-guide-position')!
 const layoutGuide = app.querySelector<HTMLSelectElement>('#layout-guide')!
 const layoutDirection = app.querySelector<HTMLSelectElement>('#layout-direction')!
