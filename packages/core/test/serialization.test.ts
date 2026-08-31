@@ -9,17 +9,18 @@ it('restores a serialized rectangle scene', () => {
   expect(loadScene(serializeScene(scene))).toEqual(scene)
 })
 
-it('migrates a version 1 scene into version 5', () => {
+it('migrates a version 1 scene into version 6', () => {
   expect(importScene('{"version":1,"nodes":[],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}'))
-    .toMatchObject({ version: 5, connectors: [], groups: [], guides: [], layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }] })
+    .toMatchObject({ version: 6, connectors: [], groups: [], guides: [], assets: [], layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }] })
 })
 
-it('adapts version 1 graph records into version 5 connectors', () => {
+it('adapts version 1 graph records into version 6 connectors', () => {
   const version1 = '{"version":1,"nodes":[{"id":"a","type":"rectangle","position":{"x":0,"y":0},"size":{"width":10,"height":10},"fill":"#fff"},{"id":"b","type":"rectangle","position":{"x":20,"y":0},"size":{"width":10,"height":10},"fill":"#000"}],"edges":[{"id":"link","type":"arrow","sourceId":"a","targetId":"b"}],"groups":[{"id":"pair","nodeIds":["a","b"]}],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}'
 
   expect(importScene(version1)).toMatchObject({
-    version: 5,
+    version: 6,
     guides: [],
+    assets: [],
     connectors: [{ id: 'link', sourceNodeId: 'a', sourcePortId: 'center', targetNodeId: 'b', targetPortId: 'center', routing: 'straight' }],
     groups: [{ id: 'pair', nodeIds: ['a', 'b'] }],
   })
@@ -33,7 +34,7 @@ it('exports and imports canonical version 4 scenes', () => {
   expect(importScene(exportScene(scene))).toEqual(scene)
 })
 
-it('migrates canonical version 4 scenes to version 5 with empty guides', () => {
+it('migrates canonical version 4 scenes to version 6 with empty guides and assets', () => {
   const version4 = JSON.stringify({
     version: 4,
     nodes: [], connectors: [], groups: [],
@@ -41,7 +42,7 @@ it('migrates canonical version 4 scenes to version 5 with empty guides', () => {
     viewport: { x: 0, y: 0, zoom: 1 }, metadata: {},
   })
 
-  expect(importScene(version4)).toMatchObject({ version: 5, guides: [] })
+  expect(importScene(version4)).toMatchObject({ version: 6, guides: [], assets: [] })
 })
 
 it('rejects duplicate and non-finite canonical guide records', () => {
@@ -61,6 +62,31 @@ it('rejects duplicate and non-finite canonical guide records', () => {
   ] }))).toThrow(InvalidSceneError)
 })
 
+it('migrates V5 scenes to V6 with empty assets and compatible text runs', () => {
+  const version5 = JSON.stringify({
+    version: 5,
+    nodes: [{ id: 'caption', layerId: 'layer-default', type: 'text', position: { x: 20, y: 40 }, text: 'Hello', fill: '#fff', fontSize: 16 }],
+    connectors: [], groups: [], guides: [], layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }],
+    viewport: { x: 0, y: 0, zoom: 1 }, metadata: {},
+  })
+
+  expect(importScene(version5)).toMatchObject({
+    version: 6, assets: [], nodes: [expect.objectContaining({ runs: [{ text: 'Hello' }] })],
+  })
+})
+
+it('validates canonical image asset references and normalized crops', () => {
+  const base = {
+    version: 6, connectors: [], groups: [], guides: [], layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }],
+    viewport: { x: 0, y: 0, zoom: 1 }, metadata: {}, assets: [{ id: 'logo', kind: 'image', source: 'https://cdn.test/logo.png', mimeType: 'image/png', width: 80, height: 40 }],
+  }
+  const node = { id: 'logo-node', layerId: 'layer-default', type: 'image', position: { x: 0, y: 0 }, size: { width: 160, height: 80 }, assetId: 'logo', fit: 'contain', crop: { x: 0, y: 0, width: 1, height: 1 } }
+
+  expect(importScene(JSON.stringify({ ...base, nodes: [node] })).nodes[0]).toMatchObject({ type: 'image', assetId: 'logo' })
+  expect(() => importScene(JSON.stringify({ ...base, nodes: [{ ...node, assetId: 'missing' }] }))).toThrow(InvalidSceneError)
+  expect(() => importScene(JSON.stringify({ ...base, nodes: [{ ...node, crop: { x: 0.5, y: 0, width: 0.6, height: 1 } }] }))).toThrow(InvalidSceneError)
+})
+
 it('rejects malformed imported JSON with a typed error', () => {
   expect(() => importScene('{"version":2,"nodes":"bad"}')).toThrow(InvalidSceneError)
 })
@@ -70,7 +96,7 @@ it('rejects invalid JSON syntax with a typed error', () => {
 })
 
 it('rejects unsupported scene versions with the unsupported-version subtype', () => {
-  expect(() => importScene('{"version":6,"nodes":[],"connectors":[],"groups":[],"layers":[],"guides":[],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}'))
+  expect(() => importScene('{"version":7,"nodes":[],"connectors":[],"groups":[],"layers":[],"guides":[],"assets":[],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}'))
     .toThrow(UnsupportedSceneVersionError)
 })
 

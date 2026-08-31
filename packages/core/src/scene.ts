@@ -11,6 +11,7 @@ export function createScene(): CanvasScene {
     groups: [],
     layers: [{ id: DEFAULT_LAYER_ID, name: 'Default', visible: true, locked: false }],
     guides: [],
+    assets: [],
     viewport: { x: 0, y: 0, zoom: 1 },
     metadata: {},
   }
@@ -34,7 +35,7 @@ function addNode(scene: CanvasScene, node: CanvasNode): CanvasScene {
   return { ...scene, nodes: [...scene.nodes, node] }
 }
 export function addCircle(scene: CanvasScene, input: CreateCircleInput): CanvasScene { return addNode(scene, { ...input, layerId: input.layerId ?? implicitLayerId(scene), type: 'circle' }) }
-export function addText(scene: CanvasScene, input: CreateTextInput): CanvasScene { return addNode(scene, { ...input, layerId: input.layerId ?? implicitLayerId(scene), type: 'text' }) }
+export function addText(scene: CanvasScene, input: CreateTextInput): CanvasScene { return addNode(scene, { ...input, layerId: input.layerId ?? implicitLayerId(scene), type: 'text', runs: [{ text: input.text }] }) }
 export function addEdge(scene: CanvasScene, input: CreateEdgeInput): CanvasScene {
   return addConnector(scene, {
     id: input.id,

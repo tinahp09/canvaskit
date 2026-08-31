@@ -12,7 +12,7 @@ export function hitTestNode(scene: CanvasScene, point: Point, index?: SpatialInd
   return [...interactiveNodesInRenderOrder(scene)].reverse().find((node) => {
     if (candidateIds && !candidateIds.has(node.id)) return false
     if (!isNodeInteractive(scene, node.id)) return false
-    if (node.type === 'rectangle') return rectContainsPoint({ ...node.position, ...node.size }, point)
+    if (node.type === 'rectangle' || node.type === 'image') return rectContainsPoint({ ...node.position, ...node.size }, point)
     if (node.type === 'circle') return Math.hypot(point.x - node.position.x, point.y - node.position.y) <= node.radius
     return point.x >= node.position.x && point.x <= node.position.x + node.text.length * node.fontSize
       && point.y >= node.position.y - node.fontSize && point.y <= node.position.y

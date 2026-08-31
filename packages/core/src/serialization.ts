@@ -1,4 +1,4 @@
-import { SCENE_VERSION, type CanvasConnector, type CanvasGuide, type CanvasLayer, type CanvasNode, type CanvasScene, type RectangleNode } from './model.js'
+import { SCENE_VERSION, type CanvasAsset, type CanvasConnector, type CanvasGuide, type CanvasLayer, type CanvasNode, type CanvasScene, type RectangleNode } from './model.js'
 import { InvalidSceneError, migrateScene, UnsupportedSceneVersionError } from './migrations.js'
 import { findNodePort } from './ports.js'
 
@@ -24,9 +24,9 @@ export const loadScene = importScene
 function parseCanonicalScene(value: unknown): CanvasScene {
   if (!isRecord(value)) throw new InvalidSceneError('Scene must be an object.')
   if (value.version !== SCENE_VERSION) throw new UnsupportedSceneVersionError(value.version)
-  if (Object.hasOwn(value, 'edges')) throw new InvalidSceneError('Version 5 scenes must use connectors instead of edges.')
+  if (Object.hasOwn(value, 'edges')) throw new InvalidSceneError('Version 6 scenes must use connectors instead of edges.')
   if (!Array.isArray(value.nodes)) throw new InvalidSceneError('Scene nodes must be an array.')
-  if (!Array.isArray(value.connectors) || !Array.isArray(value.groups) || !Array.isArray(value.layers) || !Array.isArray(value.guides)) throw new InvalidSceneError('Scene graph state is invalid.')
+  if (!Array.isArray(value.connectors) || !Array.isArray(value.groups) || !Array.isArray(value.layers) || !Array.isArray(value.guides) || !Array.isArray(value.assets)) throw new InvalidSceneError('Scene graph state is invalid.')
   if (!isTransform(value.viewport)) throw new InvalidSceneError('Scene viewport is invalid.')
   if (!isRecord(value.metadata)) throw new InvalidSceneError('Scene metadata must be an object.')
 
@@ -37,6 +37,7 @@ function parseCanonicalScene(value: unknown): CanvasScene {
     groups: value.groups.map(parseGroup),
     layers: value.layers.map(parseLayer),
     guides: value.guides.map(parseGuide),
+    assets: value.assets.map(parseAsset),
     viewport: value.viewport,
     metadata: value.metadata,
   }
@@ -48,6 +49,7 @@ function parseGuide(value: unknown): CanvasGuide {
   if (!isRecord(value) || typeof value.id !== 'string' || !['horizontal', 'vertical'].includes(String(value.axis)) || typeof value.position !== 'number' || !Number.isFinite(value.position)) throw new InvalidSceneError('Scene contains an invalid guide.')
   return { id: value.id, axis: value.axis as CanvasGuide['axis'], position: value.position }
 }
+function parseAsset(value: unknown): CanvasAsset { if (!isRecord(value) || value.kind !== 'image' || typeof value.id !== 'string' || typeof value.source !== 'string' || typeof value.mimeType !== 'string' || typeof value.width !== 'number' || typeof value.height !== 'number' || !Number.isFinite(value.width) || !Number.isFinite(value.height) || value.width <= 0 || value.height <= 0) throw new InvalidSceneError('Scene contains an invalid asset.'); return { id: value.id, kind: 'image', source: value.source, mimeType: value.mimeType, width: value.width, height: value.height } }
 function parseConnector(value: unknown): CanvasConnector {
   if (!isRecord(value) || typeof value.id !== 'string'
     || typeof value.sourceNodeId !== 'string' || typeof value.sourcePortId !== 'string'
@@ -69,7 +71,8 @@ function parseConnector(value: unknown): CanvasConnector {
 function parseGroup(value: unknown) { if (!isRecord(value) || typeof value.id !== 'string' || !Array.isArray(value.nodeIds) || !value.nodeIds.every((id) => typeof id === 'string')) throw new InvalidSceneError('Scene contains an invalid group.'); return { id: value.id, nodeIds: value.nodeIds as string[] } }
 function parseNode(value: unknown): CanvasNode {
   if (isRecord(value) && value.type === 'circle' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.radius === 'number' && typeof value.fill === 'string') return { id: value.id, layerId: value.layerId, type: 'circle', position: value.position, radius: value.radius, fill: value.fill }
-  if (isRecord(value) && value.type === 'text' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.text === 'string' && typeof value.fill === 'string' && typeof value.fontSize === 'number') return { id: value.id, layerId: value.layerId, type: 'text', position: value.position, text: value.text, fill: value.fill, fontSize: value.fontSize }
+  if (isRecord(value) && value.type === 'text' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.text === 'string' && Array.isArray(value.runs) && value.runs.every((run) => isRecord(run) && typeof run.text === 'string' && (run.bold === undefined || typeof run.bold === 'boolean') && (run.italic === undefined || typeof run.italic === 'boolean')) && typeof value.fill === 'string' && typeof value.fontSize === 'number') return { id: value.id, layerId: value.layerId, type: 'text', position: value.position, text: value.text, runs: value.runs as never, fill: value.fill, fontSize: value.fontSize }
+  if (isRecord(value) && value.type === 'image' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && isSize(value.size) && typeof value.assetId === 'string' && ['contain', 'cover', 'fill'].includes(String(value.fit)) && isCrop(value.crop)) return { id: value.id, layerId: value.layerId, type: 'image', position: value.position, size: value.size, assetId: value.assetId, fit: value.fit as never, crop: value.crop }
   return parseRectangle(value)
 }
 
@@ -93,6 +96,10 @@ function isPoint(value: unknown): value is { x: number; y: number } {
 function isSize(value: unknown): value is { width: number; height: number } {
   return isRecord(value) && typeof value.width === 'number' && typeof value.height === 'number'
 }
+function isCrop(value: unknown): value is { x: number; y: number; width: number; height: number } {
+  if (!isRecord(value) || typeof value.x !== 'number' || typeof value.y !== 'number' || typeof value.width !== 'number' || typeof value.height !== 'number') return false
+  return Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.width) && Number.isFinite(value.height) && value.x >= 0 && value.y >= 0 && value.width > 0 && value.height > 0 && value.x + value.width <= 1 && value.y + value.height <= 1
+}
 
 function isTransform(value: unknown): value is { x: number; y: number; zoom: number } {
   return isRecord(value)
@@ -106,9 +113,11 @@ function assertCanonicalReferences(scene: CanvasScene): void {
   uniqueIds(scene.connectors, 'connector')
   uniqueIds(scene.groups, 'group')
   uniqueIds(scene.guides, 'guide')
+  const assetIds = uniqueIds(scene.assets, 'asset')
   const layerIds = uniqueIds(scene.layers, 'layer')
   if (layerIds.size === 0) throw new InvalidSceneError('Scene must contain at least one layer.')
   if (scene.nodes.some((node) => !layerIds.has(node.layerId))) throw new InvalidSceneError('Scene nodes must reference existing layers.')
+  if (scene.nodes.some((node) => node.type === 'image' && !assetIds.has(node.assetId))) throw new InvalidSceneError('Scene image nodes must reference existing assets.')
 
   for (const connector of scene.connectors) {
     const source = scene.nodes.find((node) => node.id === connector.sourceNodeId)

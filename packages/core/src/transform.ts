@@ -327,7 +327,7 @@ function resizeNode(
     y: target.y + (point.y - source.y) * scaleY,
   })
 
-  if (node.type === 'rectangle') {
+  if (node.type === 'rectangle' || node.type === 'image') {
     const bounds = normalizeRect(nodeBounds(node))
     return {
       ...node,

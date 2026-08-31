@@ -1,6 +1,6 @@
 import type { Point, Size, ViewportTransform } from '@canvaskit/geometry'
 
-export const SCENE_VERSION = 5 as const
+export const SCENE_VERSION = 6 as const
 export const DEFAULT_LAYER_ID = 'layer-default'
 
 export interface RectangleNode {
@@ -12,8 +12,12 @@ export interface RectangleNode {
   fill: string
 }
 export interface CircleNode { id: string; layerId: string; type: 'circle'; position: Point; radius: number; fill: string }
-export interface TextNode { id: string; layerId: string; type: 'text'; position: Point; text: string; fill: string; fontSize: number }
-export type CanvasNode = RectangleNode | CircleNode | TextNode
+export interface TextRun { text: string; bold?: boolean; italic?: boolean }
+export interface TextNode { id: string; layerId: string; type: 'text'; position: Point; text: string; runs: TextRun[]; fill: string; fontSize: number }
+export type ImageFit = 'contain' | 'cover' | 'fill'
+export interface ImageCrop { x: number; y: number; width: number; height: number }
+export interface ImageNode { id: string; layerId: string; type: 'image'; position: Point; size: Size; assetId: string; fit: ImageFit; crop: ImageCrop }
+export type CanvasNode = RectangleNode | CircleNode | TextNode | ImageNode
 export interface CanvasEdge { id: string; type: 'line' | 'arrow' | 'bezier'; sourceId: string; targetId: string }
 export type PortDirection = 'north' | 'east' | 'south' | 'west'
 export interface NodePort { id: string; direction: PortDirection | 'center'; position: Point }
@@ -31,6 +35,8 @@ export interface CanvasGroup { id: string; nodeIds: string[] }
 export interface CanvasLayer { id: string; name: string; visible: boolean; locked: boolean }
 export type GuideAxis = 'horizontal' | 'vertical'
 export interface CanvasGuide { id: string; axis: GuideAxis; position: number }
+export interface ImageAsset { id: string; kind: 'image'; source: string; mimeType: string; width: number; height: number }
+export type CanvasAsset = ImageAsset
 
 export interface CanvasScene {
   version: typeof SCENE_VERSION
@@ -39,6 +45,7 @@ export interface CanvasScene {
   groups: CanvasGroup[]
   layers: CanvasLayer[]
   guides: CanvasGuide[]
+  assets: CanvasAsset[]
   viewport: ViewportTransform
   metadata: Record<string, unknown>
 }

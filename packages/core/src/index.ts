@@ -1,7 +1,7 @@
 export const PACKAGE_NAME = '@canvaskit/core'
 
 export { DEFAULT_LAYER_ID, SCENE_VERSION } from './model.js'
-export type { CanvasConnector, CanvasEdge, CanvasGroup, CanvasGuide, CanvasLayer, CanvasNode, CanvasScene, CircleNode, ConnectorRouting, CreateCircleInput, CreateConnectorInput, CreateEdgeInput, CreateGroupInput, CreateRectangleInput, CreateTextInput, GuideAxis, NodePort, PortDirection, RectangleNode, TextNode } from './model.js'
+export type { CanvasAsset, CanvasConnector, CanvasEdge, CanvasGroup, CanvasGuide, CanvasLayer, CanvasNode, CanvasScene, CircleNode, ConnectorRouting, CreateCircleInput, CreateConnectorInput, CreateEdgeInput, CreateGroupInput, CreateRectangleInput, CreateTextInput, GuideAxis, ImageAsset, ImageCrop, ImageFit, ImageNode, NodePort, PortDirection, RectangleNode, TextNode, TextRun } from './model.js'
 export { addCircle, addConnector, addEdge, addGroup, addRectangle, addText, connectNodes, createScene, removeConnector, removeEdge, translateNode } from './scene.js'
 export { addLayer, groupNodes, interactiveNodesInRenderOrder, isNodeInteractive, moveNodesToLayer, projectVisibleDocument, removeLayer, reorderLayer, reorderNodeInLayer, setLayerLocked, setLayerVisibility, ungroupNodes } from './document.js'
 export type { VisibleDocumentProjection } from './document.js'

@@ -11,6 +11,7 @@ export function nodeBounds(node: CanvasNode): Rect {
       height: node.radius * 2,
     }
   }
+  if (node.type === 'image') return { ...node.position, ...node.size }
   return {
     x: node.position.x,
     y: node.position.y - node.fontSize,

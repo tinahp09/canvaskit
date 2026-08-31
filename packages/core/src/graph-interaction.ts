@@ -6,6 +6,7 @@ import { ConnectorController } from './connector.js'
 export function nodeCenter(node: CanvasNode): Point {
   if (node.type === 'rectangle') return { x: node.position.x + node.size.width / 2, y: node.position.y + node.size.height / 2 }
   if (node.type === 'circle') return node.position
+  if (node.type === 'image') return { x: node.position.x + node.size.width / 2, y: node.position.y + node.size.height / 2 }
   return { x: node.position.x + node.text.length * node.fontSize / 2, y: node.position.y - node.fontSize / 2 }
 }
 
