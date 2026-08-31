@@ -21,6 +21,13 @@ keyboard-accessible create/select/retarget/delete flows. See the [diagram
 toolkit guide](docs/guides/diagram-toolkit.md), [API
 reference](docs/api/diagram-toolkit.md), and [migration notes](docs/migrations.md).
 
+## V2.4 smart layout
+
+V2.4 adds Scene V5 ruler guides, deterministic smart snapping, and explicit
+horizontal, vertical, and grid auto-layout. Core calculations respect
+hidden/locked layers; transient snap feedback is renderer-only and never saved.
+See the [smart layout guide](docs/guides/smart-layout.md) and [API reference](docs/api/smart-layout.md).
+
 ## V2.2 document & layers
 
 V2.2 adds ordered document layers, durable metadata-only groups, layer

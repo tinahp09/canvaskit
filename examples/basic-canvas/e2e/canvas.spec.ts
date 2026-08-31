@@ -54,11 +54,12 @@ test('clears history after importing a different version 2 scene', async ({ page
     metadata: { source: 'durable-editing-test' },
   }
   const migratedScene = {
-    version: 4,
+    version: 5,
     nodes: [{ id: 'imported-node', layerId: 'layer-default', type: 'rectangle', position: { x: 20, y: 30 }, size: { width: 160, height: 80 }, fill: '#F97316' }],
     connectors: [],
     groups: [],
     layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }],
+    guides: [],
     viewport: { x: 0, y: 0, zoom: 1 },
     metadata: { source: 'durable-editing-test' },
   }

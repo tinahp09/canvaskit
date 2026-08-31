@@ -1,7 +1,7 @@
 # Scene migrations
 
 CanvasKit scene documents use a versioned JSON format. The current canonical
-format is version 4.
+format is version 5.
 
 ## Version 1 to version 2
 
@@ -43,6 +43,13 @@ New V4 documents use a `connectors` array. Each connector names existing source
 and target nodes and one of their derived `north`, `east`, `south`, or `west`
 ports. `importScene` accepts V1–V3 documents; `exportScene` always writes
 canonical version 4 JSON.
+
+## Version 4 to version 5
+
+V2.4 adds persistent ruler guides. V4 imports become V5 with `guides: []`;
+existing nodes, connectors, layers, groups, viewport, metadata, and order are
+unchanged. A V5 guide has a unique ID, horizontal/vertical axis, and finite
+world-coordinate position. Transient smart-snap feedback is never serialized.
 
 Malformed JSON and invalid scene fields throw `InvalidSceneError`. Unsupported
 versions throw `UnsupportedSceneVersionError`, which is an `InvalidSceneError`.

@@ -2,17 +2,17 @@
 
 ## Code
 
-- [x] Features complete / feature freeze confirmed (V2.3 Diagram Toolkit)
-- [x] Tests passing (2026-08-31 candidate: 31 unit files / 227 tests and 27 basic-canvas browser tests)
+- [x] Features complete / feature freeze confirmed (V2.4 Smart Layout)
+- [x] Tests passing (2026-08-31 candidate: 32 unit files / 235 tests and 28 basic-canvas browser tests)
 - [x] Performance checked (2026-08-31 spatial-index benchmark at 1,000, 5,000, and 10,000 nodes; indexed hit-test remained substantially below linear)
-- [x] Breaking changes documented (Scene export is V4; V1–V3 import migration is documented)
+- [x] Breaking changes documented (Scene export is V5; V1–V4 import migration is documented)
 
 ## Documentation
 
 - [x] README updated
 - [x] Architecture docs updated
 - [x] API documented
-- [x] Migration notes added (V3 edges to V4 connectors)
+- [x] Migration notes added (V4 to V5 guides)
 
 ## Media
 
@@ -22,9 +22,9 @@
 
 ## Release
 
-- [ ] Version bumped (V2.3 is a milestone candidate; package publication/versioning needs release-owner approval)
+- [ ] Version bumped (V2.4 is a milestone candidate; package publication/versioning needs release-owner approval)
 - [ ] CHANGELOG updated (deferred with the approved package version)
-- [x] Release notes written (candidate: `docs/release-notes-v2-3.md`)
+- [x] Release notes written (candidate: `docs/release-notes-v2-4.md`)
 - [ ] GitHub Release created
 
 ## Public
