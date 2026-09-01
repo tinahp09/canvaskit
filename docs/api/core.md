@@ -77,10 +77,11 @@ The instance exposes five public controllers: `viewport`, `selection`,
 ## Controllers, history, and registries
 
 - `ViewportController` reads and changes the scene transform with `getTransform`, `panBy`, `setZoom`, `zoomAt`, and `reset`.
-- `SelectionController` manages node IDs with `select`, `selectMultiple`,
-  `set`, `add`, `remove`, `toggle`, `clear`, `get`, and `selectAll`; selections
-  are retained only for nodes that still exist. `SelectionMode` describes the
-  four explicit selection mutations.
+- `SelectionController` manages node and group IDs with `select`,
+  `selectMultiple`, `set`, `add`, `remove`, `toggle`, `clear`, `get`, and
+  `selectAll`; group IDs remain compact until an operation resolves their
+  descendant leaves. Selections are retained only while interactive.
+  `SelectionMode` describes the four explicit selection mutations.
 - `HistoryController` is the lower-level undo/redo implementation. `SceneCommand` supplies a label plus `execute` and `undo` scene transformations.
 - `NodeRegistry` and `EdgeRegistry` register named node and edge definitions. `NamedDefinition` is the minimum registry shape: an `id` string.
 
@@ -114,9 +115,15 @@ interaction paths.
   editor workflow shortcuts. Each returns a cleanup function.
 - `hitTestNode(scene, point, index?)`, `hitTestConnector(scene, point, tolerance?)`,
   `hitTestEdge(scene, point, tolerance?)`,
-  `nodesInRect(scene, rect, mode?, index?)`, and `moveNodes(scene, ids, delta)`
+  `nodesInRect(scene, rect, mode?, index?)`, `nodesInLasso(scene, polygon)`,
+  and `moveNodes(scene, ids, delta)`
   support custom editor interaction. `MarqueeMode` selects `contain` or
-  `intersect` bounds matching.
+  `intersect` bounds matching. Lasso uses each interactive node's bounds centre
+  and preserves scene order; moving a group resolves its leaves once.
+- `CanvasKit.selectInLasso(points, options?)` applies a lasso result with the
+  same replace/add/remove/toggle semantics as `selectInRect`. Its
+  `nudgeSelection(delta)` is history-backed; the default keyboard adapter maps
+  arrow keys to a one-unit nudge.
 - `nodeCenter(node)` and `nodeBounds(node)` derive geometry for a node.
 - `snapPointToGrid(point, gridSize)` returns the nearest grid point for a positive grid size.
 - `SpatialIndex(nodes)` creates a read-only node index. Its `query(rect)` method returns candidates in original scene order; recreate it after node bounds change.

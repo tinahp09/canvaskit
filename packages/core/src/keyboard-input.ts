@@ -23,6 +23,16 @@ export function attachKeyboardInput(element: HTMLElement, canvas: CanvasKit): ()
           ? 'clear-selection'
           : undefined
 
+    const nudge = !primaryModifier && !command
+      ? ({ ArrowLeft: { x: -1, y: 0 }, ArrowRight: { x: 1, y: 0 }, ArrowUp: { x: 0, y: -1 }, ArrowDown: { x: 0, y: 1 } } as const)[event.key]
+      : undefined
+
+    if (nudge) {
+      event.preventDefault()
+      canvas.nudgeSelection(nudge)
+      return
+    }
+
     if (!command) return
     event.preventDefault()
     canvas.executeCommand(command)

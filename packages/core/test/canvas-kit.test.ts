@@ -170,6 +170,18 @@ it('applies marquee results with explicit selection semantics', () => {
   expect(canvas.selection.get()).toEqual(['a', 'b'])
 })
 
+it('applies lasso results with explicit selection semantics', () => {
+  const scene = addRectangle(addRectangle(createScene(), {
+    id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+  }), {
+    id: 'b', position: { x: 40, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+  })
+  const canvas = new CanvasKit({ scene })
+
+  expect(canvas.selectInLasso([{ x: -5, y: -5 }, { x: 20, y: -5 }, { x: 20, y: 20 }, { x: -5, y: 20 }])).toEqual(['a'])
+  expect(canvas.selection.get()).toEqual(['a'])
+})
+
 it('deletes through the command without leaving dangling graph records and restores one scene on undo', () => {
   let scene = addRectangle(createScene(), { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
   scene = addRectangle(scene, { id: 'b', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' })

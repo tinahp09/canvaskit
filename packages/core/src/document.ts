@@ -57,6 +57,13 @@ export function isNodeInteractive(scene: CanvasScene, nodeId: string): boolean {
   return layer?.visible === true && layer.locked === false && isNodeVisible(scene, nodeId) && !isNodeGroupLocked(scene, nodeId)
 }
 
+/** Returns whether a group and all of its leaf content may be selected. */
+export function isGroupInteractive(scene: CanvasScene, groupId: string): boolean {
+  if (!findGroup(scene, groupId)) return false
+  const nodeIds = groupDescendantNodeIds(scene, groupId)
+  return nodeIds.length > 0 && nodeIds.every((nodeId) => isNodeInteractive(scene, nodeId))
+}
+
 export function reorderLayer(scene: CanvasScene, layerId: string, targetIndex: number): CanvasScene {
   const sourceIndex = layerIndex(scene, layerId)
   if (sourceIndex < 0) throw new Error(`Unknown layer id: ${layerId}.`)

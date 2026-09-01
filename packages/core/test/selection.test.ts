@@ -1,4 +1,4 @@
-import { addCircle, addLayer, addRectangle, CanvasKit, createScene, SelectionController, setLayerLocked } from '../src/index.js'
+import { addCircle, addLayer, addRectangle, CanvasKit, createScene, groupNodes, SelectionController, setGroupLocked, setLayerLocked } from '../src/index.js'
 import { expect, it } from 'vitest'
 
 function canvasWithNodes(): CanvasKit {
@@ -46,6 +46,18 @@ it('clears and selects all scene nodes', () => {
   canvas.selection.selectAll()
   expect(canvas.selection.get()).toEqual(['rectangle', 'circle'])
   canvas.selection.clear()
+  expect(canvas.selection.get()).toEqual([])
+})
+
+it('retains an interactive group id as a compact hierarchy selection', () => {
+  const scene = groupNodes(addRectangle(createScene(), {
+    id: 'node', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff',
+  }), { id: 'group', nodeIds: ['node'] })
+  const canvas = new CanvasKit({ scene })
+
+  canvas.selection.select('group')
+  expect(canvas.selection.get()).toEqual(['group'])
+  canvas.setScene(setGroupLocked(scene, 'group', true))
   expect(canvas.selection.get()).toEqual([])
 })
 

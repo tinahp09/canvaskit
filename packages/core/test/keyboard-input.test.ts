@@ -77,3 +77,15 @@ it('maps Delete to relation-safe graph removal', () => {
   expect(canvas.getScene().groups).toEqual([{ id: 'pair', nodeIds: ['b'], visible: true, locked: false }])
   expect(importScene(canvas.toJSON())).toEqual(canvas.getScene())
 })
+
+it('nudges the selection by one world unit with arrow keys', () => {
+  const target = new FakeKeyboardTarget()
+  const canvas = new CanvasKit({ scene: addRectangle(createScene(), { id: 'node', position: { x: 5, y: 8 }, size: { width: 1, height: 1 }, fill: '#fff' }) })
+  canvas.selection.select('node')
+  attachKeyboardInput(target as unknown as HTMLElement, canvas)
+
+  target.dispatch({ key: 'ArrowRight', preventDefault() {} } as KeyboardEvent)
+  target.dispatch({ key: 'ArrowUp', preventDefault() {} } as KeyboardEvent)
+
+  expect(canvas.getScene().nodes[0]?.position).toEqual({ x: 6, y: 7 })
+})

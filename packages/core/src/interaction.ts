@@ -2,7 +2,7 @@ import { rectContainsPoint, type Point, type Rect } from '@canvaskit/geometry'
 import { nodeBounds } from './bounds.js'
 import type { CanvasNode, CanvasScene } from './model.js'
 import { SpatialIndex } from './spatial-index.js'
-import { interactiveNodesInRenderOrder, isNodeInteractive } from './document.js'
+import { groupDescendantNodeIds, interactiveNodesInRenderOrder, isNodeInteractive } from './document.js'
 
 export type MarqueeMode = 'contain' | 'intersect'
 
@@ -55,12 +55,35 @@ export function nodesInRect(
   }).map((node) => node.id)
 }
 
+/** Returns interactive nodes with their bounds centre inside a closed lasso polygon. */
+export function nodesInLasso(scene: CanvasScene, polygon: readonly Point[]): string[] {
+  if (polygon.length < 3) return []
+  return scene.nodes.filter((node) => {
+    if (!isNodeInteractive(scene, node.id)) return false
+    const bounds = nodeBounds(node)
+    return pointInPolygon({ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }, polygon)
+  }).map((node) => node.id)
+}
+
 export function moveNodes(scene: CanvasScene, ids: readonly string[], delta: Point): CanvasScene {
-  const moving = new Set(ids)
+  const nodeIds = new Set(scene.nodes.map((node) => node.id))
+  const moving = new Set(ids.flatMap((id) => nodeIds.has(id) ? [id] : scene.groups.some((group) => group.id === id) ? groupDescendantNodeIds(scene, id) : []))
   return {
     ...scene,
     nodes: scene.nodes.map((node) => moving.has(node.id)
       ? { ...node, position: { x: node.position.x + delta.x, y: node.position.y + delta.y } }
       : node),
   }
+}
+
+function pointInPolygon(point: Point, polygon: readonly Point[]): boolean {
+  let inside = false
+  for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index++) {
+    const currentPoint = polygon[index]!
+    const previousPoint = polygon[previous]!
+    const crosses = (currentPoint.y > point.y) !== (previousPoint.y > point.y)
+      && point.x < (previousPoint.x - currentPoint.x) * (point.y - currentPoint.y) / (previousPoint.y - currentPoint.y) + currentPoint.x
+    if (crosses) inside = !inside
+  }
+  return inside
 }

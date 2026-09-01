@@ -1,5 +1,5 @@
 import type { CanvasScene } from './model.js'
-import { isNodeInteractive } from './document.js'
+import { isGroupInteractive, isNodeInteractive } from './document.js'
 
 export type SelectionMode = 'replace' | 'add' | 'remove' | 'toggle'
 
@@ -53,9 +53,11 @@ export class SelectionController {
   }
 
   get(): string[] {
-    return this.getScene().nodes
-      .filter((node) => this.ids.has(node.id) && this.canSelect(node.id))
-      .map((node) => node.id)
+    const scene = this.getScene()
+    return [
+      ...scene.nodes.filter((node) => this.ids.has(node.id) && this.canSelect(node.id)).map((node) => node.id),
+      ...scene.groups.filter((group) => this.ids.has(group.id) && this.canSelect(group.id)).map((group) => group.id),
+    ]
   }
 
   selectAll(): void {
@@ -82,10 +84,11 @@ export class SelectionController {
   }
 
   private canSelect(id: string): boolean {
-    return this.interactionPredicate?.(id) ?? isNodeInteractive(this.getScene(), id)
+    if (this.interactionPredicate) return this.interactionPredicate(id)
+    return isNodeInteractive(this.getScene(), id) || isGroupInteractive(this.getScene(), id)
   }
 
   private assertNode(id: string): void {
-    if (!this.getScene().nodes.some((node) => node.id === id)) throw new Error(`Unknown node id: ${id}.`)
+    if (!this.getScene().nodes.some((node) => node.id === id) && !this.getScene().groups.some((group) => group.id === id)) throw new Error(`Unknown node id: ${id}.`)
   }
 }

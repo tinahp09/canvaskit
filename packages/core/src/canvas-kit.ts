@@ -5,7 +5,7 @@ import { loadScene, serializeScene } from './serialization.js'
 import { ViewportController } from './viewport.js'
 import { SelectionController } from './selection.js'
 import type { SelectionMode } from './selection.js'
-import { nodesInRect, type MarqueeMode } from './interaction.js'
+import { moveNodes, nodesInLasso, nodesInRect, type MarqueeMode } from './interaction.js'
 import { HistoryController, type SceneCommand } from './history.js'
 import { cloneClipboard, copySelection, pasteSelection, removeSelection, type SceneClipboard } from './clipboard.js'
 import type { EditorCommand } from './editor-command.js'
@@ -13,7 +13,7 @@ import type { CanvasPlugin } from './plugin.js'
 import { EdgeRegistry, NodeRegistry } from './registry.js'
 import { SceneSubscription, type SceneListener } from './scene-subscription.js'
 import { TransformController, type AlignmentAxis, type DistributionAxis, type TransformConstraints, type TransformHandle } from './transform.js'
-import { addLayer, groupNodes, isNodeInteractive, moveNodesToLayer, reorderLayer as reorderLayers, reorderNodeInLayer, setLayerLocked, setLayerVisibility, ungroupNodes } from './document.js'
+import { addLayer, groupNodes, isGroupInteractive, isNodeInteractive, moveNodesToLayer, reorderLayer as reorderLayers, reorderNodeInLayer, setLayerLocked, setLayerVisibility, ungroupNodes } from './document.js'
 import { ConnectorController } from './connector.js'
 import { LayoutController, type AutoLayoutOptions, type SnapOptions, type SnapResult } from './layout.js'
 import { ContentController, type CreateImageInput } from './content.js'
@@ -79,7 +79,7 @@ export class CanvasKit {
         this.activeLayoutGuides = []
         this.notifyScene()
       },
-      (id) => this.isNodeInteractive(id),
+      (id) => this.isSelectionInteractive(id),
     )
   }
 
@@ -89,6 +89,11 @@ export class CanvasKit {
 
   isNodeInteractive(id: string): boolean {
     return isNodeInteractive(this.getScene(), id)
+  }
+
+  private isSelectionInteractive(id: string): boolean {
+    const scene = this.getScene()
+    return isNodeInteractive(scene, id) || isGroupInteractive(scene, id)
   }
 
   /** Creates a connector when both validated endpoint nodes are interactive. */
@@ -269,6 +274,13 @@ export class CanvasKit {
     return this.executeTransform('distribute selection', before, this.transform.distribute(before, ids, axis))
   }
 
+  /** Moves the current node/group selection by a world-space delta. */
+  nudgeSelection(delta: Point): boolean {
+    if (!Number.isFinite(delta.x) || !Number.isFinite(delta.y)) throw new Error('Nudge delta must be finite.')
+    const before = this.getScene()
+    return this.executeSceneChange('nudge selection', before, moveNodes(before, this.selection.get(), delta))
+  }
+
   createGuide(guide: CanvasGuide): boolean {
     return this.executeDocument('create guide', (scene) => this.layout.createGuide(scene, guide))
   }
@@ -376,6 +388,17 @@ export class CanvasKit {
 
   selectInRect(rect: Rect, options: MarqueeSelectionOptions = {}): string[] {
     const ids = nodesInRect(this.getScene(), rect, options.mode ?? 'contain')
+    switch (options.selection ?? 'replace') {
+      case 'replace': this.selection.set(ids); break
+      case 'add': this.selection.add(ids); break
+      case 'remove': this.selection.remove(ids); break
+      case 'toggle': this.selection.toggle(ids); break
+    }
+    return ids
+  }
+
+  selectInLasso(points: readonly Point[], options: Pick<MarqueeSelectionOptions, 'selection'> = {}): string[] {
+    const ids = nodesInLasso(this.getScene(), points)
     switch (options.selection ?? 'replace') {
       case 'replace': this.selection.set(ids); break
       case 'add': this.selection.add(ids); break

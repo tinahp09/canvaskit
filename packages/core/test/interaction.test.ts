@@ -1,4 +1,4 @@
-import { addCircle, addLayer, addRectangle, createScene, hitTestNode, isNodeInteractive, moveNodes, nodesInRect, SpatialIndex } from '../src/index.js'
+import { addCircle, addLayer, addRectangle, createScene, groupNodes, hitTestNode, isNodeInteractive, moveNodes, nodesInLasso, nodesInRect, SpatialIndex } from '../src/index.js'
 import { expect, it, vi } from 'vitest'
 
 const scene = addCircle(addRectangle(createScene(), {
@@ -80,6 +80,11 @@ it('selects every node whose bounds intersect an intersect marquee', () => {
   expect(nodesInRect(scene, { x: 90, y: 90, width: 20, height: 20 }, 'intersect')).toEqual(['circle'])
 })
 
+it('selects interactive nodes whose centres are inside a lasso polygon in scene order', () => {
+  expect(nodesInLasso(scene, [{ x: 0, y: 0 }, { x: 80, y: 0 }, { x: 80, y: 80 }, { x: 0, y: 80 }])).toEqual(['rectangle'])
+  expect(nodesInLasso(scene, [{ x: 85, y: 85 }, { x: 130, y: 85 }, { x: 130, y: 130 }, { x: 85, y: 130 }])).toEqual(['circle'])
+})
+
 it('uses an index without changing fully-contained marquee selection', () => {
   const index = new SpatialIndex(scene.nodes)
   const query = vi.spyOn(index, 'query')
@@ -108,4 +113,12 @@ it('moves named nodes immutably in world coordinates', () => {
   const moved = moveNodes(scene, ['rectangle'], { x: 5, y: -3 })
   expect(scene.nodes[0]?.position).toEqual({ x: 10, y: 10 })
   expect(moved.nodes[0]?.position).toEqual({ x: 15, y: 7 })
+})
+
+it('moves a selected group through its descendant leaves once', () => {
+  let grouped = addRectangle(createScene(), { id: 'a', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
+  grouped = addRectangle(grouped, { id: 'b', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
+  grouped = groupNodes(grouped, { id: 'pair', nodeIds: ['a', 'b'] })
+
+  expect(moveNodes(grouped, ['pair'], { x: 5, y: 8 }).nodes.map((node) => node.position)).toEqual([{ x: 5, y: 8 }, { x: 25, y: 8 }])
 })
