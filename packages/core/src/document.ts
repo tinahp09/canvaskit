@@ -16,7 +16,7 @@ export function projectVisibleDocument(scene: CanvasScene): VisibleDocumentProje
   if (layers.length === 0) return { nodes: [...scene.nodes], connectors: [...connectors] }
 
   const nodes = layers.flatMap((layer) => layer.visible
-    ? scene.nodes.filter((node) => node.layerId === layer.id)
+    ? scene.nodes.filter((node) => node.layerId === layer.id && isNodeVisible(scene, node.id))
     : [])
   const visibleNodeIds = new Set(nodes.map((node) => node.id))
   const visibleConnectors = connectors.filter((connector) => visibleNodeIds.has(connector.sourceNodeId) && visibleNodeIds.has(connector.targetNodeId))
@@ -25,8 +25,7 @@ export function projectVisibleDocument(scene: CanvasScene): VisibleDocumentProje
 
 /** Returns pointer-interactive nodes in front-to-back hit-test order. */
 export function interactiveNodesInRenderOrder(scene: CanvasScene): CanvasNode[] {
-  const layers = new Map((scene.layers ?? []).map((layer) => [layer.id, layer]))
-  return projectVisibleDocument(scene).nodes.filter((node) => layers.size === 0 || layers.get(node.layerId)?.locked === false)
+  return projectVisibleDocument(scene).nodes.filter((node) => isNodeInteractive(scene, node.id))
 }
 
 export function addLayer(scene: CanvasScene, layer: CanvasLayer): CanvasScene {
@@ -53,9 +52,9 @@ export function isNodeInteractive(scene: CanvasScene, nodeId: string): boolean {
   const node = scene.nodes.find((candidate) => candidate.id === nodeId)
   if (!node) return false
   const layers = Array.isArray(scene.layers) ? scene.layers : []
-  if (layers.length === 0) return true
+  if (layers.length === 0) return isNodeVisible(scene, nodeId) && !isNodeGroupLocked(scene, nodeId)
   const layer = layers.find((candidate) => candidate.id === node.layerId)
-  return layer?.visible === true && layer.locked === false
+  return layer?.visible === true && layer.locked === false && isNodeVisible(scene, nodeId) && !isNodeGroupLocked(scene, nodeId)
 }
 
 export function reorderLayer(scene: CanvasScene, layerId: string, targetIndex: number): CanvasScene {
@@ -89,12 +88,70 @@ export function setLayerLocked(scene: CanvasScene, layerId: string, locked: bool
 export function groupNodes(scene: CanvasScene, input: CreateGroupInput): CanvasScene {
   if (scene.groups.some((group) => group.id === input.id)) throw new Error(`A group with id "${input.id}" already exists.`)
   assertNodeIds(scene, input.nodeIds, 'Group nodes must exist.')
-  return { ...scene, groups: [...scene.groups, { id: input.id, nodeIds: [...input.nodeIds] }] }
+  if (scene.groups.some((group) => group.nodeIds.some((nodeId) => input.nodeIds.includes(nodeId)))) throw new Error('Group nodes must not already belong to another group.')
+  if (input.parentId !== undefined) assertGroup(scene, input.parentId)
+  return {
+    ...scene,
+    groups: [...scene.groups, {
+      id: input.id,
+      nodeIds: [...input.nodeIds],
+      visible: input.visible ?? true,
+      locked: input.locked ?? false,
+      ...(input.parentId === undefined ? {} : { parentId: input.parentId }),
+    }],
+  }
 }
 
 export function ungroupNodes(scene: CanvasScene, groupId: string): CanvasScene {
-  if (!scene.groups.some((group) => group.id === groupId)) throw new Error(`Unknown group id: ${groupId}.`)
-  return { ...scene, groups: scene.groups.filter((group) => group.id !== groupId) }
+  const group = findGroup(scene, groupId)
+  if (!group) throw new Error(`Unknown group id: ${groupId}.`)
+  return {
+    ...scene,
+    groups: scene.groups.filter((candidate) => candidate.id !== groupId).map((candidate) => candidate.parentId === groupId
+      ? { ...candidate, ...(group.parentId === undefined ? { parentId: undefined } : { parentId: group.parentId }) }
+      : candidate),
+  }
+}
+
+/** Returns a group's direct and recursive leaf nodes in stable scene-node order. */
+export function groupDescendantNodeIds(scene: CanvasScene, groupId: string): string[] {
+  if (!findGroup(scene, groupId)) throw new Error(`Unknown group id: ${groupId}.`)
+  const groupsByParent = new Map<string | undefined, string[]>()
+  for (const group of scene.groups) {
+    const children = groupsByParent.get(group.parentId) ?? []
+    children.push(group.id)
+    groupsByParent.set(group.parentId, children)
+  }
+  const nodeIds = new Set<string>()
+  const visited = new Set<string>()
+  const visit = (id: string): void => {
+    if (visited.has(id)) return
+    visited.add(id)
+    const group = findGroup(scene, id)!
+    for (const nodeId of group.nodeIds) nodeIds.add(nodeId)
+    for (const childId of groupsByParent.get(id) ?? []) visit(childId)
+  }
+  visit(groupId)
+  return scene.nodes.filter((node) => nodeIds.has(node.id)).map((node) => node.id)
+}
+
+export function setGroupParent(scene: CanvasScene, groupId: string, parentId: string | undefined): CanvasScene {
+  const group = findGroup(scene, groupId)
+  if (!group) throw new Error(`Unknown group id: ${groupId}.`)
+  if (parentId === undefined) return group.parentId === undefined ? scene : { ...scene, groups: scene.groups.map((candidate) => candidate.id === groupId ? { ...candidate, parentId: undefined } : candidate) }
+  if (!findGroup(scene, parentId)) throw new Error(`Unknown group id: ${parentId}.`)
+  if (parentId === groupId || groupAncestorIds(scene, parentId).includes(groupId)) throw new Error('Group hierarchy must not contain cycles.')
+  return group.parentId === parentId ? scene : { ...scene, groups: scene.groups.map((candidate) => candidate.id === groupId ? { ...candidate, parentId } : candidate) }
+}
+
+export function setGroupVisibility(scene: CanvasScene, groupId: string, visible: boolean): CanvasScene {
+  assertGroup(scene, groupId)
+  return { ...scene, groups: scene.groups.map((group) => group.id === groupId ? { ...group, visible } : group) }
+}
+
+export function setGroupLocked(scene: CanvasScene, groupId: string, locked: boolean): CanvasScene {
+  assertGroup(scene, groupId)
+  return { ...scene, groups: scene.groups.map((group) => group.id === groupId ? { ...group, locked } : group) }
 }
 
 export function reorderNodeInLayer(scene: CanvasScene, nodeId: string, targetIndex: number): CanvasScene {
@@ -115,6 +172,39 @@ export function reorderNodeInLayer(scene: CanvasScene, nodeId: string, targetInd
 
 function assertLayer(scene: CanvasScene, layerId: string): void {
   if (layerIndex(scene, layerId) < 0) throw new Error(`Unknown layer id: ${layerId}.`)
+}
+
+function assertGroup(scene: CanvasScene, groupId: string): void {
+  if (!findGroup(scene, groupId)) throw new Error(`Unknown group id: ${groupId}.`)
+}
+
+function findGroup(scene: CanvasScene, groupId: string) {
+  return scene.groups?.find((group) => group.id === groupId)
+}
+
+function groupAncestorIds(scene: CanvasScene, groupId: string): string[] {
+  const ancestors: string[] = []
+  const seen = new Set<string>()
+  let current = findGroup(scene, groupId)
+  while (current?.parentId !== undefined && !seen.has(current.parentId)) {
+    ancestors.push(current.parentId)
+    seen.add(current.parentId)
+    current = findGroup(scene, current.parentId)
+  }
+  return ancestors
+}
+
+function nodeGroupAncestors(scene: CanvasScene, nodeId: string) {
+  const direct = (scene.groups ?? []).find((group) => group.nodeIds.includes(nodeId))
+  return direct ? [direct, ...groupAncestorIds(scene, direct.id).flatMap((id) => findGroup(scene, id) ?? [])] : []
+}
+
+function isNodeVisible(scene: CanvasScene, nodeId: string): boolean {
+  return nodeGroupAncestors(scene, nodeId).every((group) => group.visible)
+}
+
+function isNodeGroupLocked(scene: CanvasScene, nodeId: string): boolean {
+  return nodeGroupAncestors(scene, nodeId).some((group) => group.locked)
 }
 
 function layerIndex(scene: CanvasScene, layerId: string): number {

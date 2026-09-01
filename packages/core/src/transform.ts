@@ -1,5 +1,6 @@
 import type { Point, Rect } from '@canvaskit/geometry'
 import { nodeBounds } from './bounds.js'
+import { groupDescendantNodeIds } from './document.js'
 import type { CanvasNode, CanvasScene } from './model.js'
 
 export type TransformHandle =
@@ -175,9 +176,18 @@ function translateSelectedNodes(scene: CanvasScene, moves: ReadonlyMap<string, P
 function selectedNodes(scene: CanvasScene, ids: readonly string[]): CanvasNode[] | undefined {
   if (ids.length === 0) return undefined
   const byId = new Map(scene.nodes.map((node) => [node.id, node]))
-  const uniqueIds = [...new Set(ids)]
-  const nodes = uniqueIds.map((id) => byId.get(id))
-  return nodes.every((node): node is CanvasNode => node !== undefined) ? nodes : undefined
+  const groupIds = new Set((scene.groups ?? []).map((group) => group.id))
+  const selectedIds = new Set<string>()
+  for (const id of new Set(ids)) {
+    if (byId.has(id)) {
+      selectedIds.add(id)
+      continue
+    }
+    if (!groupIds.has(id)) return undefined
+    for (const nodeId of groupDescendantNodeIds(scene, id)) selectedIds.add(nodeId)
+  }
+  const nodes = scene.nodes.filter((node) => selectedIds.has(node.id))
+  return nodes.length > 0 ? nodes : undefined
 }
 
 function unionBounds(nodes: readonly CanvasNode[]): Rect {

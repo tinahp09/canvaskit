@@ -13,13 +13,14 @@ This page is the curated inventory of every public export from the package root.
 - `PACKAGE_NAME` is the package identifier and `SCENE_VERSION` is the current scene-document version.
 - `CanvasScene` is a versioned document with ordered `layers`, `nodes`,
   `connectors`, `groups`, `viewport`, and `metadata`. The current
-  `SCENE_VERSION` is `4`.
+  `SCENE_VERSION` is `7`.
 - `CanvasNode` is the union of `RectangleNode`, `CircleNode`, and `TextNode`.
 - Every `CanvasNode` has a `layerId`. `CanvasLayer` has `id`, `name`, `visible`,
   and `locked`; `DEFAULT_LAYER_ID` is `'layer-default'` for Core-created scenes.
 - `CanvasConnector` connects named derived ports with `straight` or
-  `orthogonal` routing; `CanvasGroup` collects node IDs without becoming a
-  nested transform container. `CanvasEdge` remains a legacy migration type.
+  `orthogonal` routing. `CanvasGroup` owns direct leaf `nodeIds`, optional
+  `parentId`, and `visible`/`locked` state; group state is inherited by every
+  descendant. `CanvasEdge` remains a legacy migration type.
 - `CreateRectangleInput`, `CreateCircleInput`, `CreateTextInput`,
   `CreateConnectorInput`, `CreateEdgeInput`, and `CreateGroupInput` are the
   corresponding immutable-scene creation inputs.
@@ -96,11 +97,13 @@ The instance exposes five public controllers: `viewport`, `selection`,
 
 `addLayer`, `removeLayer`, `reorderLayer`, `moveNodesToLayer`,
 `reorderNodeInLayer`, `setLayerVisibility`, `setLayerLocked`, `groupNodes`, and
-`ungroupNodes` are immutable lower-level document operations. They validate
+`ungroupNodes`, `setGroupParent`, `setGroupVisibility`, and `setGroupLocked`
+are immutable lower-level document operations. They validate
 layer and node references and preserve all relation invariants. Use
 `projectVisibleDocument(scene)` when a renderer needs the canonical layer paint
-order; it omits hidden-layer nodes and connectors whose endpoints are not both
-visible. `interactiveNodesInRenderOrder(scene)` and
+order; it omits hidden-layer/group nodes and connectors whose endpoints are not
+both visible. `groupDescendantNodeIds(scene, groupId)` resolves a group to its
+recursive leaf nodes in scene order. `interactiveNodesInRenderOrder(scene)` and
 `isNodeInteractive(scene, nodeId)` additionally exclude locked content for
 interaction paths.
 
@@ -126,6 +129,8 @@ alignment, and distribution scenes. `TransformHandle`, `TransformConstraints`,
 `rotateSelection(radians)` and a `rotate` resize request persist a node's
 optional `rotation` angle into `CanvasScene`. See
 [Transform tools](/api/transform-tools) for the complete contract and examples.
+Selection IDs may be node or group IDs; a group transform resolves its
+descendant leaves exactly once.
 
 ## Plugins and renderers
 

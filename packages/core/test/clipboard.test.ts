@@ -8,6 +8,8 @@ import {
   copySelection,
   createScene,
   pasteSelection,
+  removeSelection,
+  setGroupParent,
   type SceneClipboard,
 } from '../src/index.js'
 
@@ -66,7 +68,7 @@ it('filters clipboard relations that reference nodes outside the clipboard', () 
   const clipboard: SceneClipboard = {
     nodes: copySelection(source, ['a']).nodes,
     edges: [{ id: 'invalid-edge', sourceId: 'a', targetId: 'missing', type: 'arrow' }],
-    groups: [{ id: 'invalid-group', nodeIds: ['a', 'missing'] }],
+    groups: [{ id: 'invalid-group', nodeIds: ['a', 'missing'], visible: true, locked: false }],
   }
 
   const result = pasteSelection(createScene(), clipboard, { x: 0, y: 0 })
@@ -84,7 +86,7 @@ it('preserves node subtype fields and remaps copied group members', () => {
   const result = pasteSelection(scene, copySelection(scene, ['a', 'b']), { x: 5, y: 8 })
 
   expect(result.scene.nodes[3]).toEqual({ id: 'b-copy', layerId: 'layer-default', type: 'circle', position: { x: 35, y: 8 }, radius: 12, fill: '#123' })
-  expect(result.scene.groups[1]).toEqual({ id: 'pair-copy', nodeIds: ['a-copy', 'b-copy'] })
+  expect(result.scene.groups[1]).toEqual({ id: 'pair-copy', nodeIds: ['a-copy', 'b-copy'], visible: true, locked: false })
 })
 
 it('uses collision-free deterministic ids for pasted records', () => {
@@ -101,7 +103,32 @@ it('uses collision-free deterministic ids for pasted records', () => {
 
   expect(result.ids).toEqual(['a-copy-2', 'b-copy-2'])
   expect(result.scene.connectors.at(-1)).toEqual({ id: 'link-copy-2', sourceNodeId: 'a-copy-2', sourcePortId: 'center', targetNodeId: 'b-copy-2', targetPortId: 'center', routing: 'straight' })
-  expect(result.scene.groups.at(-1)).toEqual({ id: 'pair-copy-2', nodeIds: ['a-copy-2', 'b-copy-2'] })
+  expect(result.scene.groups.at(-1)).toEqual({ id: 'pair-copy-2', nodeIds: ['a-copy-2', 'b-copy-2'], visible: true, locked: false })
+})
+
+it('remaps nested group parent references when pasting a complete hierarchy', () => {
+  let scene = addRectangle(createScene(), rectangle)
+  scene = addRectangle(scene, { ...rectangle, id: 'b', position: { x: 30, y: 0 } })
+  scene = addGroup(scene, { id: 'child', nodeIds: ['b'] })
+  scene = addGroup(scene, { id: 'parent', nodeIds: ['a'] })
+  scene = setGroupParent(scene, 'child', 'parent')
+
+  const result = pasteSelection(scene, copySelection(scene, ['a', 'b']), { x: 0, y: 0 })
+
+  expect(result.scene.groups.at(-2)).toMatchObject({ id: 'child-copy', parentId: 'parent-copy', nodeIds: ['b-copy'] })
+  expect(result.scene.groups.at(-1)).toMatchObject({ id: 'parent-copy', nodeIds: ['a-copy'] })
+})
+
+it('promotes child groups when removing their parent group leaf nodes', () => {
+  let scene = addRectangle(createScene(), rectangle)
+  scene = addRectangle(scene, { ...rectangle, id: 'b', position: { x: 30, y: 0 } })
+  scene = addGroup(scene, { id: 'child', nodeIds: ['b'] })
+  scene = addGroup(scene, { id: 'parent', nodeIds: ['a'] })
+  scene = setGroupParent(scene, 'child', 'parent')
+
+  const removed = removeSelection(scene, ['a'])
+
+  expect(removed.groups).toEqual([{ id: 'child', nodeIds: ['b'], visible: true, locked: false }])
 })
 
 it('returns the original scene without inserted ids for an empty clipboard', () => {
@@ -184,7 +211,6 @@ it('cuts selected nodes, cleans dangling relations, and restores the whole scene
   scene = addEdge(scene, { id: 'ab', sourceId: 'a', targetId: 'b', type: 'line' })
   scene = addEdge(scene, { id: 'bc', sourceId: 'b', targetId: 'c', type: 'arrow' })
   scene = addGroup(scene, { id: 'all', nodeIds: ['a', 'b', 'c'] })
-  scene = addGroup(scene, { id: 'only-b', nodeIds: ['b'] })
   const kit = new CanvasKit({ scene })
   kit.selection.set(['b'])
 
@@ -193,7 +219,7 @@ it('cuts selected nodes, cleans dangling relations, and restores the whole scene
   expect(clipboard.nodes.map((node) => node.id)).toEqual(['b'])
   expect(kit.getScene().nodes.map((node) => node.id)).toEqual(['a', 'c'])
   expect(kit.getScene().connectors).toEqual([])
-  expect(kit.getScene().groups).toEqual([{ id: 'all', nodeIds: ['a', 'c'] }])
+  expect(kit.getScene().groups).toEqual([{ id: 'all', nodeIds: ['a', 'c'], visible: true, locked: false }])
   expect(kit.selection.get()).toEqual([])
   expect(kit.undo()).toEqual(scene)
 })

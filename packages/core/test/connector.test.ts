@@ -46,7 +46,7 @@ it('migrates a V3 edge into a straight connector with legacy center endpoints', 
   }))
 
   expect(scene).toMatchObject({
-    version: 6,
+    version: 7,
     guides: [],
     assets: [],
     connectors: [{

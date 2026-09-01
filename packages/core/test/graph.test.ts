@@ -26,7 +26,7 @@ it('does not hit-test connectors attached to hidden layers', () => {
 
 it('groups existing node ids', () => {
   const scene = addRectangle(createScene(), { id: 'node', position: { x: 0, y: 0 }, size: { width: 20, height: 20 }, fill: '#fff' })
-  expect(addGroup(scene, { id: 'group', nodeIds: ['node'] }).groups).toEqual([{ id: 'group', nodeIds: ['node'] }])
+  expect(addGroup(scene, { id: 'group', nodeIds: ['node'] }).groups).toEqual([{ id: 'group', nodeIds: ['node'], visible: true, locked: false }])
 })
 
 it('connects two existing nodes with a generated connector id', () => {

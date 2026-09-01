@@ -1,4 +1,4 @@
-import { SCENE_VERSION, type CanvasAsset, type CanvasConnector, type CanvasGuide, type CanvasLayer, type CanvasNode, type CanvasScene, type RectangleNode } from './model.js'
+import { SCENE_VERSION, type CanvasAsset, type CanvasConnector, type CanvasGroup, type CanvasGuide, type CanvasLayer, type CanvasNode, type CanvasScene, type RectangleNode } from './model.js'
 import { InvalidSceneError, migrateScene, UnsupportedSceneVersionError } from './migrations.js'
 import { findNodePort } from './ports.js'
 
@@ -24,7 +24,7 @@ export const loadScene = importScene
 function parseCanonicalScene(value: unknown): CanvasScene {
   if (!isRecord(value)) throw new InvalidSceneError('Scene must be an object.')
   if (value.version !== SCENE_VERSION) throw new UnsupportedSceneVersionError(value.version)
-  if (Object.hasOwn(value, 'edges')) throw new InvalidSceneError('Version 6 scenes must use connectors instead of edges.')
+  if (Object.hasOwn(value, 'edges')) throw new InvalidSceneError('Version 7 scenes must use connectors instead of edges.')
   if (!Array.isArray(value.nodes)) throw new InvalidSceneError('Scene nodes must be an array.')
   if (!Array.isArray(value.connectors) || !Array.isArray(value.groups) || !Array.isArray(value.layers) || !Array.isArray(value.guides) || !Array.isArray(value.assets)) throw new InvalidSceneError('Scene graph state is invalid.')
   if (!isTransform(value.viewport)) throw new InvalidSceneError('Scene viewport is invalid.')
@@ -68,7 +68,13 @@ function parseConnector(value: unknown): CanvasConnector {
     ...(value.label === undefined ? {} : { label: value.label }),
   }
 }
-function parseGroup(value: unknown) { if (!isRecord(value) || typeof value.id !== 'string' || !Array.isArray(value.nodeIds) || !value.nodeIds.every((id) => typeof id === 'string')) throw new InvalidSceneError('Scene contains an invalid group.'); return { id: value.id, nodeIds: value.nodeIds as string[] } }
+function parseGroup(value: unknown): CanvasGroup {
+  if (!isRecord(value) || typeof value.id !== 'string' || !Array.isArray(value.nodeIds) || !value.nodeIds.every((id) => typeof id === 'string')
+    || (value.parentId !== undefined && typeof value.parentId !== 'string') || typeof value.visible !== 'boolean' || typeof value.locked !== 'boolean') {
+    throw new InvalidSceneError('Scene contains an invalid group.')
+  }
+  return { id: value.id, nodeIds: value.nodeIds as string[], visible: value.visible, locked: value.locked, ...(value.parentId === undefined ? {} : { parentId: value.parentId }) }
+}
 function parseNode(value: unknown): CanvasNode {
   if (isRecord(value) && value.type === 'circle' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.radius === 'number' && typeof value.fill === 'string' && isRotation(value.rotation)) return { id: value.id, layerId: value.layerId, type: 'circle', position: value.position, radius: value.radius, fill: value.fill, ...(value.rotation === undefined ? {} : { rotation: value.rotation }) }
   if (isRecord(value) && value.type === 'text' && typeof value.id === 'string' && typeof value.layerId === 'string' && isPoint(value.position) && typeof value.text === 'string' && Array.isArray(value.runs) && value.runs.every((run) => isRecord(run) && typeof run.text === 'string' && (run.bold === undefined || typeof run.bold === 'boolean') && (run.italic === undefined || typeof run.italic === 'boolean')) && typeof value.fill === 'string' && typeof value.fontSize === 'number' && isRotation(value.rotation)) return { id: value.id, layerId: value.layerId, type: 'text', position: value.position, text: value.text, runs: value.runs as never, fill: value.fill, fontSize: value.fontSize, ...(value.rotation === undefined ? {} : { rotation: value.rotation }) }
@@ -128,9 +134,28 @@ function assertCanonicalReferences(scene: CanvasScene): void {
     }
   }
 
+  const directMemberIds = new Set<string>()
+  const groupIds = new Set(scene.groups.map((group) => group.id))
   for (const group of scene.groups) {
     if (new Set(group.nodeIds).size !== group.nodeIds.length || group.nodeIds.some((id) => !nodeIds.has(id))) {
       throw new InvalidSceneError('Scene group members must reference existing nodes uniquely.')
+    }
+    for (const nodeId of group.nodeIds) {
+      if (directMemberIds.has(nodeId)) throw new InvalidSceneError('Scene nodes may belong to only one group.')
+      directMemberIds.add(nodeId)
+    }
+    if (group.parentId !== undefined && (!groupIds.has(group.parentId) || group.parentId === group.id)) {
+      throw new InvalidSceneError('Scene group parents must reference another group.')
+    }
+  }
+
+  for (const group of scene.groups) {
+    const ancestors = new Set<string>([group.id])
+    let parentId = group.parentId
+    while (parentId !== undefined) {
+      if (ancestors.has(parentId)) throw new InvalidSceneError('Scene group hierarchy must not contain cycles.')
+      ancestors.add(parentId)
+      parentId = scene.groups.find((candidate) => candidate.id === parentId)?.parentId
     }
   }
 }

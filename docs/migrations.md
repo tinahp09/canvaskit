@@ -1,7 +1,7 @@
 # Scene migrations
 
 CanvasKit scene documents use a versioned JSON format. The current canonical
-format is version 6.
+format is version 7.
 
 ## Version 1 to version 2
 
@@ -61,3 +61,16 @@ V6 with `assets: []`; every existing text node gains
 `runs: [{ text: node.text }]`. Existing geometry, layers, connectors, groups,
 guides, viewport, metadata, and ordering are unchanged. New image nodes must
 reference an existing asset and carry a valid normalized crop rectangle.
+
+## Version 6 to version 7
+
+V3 introduces nested groups without turning groups into rendered nodes. V6
+imports become V7 with every existing group set to `visible: true` and
+`locked: false`; they remain top-level because `parentId` is omitted. A V7
+group retains `nodeIds` as direct leaf-node members and may name a parent group
+through `parentId`.
+
+V7 rejects duplicate direct membership, missing/self parent references, and
+parent cycles. Visibility and locking are inherited through all group
+ancestors. Existing nodes keep their `layerId`, geometry, and serialization
+order, so V6 documents preserve their visual result after migration.

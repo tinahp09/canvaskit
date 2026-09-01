@@ -33,13 +33,31 @@ export function removeSelection(scene: CanvasScene, ids: readonly string[]): Can
   const nodes = scene.nodes.filter((node) => !removedIds.has(node.id))
   const remainingIds = new Set(nodes.map((node) => node.id))
 
+  const survivingGroups = scene.groups
+    .map((group) => ({ ...group, nodeIds: group.nodeIds.filter((id) => remainingIds.has(id)) }))
+    .filter((group) => group.nodeIds.length > 0)
+  const survivingGroupIds = new Set(survivingGroups.map((group) => group.id))
+  const groupById = new Map(scene.groups.map((group) => [group.id, group]))
+  const nearestSurvivingParentId = (parentId: string | undefined): string | undefined => {
+    const visited = new Set<string>()
+    let candidate = parentId
+    while (candidate !== undefined && !visited.has(candidate)) {
+      if (survivingGroupIds.has(candidate)) return candidate
+      visited.add(candidate)
+      candidate = groupById.get(candidate)?.parentId
+    }
+    return undefined
+  }
+
   return {
     ...scene,
     nodes,
     connectors: scene.connectors.filter((connector) => remainingIds.has(connector.sourceNodeId) && remainingIds.has(connector.targetNodeId)),
-    groups: scene.groups
-      .map((group) => ({ ...group, nodeIds: group.nodeIds.filter((id) => remainingIds.has(id)) }))
-      .filter((group) => group.nodeIds.length > 0),
+    groups: survivingGroups.map((group) => {
+      const parentId = nearestSurvivingParentId(group.parentId)
+      const { parentId: _parentId, ...withoutParent } = group
+      return parentId === undefined ? withoutParent : { ...withoutParent, parentId }
+    }),
   }
 }
 
@@ -48,11 +66,15 @@ export function copySelection(scene: CanvasScene, ids: readonly string[]): Scene
   const nodes = scene.nodes.filter((node) => selected.has(node.id)).map(cloneNode)
   const nodeIds = new Set(nodes.map((node) => node.id))
 
+  const eligibleGroups = scene.groups.filter((group) => group.nodeIds.every((id) => nodeIds.has(id)))
+  const eligibleGroupIds = new Set(eligibleGroups.map((group) => group.id))
+  const groups = eligibleGroups.filter((group) => group.parentId === undefined || eligibleGroupIds.has(group.parentId))
+
   return {
     nodes,
     connectors: scene.connectors.filter((connector) => nodeIds.has(connector.sourceNodeId) && nodeIds.has(connector.targetNodeId)).map((connector) => ({ ...connector })),
     edges: [],
-    groups: scene.groups.filter((group) => group.nodeIds.every((id) => nodeIds.has(id))).map((group) => ({ ...group, nodeIds: [...group.nodeIds] })),
+    groups: groups.map((group) => ({ ...group, nodeIds: [...group.nodeIds] })),
   }
 }
 
@@ -87,10 +109,15 @@ export function pasteSelection(scene: CanvasScene, clipboard: SceneClipboard, of
       return false
     }
   })
-  const groups = clipboard.groups.filter((group) => new Set(group.nodeIds).size === group.nodeIds.length && group.nodeIds.every((id) => remappedIds.has(id))).map((group) => ({
+  const copiedGroups = clipboard.groups.filter((group) => new Set(group.nodeIds).size === group.nodeIds.length && group.nodeIds.every((id) => remappedIds.has(id)))
+  const copiedGroupIds = new Set(copiedGroups.map((group) => group.id))
+  const completeGroups = copiedGroups.filter((group) => group.parentId === undefined || copiedGroupIds.has(group.parentId))
+  const remappedGroupIds = new Map(completeGroups.map((group) => [group.id, uniqueCopyId(group.id, groupIds)]))
+  const groups = completeGroups.map((group) => ({
     ...group,
-    id: uniqueCopyId(group.id, groupIds),
+    id: remappedGroupIds.get(group.id)!,
     nodeIds: group.nodeIds.map((id) => remappedIds.get(id)!),
+    ...(group.parentId === undefined ? {} : { parentId: remappedGroupIds.get(group.parentId)! }),
   }))
 
   return {

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { addCircle, addRectangle, addText, createScene, TransformController, UnsupportedPersistentRotationError } from '../src/index.js'
+import { addCircle, addRectangle, addText, createScene, groupNodes, setGroupParent, TransformController, UnsupportedPersistentRotationError } from '../src/index.js'
 
 const controller = new TransformController()
 
@@ -149,4 +149,20 @@ it('rotates selected nodes around their common centre and persists the angle', (
     { id: 'right', position: { x: 10, y: 10 }, rotation: Math.PI / 2 },
   ])
   expect(withRight.nodes).not.toHaveProperty('0.rotation')
+})
+
+it('resolves nested group selections to each leaf exactly once for transforms', () => {
+  let scene = addRectangle(createScene(), { id: 'left', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
+  scene = addRectangle(scene, { id: 'right', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' })
+  scene = groupNodes(scene, { id: 'child', nodeIds: ['right'] })
+  scene = groupNodes(scene, { id: 'parent', nodeIds: ['left'] })
+  scene = setGroupParent(scene, 'child', 'parent')
+
+  const rotated = controller.rotate(scene, ['parent', 'child'], Math.PI / 2)
+
+  expect(controller.getOverlay(scene, ['parent'])?.bounds).toEqual({ x: 0, y: 0, width: 30, height: 10 })
+  expect(rotated.nodes).toMatchObject([
+    { id: 'left', position: { x: 10, y: -10 }, rotation: Math.PI / 2 },
+    { id: 'right', position: { x: 10, y: 10 }, rotation: Math.PI / 2 },
+  ])
 })

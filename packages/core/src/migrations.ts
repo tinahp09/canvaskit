@@ -46,7 +46,16 @@ export function migrateScene(value: unknown): unknown {
     scene = { ...scene, version: 5, guides: [] }
   }
   if (scene.version === 5) {
-    scene = { ...scene, version: SCENE_VERSION, assets: [], nodes: Array.isArray(scene.nodes) ? scene.nodes.map((node) => isRecord(node) && node.type === 'text' ? { ...node, runs: [{ text: node.text }] } : node) : scene.nodes }
+    scene = { ...scene, version: 6, assets: [], nodes: Array.isArray(scene.nodes) ? scene.nodes.map((node) => isRecord(node) && node.type === 'text' ? { ...node, runs: [{ text: node.text }] } : node) : scene.nodes }
+  }
+  if (scene.version === 6) {
+    scene = {
+      ...scene,
+      version: SCENE_VERSION,
+      groups: Array.isArray(scene.groups)
+        ? scene.groups.map((group) => isRecord(group) ? { ...group, visible: true, locked: false } : group)
+        : scene.groups,
+    }
   }
 
   if (scene.version === SCENE_VERSION) return scene

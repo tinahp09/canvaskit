@@ -6,17 +6,22 @@ import {
   addText,
   createScene,
   exportScene,
+  groupDescendantNodeIds,
   groupNodes,
   importScene,
   InvalidSceneError,
   isNodeInteractive,
   moveNodesToLayer,
   pasteSelection,
+  projectVisibleDocument,
   removeLayer,
   reorderLayer,
   reorderNodeInLayer,
   setLayerLocked,
   setLayerVisibility,
+  setGroupLocked,
+  setGroupParent,
+  setGroupVisibility,
   ungroupNodes,
 } from '../src/index.js'
 
@@ -124,9 +129,38 @@ it('groups and ungroups validated node members immutably', () => {
   const grouped = groupNodes(scene, { id: 'pair', nodeIds: ['a', 'b'] })
 
   expect(scene.groups).toEqual([])
-  expect(grouped.groups).toEqual([{ id: 'pair', nodeIds: ['a', 'b'] }])
+  expect(grouped.groups).toEqual([{ id: 'pair', nodeIds: ['a', 'b'], visible: true, locked: false }])
   expect(ungroupNodes(grouped, 'pair').groups).toEqual([])
   expect(() => groupNodes(scene, { id: 'bad', nodeIds: ['missing'] })).toThrow('Group nodes must exist.')
+})
+
+it('resolves nested group descendants in stable scene-node order', () => {
+  let scene = addRectangle(createScene(), { id: 'a', position: { x: 0, y: 0 }, size: { width: 1, height: 1 }, fill: '#fff' })
+  scene = addRectangle(scene, { id: 'b', position: { x: 10, y: 0 }, size: { width: 1, height: 1 }, fill: '#fff' })
+  scene = addRectangle(scene, { id: 'c', position: { x: 20, y: 0 }, size: { width: 1, height: 1 }, fill: '#fff' })
+  scene = groupNodes(scene, { id: 'child', nodeIds: ['b', 'c'] })
+  scene = groupNodes(scene, { id: 'parent', nodeIds: ['a'] })
+  const nested = setGroupParent(scene, 'child', 'parent')
+
+  expect(groupDescendantNodeIds(nested, 'parent')).toEqual(['a', 'b', 'c'])
+})
+
+it('inherits group visibility and locking through every ancestor', () => {
+  const scene = groupNodes(addRectangle(createScene(), {
+    id: 'node', position: { x: 0, y: 0 }, size: { width: 1, height: 1 }, fill: '#fff',
+  }), { id: 'parent', nodeIds: ['node'] })
+  const hidden = setGroupVisibility(scene, 'parent', false)
+  const locked = setGroupLocked(scene, 'parent', true)
+
+  expect(projectVisibleDocument(hidden).nodes).toEqual([])
+  expect(isNodeInteractive(hidden, 'node')).toBe(false)
+  expect(isNodeInteractive(locked, 'node')).toBe(false)
+})
+
+it('rejects an operation that would make a group hierarchy cyclic', () => {
+  const scene = groupNodes(groupNodes(createScene(), { id: 'parent', nodeIds: [] }), { id: 'child', nodeIds: [], parentId: 'parent' })
+
+  expect(() => setGroupParent(scene, 'parent', 'child')).toThrow('Group hierarchy must not contain cycles.')
 })
 
 it('pastes a node into an existing destination layer when its source layer is absent', () => {
@@ -181,7 +215,7 @@ it('migrates every version 2 node into the default layer without changing its or
   const scene = importScene('{"version":2,"nodes":[{"id":"first","type":"rectangle","position":{"x":0,"y":0},"size":{"width":10,"height":10},"fill":"#fff"},{"id":"second","type":"rectangle","position":{"x":20,"y":0},"size":{"width":10,"height":10},"fill":"#000"}],"edges":[],"groups":[],"viewport":{"x":0,"y":0,"zoom":1},"metadata":{}}')
 
   expect(scene).toMatchObject({
-    version: 6,
+    version: 7,
     guides: [],
     assets: [],
     layers: [{ id: 'layer-default', name: 'Default', visible: true, locked: false }],
