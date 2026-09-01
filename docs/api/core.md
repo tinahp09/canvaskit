@@ -157,6 +157,13 @@ Registered commands may declare `shortcut` and `isAvailable(canvas)`. Use
 command entries and `executeShortcut(shortcut)` to dispatch only when exactly
 one applicable command owns that shortcut.
 
+## Diagram runtime
+
+`DiagramRuntime` receives data-only `DiagramConnectionPolicy` definitions that
+limit source and target node types and port IDs. `canConnect(scene, connection)`
+is a non-mutating policy check; `create(scene, input)` enforces the same policy
+before delegating to the deterministic connector controller.
+
 ## Transform tools
 
 `TransformController` computes `TransformOverlay` values and immutable resize,
