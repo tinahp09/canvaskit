@@ -150,6 +150,13 @@ multi-selection. `apply(scene, ids, propertyId, value)` validates every
 requested target before returning a new scene, so an unknown target cannot
 produce a partial mutation.
 
+## Command surface
+
+Registered commands may declare `shortcut` and `isAvailable(canvas)`. Use
+`CanvasKit.getCommandPalette()` to obtain the currently applicable, UI-neutral
+command entries and `executeShortcut(shortcut)` to dispatch only when exactly
+one applicable command owns that shortcut.
+
 ## Transform tools
 
 `TransformController` computes `TransformOverlay` values and immutable resize,

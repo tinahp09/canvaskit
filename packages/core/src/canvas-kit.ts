@@ -466,6 +466,18 @@ export class CanvasKit {
     if (!command) throw new Error(`Unknown registered command: "${id}".`)
     try { command.run(this); this.lastExtensionError = undefined } catch (error) { this.lastExtensionError = error instanceof Error ? error.message : String(error); throw error }
   }
+  getCommandPalette(): ReadonlyArray<{ id: string; label: string; shortcut?: string }> {
+    return Object.freeze(this.extensions.snapshot().commands
+      .map((item) => ({ ...item, definition: this.extensions.getCommand(item.id)! }))
+      .filter(({ definition }) => definition.isAvailable?.(this) !== false)
+      .map(({ definition, ...item }) => Object.freeze(item)))
+  }
+  executeShortcut(shortcut: string): boolean {
+    const candidates = this.getCommandPalette().filter((command) => command.shortcut === shortcut)
+    if (candidates.length !== 1) return false
+    this.executeRegisteredCommand(candidates[0]!.id)
+    return true
+  }
   activateTool(id: string | undefined): void {
     if (id === this.activeToolId) return
     const next = id === undefined ? undefined : this.extensions.getTool(id)

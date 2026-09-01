@@ -1,11 +1,11 @@
 import type { CanvasKit } from './canvas-kit.js'
 
-export interface CanvasCommandDefinition { id: string; label: string; run(canvas: CanvasKit): void }
+export interface CanvasCommandDefinition { id: string; label: string; shortcut?: string; isAvailable?(canvas: CanvasKit): boolean; run(canvas: CanvasKit): void }
 export interface CanvasToolDefinition { id: string; label: string; shortcut?: string; activate?(canvas: CanvasKit): void; deactivate?(canvas: CanvasKit): void }
 export interface CanvasNodeDefinition { id: string; label: string }
 export interface InspectorSection { id: string; label: string; nodeTypes?: readonly string[] }
 export interface ExtensionSnapshot {
-  commands: ReadonlyArray<Pick<CanvasCommandDefinition, 'id' | 'label'>>
+  commands: ReadonlyArray<Pick<CanvasCommandDefinition, 'id' | 'label' | 'shortcut'>>
   tools: ReadonlyArray<Pick<CanvasToolDefinition, 'id' | 'label' | 'shortcut'>>
   nodes: ReadonlyArray<CanvasNodeDefinition>
   inspectors: ReadonlyArray<InspectorSection>
@@ -25,7 +25,7 @@ export class ExtensionRegistry {
   getTool(id: string): CanvasToolDefinition | undefined { return this.tools.get(id) }
   snapshot(): ExtensionSnapshot {
     return Object.freeze({
-      commands: Object.freeze([...this.commands.values()].map(({ id, label }) => ({ id, label }))),
+      commands: Object.freeze([...this.commands.values()].map(({ id, label, shortcut }) => ({ id, label, ...(shortcut === undefined ? {} : { shortcut }) }))),
       tools: Object.freeze([...this.tools.values()].map(({ id, label, shortcut }) => ({ id, label, ...(shortcut === undefined ? {} : { shortcut }) }))),
       nodes: Object.freeze([...this.nodes.values()].map((node) => ({ ...node }))),
       inspectors: Object.freeze([...this.inspectors.values()].map((section) => ({ ...section, ...(section.nodeTypes ? { nodeTypes: [...section.nodeTypes] } : {}) }))),

@@ -22,3 +22,14 @@ it('executes registered commands, transitions tools, and reports diagnostics', (
   expect(events).toEqual(['activate:select', 'deactivate:select', 'activate:draw', 'command'])
   expect(kit.getDiagnostics()).toMatchObject({ activeToolId: 'draw', commands: ['hello'], tools: ['select', 'draw'] })
 })
+
+it('exposes only applicable registered commands and dispatches a unique shortcut', () => {
+  const kit = new CanvasKit()
+  const events: string[] = []
+  kit.registerCommand({ id: 'always', label: 'Always', shortcut: 'Meta+K', run: () => events.push('always') })
+  kit.registerCommand({ id: 'guarded', label: 'Guarded', isAvailable: () => false, run: () => events.push('guarded') })
+
+  expect(kit.getCommandPalette()).toEqual([{ id: 'always', label: 'Always', shortcut: 'Meta+K' }])
+  expect(kit.executeShortcut('Meta+K')).toBe(true)
+  expect(events).toEqual(['always'])
+})
