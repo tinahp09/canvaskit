@@ -2,29 +2,29 @@
 
 ## Code
 
-- [x] Features complete / feature freeze confirmed (CanvasKit V2)
-- [x] Tests passing (2026-08-31: 37 unit files / 251 tests and 49 browser tests)
-- [x] Performance checked (2026-08-31 spatial-index benchmark and nine package budgets verified; V2 adds no unbounded hot-path algorithm)
-- [x] Breaking changes documented (all public packages move to 2.0.0; Scene V6 remains compatible)
+- [x] Features complete / feature freeze confirmed (CanvasKit V3)
+- [x] Tests passing (275 unit tests, 50 browser E2E tests, docs build, and 9-package smoke consumer verified locally)
+- [x] Performance checked (bundle budgets pass; spatial-index benchmark verified at 1K, 5K, and 10K nodes)
+- [x] Breaking changes documented (all public packages move to 3.0.0; Scene V7 migration is documented)
 
 ## Documentation
 
 - [x] README updated
 - [x] Architecture docs updated
 - [x] API documented
-- [x] Migration notes added when needed (not needed; Scene V6 is unchanged)
+- [x] Migration notes added (`docs/upgrading-to-v3.md` and `docs/migrations.md`)
 
 ## Media
 
-- [ ] GIF recorded for a major milestone (capture plan only; no approved binary-media location)
-- [ ] Screenshots captured for a major milestone (capture plan only; no approved binary-media location)
-- [x] Demo updated (basic-canvas command plugin and diagnostics workflow)
+- [x] GIF recorded for a major milestone (6-second local capture; awaiting approved asset destination)
+- [x] Screenshots captured for a major milestone (three local captures; awaiting approved asset destination)
+- [x] Demo updated (`examples/diagram-editor`)
 
 ## Release
 
-- [x] Version bumped (all nine public packages: 2.0.0)
+- [x] Version bumped (all nine public packages: 3.0.0)
 - [x] CHANGELOG updated (`CHANGELOG.md`)
-- [x] Release notes written (V2 milestone notes in `docs/release-notes-v2*.md`)
+- [x] Release notes written (`docs/release-notes-v3.md`)
 - [ ] GitHub Release created (pending this authorized publication)
 
 ## Public
@@ -32,7 +32,7 @@
 - [ ] LinkedIn post published
 - [ ] Dev.to article published when applicable
 
-> V2 release gates are verified with direct local binaries because the installed
+> V3 release gates use direct local binaries because the installed
 > `pnpm` wrapper attempted an unavailable registry fetch and non-interactive
 > modules-directory purge. Publishing packages, creating a GitHub Release,
 > deploying a demo, and posting publicly require explicit user approval at the

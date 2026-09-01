@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { createBundleSizeReport, verifyBundleBudgets } from './bundle-size.mjs'
+import { BUNDLE_BUDGETS, createBundleSizeReport, verifyBundleBudgets } from './bundle-size.mjs'
 
 const packages = [
   'core',
@@ -17,6 +17,10 @@ const packages = [
   'renderer-svg',
   'vue',
 ]
+
+test('sets the Core V3 baseline below 130 KB while allowing its public editor runtimes', () => {
+  assert.equal(BUNDLE_BUDGETS.core, 130_000)
+})
 
 async function createRepository() {
   const root = await mkdtemp(join(tmpdir(), 'canvaskit-bundle-size-'))

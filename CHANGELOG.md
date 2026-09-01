@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.0 — 2026-09-01
+
+CanvasKit 3.0.0 is a headless runtime for professional diagram editors.
+
+- Added Scene V7 nested hierarchy, inherited group state, group-aware transforms,
+  lasso selection, group movement, and keyboard nudge.
+- Added Tool Runtime, Inspector Runtime, command-surface snapshots, and typed
+  diagram connection policies.
+- Added the glassy `examples/diagram-editor` reference editor with browser E2E.
+
+Breaking changes: all public packages now use the 3.x suite. `importScene`
+migrates supported V1–V6 scenes; exports are canonical Scene V7.
+
 ## 2.0.0 — 2026-08-31
 
 CanvasKit 2.0.0 turns the V1 canvas engine into a developer-facing foundation

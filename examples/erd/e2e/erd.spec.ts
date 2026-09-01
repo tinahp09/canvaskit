@@ -53,5 +53,5 @@ test('exposes focus-visible keyboard navigation and live ERD export feedback', a
 
   await page.getByRole('button', { name: 'Export ERD' }).click()
   await expect(page.getByRole('status')).toHaveText('ERD exported.')
-  await expect(page.getByLabel('ERD JSON')).toHaveValue(/"version":6/)
+  await expect(page.getByLabel('ERD JSON')).toHaveValue(/"version":7/)
 })

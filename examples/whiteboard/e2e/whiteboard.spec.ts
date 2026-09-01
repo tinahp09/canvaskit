@@ -12,7 +12,7 @@ test('groups selected freeform shapes and exports the whiteboard', async ({ page
   await page.getByRole('button', { name: 'Export whiteboard' }).click()
 
   const scene = JSON.parse(await page.getByLabel('Whiteboard JSON').inputValue())
-  expect(scene.groups).toEqual([{ id: 'idea-group', nodeIds: ['note', 'circle', 'caption'] }])
+  expect(scene.groups).toEqual([{ id: 'idea-group', nodeIds: ['note', 'circle', 'caption'], visible: true, locked: false }])
   await expect(page.getByRole('status')).toHaveText('Whiteboard exported.')
 })
 
@@ -36,5 +36,5 @@ test('keeps exported whiteboard data in a labelled text control during keyboard 
 
   await page.getByRole('button', { name: 'Export whiteboard' }).click()
   await expect(page.getByRole('status')).toHaveText('Whiteboard exported.')
-  await expect(page.getByLabel('Whiteboard JSON')).toHaveValue(/"version":6/)
+  await expect(page.getByLabel('Whiteboard JSON')).toHaveValue(/"version":7/)
 })

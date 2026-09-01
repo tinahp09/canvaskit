@@ -15,10 +15,11 @@ export const PUBLISHED_PACKAGES = [
 ]
 
 // Runtime JavaScript budgets include every emitted .js file in the dist allowlist.
-// They are deliberately rounded above the 2026-08-29 baseline to allow small,
-// intentional changes while catching accidental package growth.
+// They are deliberately rounded above each major-version baseline to allow small,
+// intentional changes while catching accidental package growth. The Core V3
+// baseline includes the public tool, inspector, and diagram runtimes.
 export const BUNDLE_BUDGETS = {
-  core: 121_500,
+  core: 130_000,
   geometry: 1_100,
   accessibility: 3_000,
   plugins: 2_400,

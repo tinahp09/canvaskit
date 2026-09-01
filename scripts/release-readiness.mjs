@@ -2,7 +2,7 @@ import { access, readdir, readFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const DEFAULT_STABLE_VERSION = '2.0.0'
+const DEFAULT_STABLE_VERSION = '3.0.0'
 const PACKAGE_NAMES = [
   'core',
   'geometry',

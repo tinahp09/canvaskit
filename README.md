@@ -2,14 +2,24 @@
 
 CanvasKit is a TypeScript-first engine for interactive visual editors on an infinite canvas.
 
-CanvasKit `2.0.0` is the stable editor-foundation release. Package-root exports follow the
-documented compatibility policy; start with the [V2 release notes](docs/release-notes-v2.md)
-and [upgrade guide](docs/upgrading-to-v1.md).
+CanvasKit `3.0.0` is the professional diagram-editor runtime release. Package-root exports follow the
+documented compatibility policy; start with the [V3 release notes](docs/release-notes-v3.md)
+and [upgrade guide](docs/upgrading-to-v3.md).
 The project is available under the [MIT License](LICENSE).
 
 ## Current capabilities
 
 CanvasKit provides rectangle, circle, text, and asset-backed image scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
+
+## V3 professional diagram runtime
+
+V3 adds nested Scene V7 groups, renderer-neutral tool intents, lasso and group
+selection, keyboard nudge, typed inspector properties, command palette data,
+and diagram connection policies. Run the glassy reference editor with:
+
+```sh
+pnpm --filter @canvaskit/diagram-editor dev
+```
 
 ## V2.5 rich content & assets
 

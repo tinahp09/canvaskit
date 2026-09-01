@@ -64,5 +64,5 @@ test('keeps architecture export data in a labelled textarea after keyboard navig
 
   await page.getByRole('button', { name: 'Export architecture' }).click()
   await expect(page.getByRole('status')).toHaveText('Architecture exported.')
-  await expect(page.getByLabel('Architecture JSON')).toHaveValue(/"version":6/)
+  await expect(page.getByLabel('Architecture JSON')).toHaveValue(/"version":7/)
 })
