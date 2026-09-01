@@ -121,6 +121,19 @@ interaction paths.
 - `snapPointToGrid(point, gridSize)` returns the nearest grid point for a positive grid size.
 - `SpatialIndex(nodes)` creates a read-only node index. Its `query(rect)` method returns candidates in original scene order; recreate it after node bounds change.
 
+## Tool runtime
+
+`ToolRuntime` is a small renderer-neutral state machine for the built-in
+`'select'`, `'pan'`, `'rectangle'`, `'text'`, and `'connector'` tools. Feed it
+`ToolPointerEvent` values and consume its typed `ToolIntent` values; previews
+are transient, while creation intents appear only at a completed interaction.
+
+Every `CanvasKit` exposes `tools`, `setTool(tool)`, and
+`onToolIntent(listener)`. `createPointerEvent` forwards each world-space
+pointer event through this runtime after normal pointer listeners receive it.
+Hosts decide how a `create-rectangle`, `create-text`, or `create-connector`
+intent becomes an application-specific immutable scene mutation.
+
 ## Transform tools
 
 `TransformController` computes `TransformOverlay` values and immutable resize,

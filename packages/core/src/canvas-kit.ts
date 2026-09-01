@@ -18,6 +18,7 @@ import { ConnectorController } from './connector.js'
 import { LayoutController, type AutoLayoutOptions, type SnapOptions, type SnapResult } from './layout.js'
 import { ContentController, type CreateImageInput } from './content.js'
 import { ExtensionRegistry, type CanvasCommandDefinition, type CanvasNodeDefinition, type CanvasToolDefinition, type InspectorSection } from './extensions.js'
+import { ToolRuntime, type BuiltInToolId, type ToolIntent } from './tool-runtime.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel'
 
@@ -48,6 +49,7 @@ export interface CanvasKitOptions {
 export class CanvasKit {
   private scene: CanvasScene
   private readonly listeners = new Set<(event: CanvasPointerEvent) => void>()
+  private readonly toolIntentListeners = new Set<(intent: ToolIntent) => void>()
   private readonly sceneSubscription = new SceneSubscription()
   private readonly history = new HistoryController()
   private clipboard: SceneClipboard = { nodes: [], edges: [], groups: [] }
@@ -65,6 +67,7 @@ export class CanvasKit {
   readonly layout = new LayoutController()
   readonly content = new ContentController()
   readonly extensions = new ExtensionRegistry()
+  readonly tools = new ToolRuntime()
 
   constructor(options: CanvasKitOptions = {}) {
     this.scene = options.scene ?? createScene()
@@ -483,6 +486,15 @@ export class CanvasKit {
     return () => this.listeners.delete(listener)
   }
 
+  /** Selects the renderer-neutral built-in pointer tool. */
+  setTool(tool: BuiltInToolId): void { this.tools.activate(tool) }
+
+  /** Receives interaction intents emitted by the current built-in tool. */
+  onToolIntent(listener: (intent: ToolIntent) => void): () => void {
+    this.toolIntentListeners.add(listener)
+    return () => this.toolIntentListeners.delete(listener)
+  }
+
   subscribe(listener: SceneListener): () => void {
     return this.sceneSubscription.subscribe(listener)
   }
@@ -530,6 +542,7 @@ export class CanvasKit {
       ...(buttons === undefined ? {} : { buttons }),
     }
     this.listeners.forEach((listener) => listener(event))
+    this.tools.handle({ type, point: event.world }).forEach((intent) => this.toolIntentListeners.forEach((listener) => listener(intent)))
     return event
   }
 }
