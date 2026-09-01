@@ -20,6 +20,6 @@ Captured from the passing local example at a stable 1440 × 900 viewport:
 | `v3.0-command-surface.png` | Additive selection and the available `Connect selected flow` command. |
 | `v3.0-diagram-editor.gif` | Six-second sequence: overview → Inspector mutation → command surface. |
 
-The verified local staging directory is
-`/private/tmp/canvaskit-v3-release-media`. The assets stay outside Git until a
-release-asset destination is approved; they are not fabricated placeholders.
+The verified assets are committed at `docs/public/releases/v3/` and can be
+used directly in the documentation site and GitHub Release. They are captured
+from the passing local example, not fabricated placeholders.
