@@ -141,6 +141,15 @@ pointer event through this runtime after normal pointer listeners receive it.
 Hosts decide how a `create-rectangle`, `create-text`, or `create-connector`
 intent becomes an application-specific immutable scene mutation.
 
+## Inspector runtime
+
+`InspectorRuntime` registers typed `InspectorProperty` schemas with a label,
+optional applicable node types, and `read`/`write` adapters. `read(scene, ids,
+propertyId)` reports either a concrete value or `{ kind: 'mixed' }` for a
+multi-selection. `apply(scene, ids, propertyId, value)` validates every
+requested target before returning a new scene, so an unknown target cannot
+produce a partial mutation.
+
 ## Transform tools
 
 `TransformController` computes `TransformOverlay` values and immutable resize,
