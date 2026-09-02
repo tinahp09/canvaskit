@@ -23,7 +23,7 @@ const publishedPackages = [
 function stableCoreManifest(overrides = {}) {
   return {
     name: '@canvaskit/core',
-    version: '4.0.0',
+    version: '5.0.0',
     license: 'MIT',
     exports: {
       '.': {
@@ -48,8 +48,8 @@ test('accepts a pack result containing the public JavaScript and declaration ent
 
 test('uses the V4 stable version for packed manifests by default', () => {
   assert.deepEqual(verifyPackedManifest('@canvaskit/core', {
-    ...stableCoreManifest({ version: '4.0.0' }),
-    dependencies: { '@canvaskit/geometry': '^4.0.0' },
+    ...stableCoreManifest({ version: '5.0.0' }),
+    dependencies: { '@canvaskit/geometry': '^5.0.0' },
   }), [])
 })
 
@@ -80,7 +80,7 @@ test('rejects a pack result that did not produce a tarball artifact', () => {
 test('rejects a packed manifest that retains a workspace dependency range', () => {
   const manifest = stableCoreManifest({
     dependencies: {
-      '@canvaskit/geometry': 'workspace:^4.0.0',
+      '@canvaskit/geometry': 'workspace:^5.0.0',
     },
   })
 
@@ -95,7 +95,7 @@ test('rejects a packed manifest with the wrong stable version', () => {
   })
 
   assert.deepEqual(packageSmoke.verifyPackedManifest('@canvaskit/core', manifest), [
-    '@canvaskit/core: packed manifest version must be 4.0.0, found 0.9.0.',
+    '@canvaskit/core: packed manifest version must be 5.0.0, found 0.9.0.',
   ])
 })
 
@@ -107,7 +107,7 @@ test('rejects a packed manifest with a stale internal consumer range', () => {
   })
 
   assert.deepEqual(packageSmoke.verifyPackedManifest('@canvaskit/core', manifest), [
-    '@canvaskit/core: packed range for @canvaskit/geometry must be ^4.0.0, found ^0.9.0.',
+    '@canvaskit/core: packed range for @canvaskit/geometry must be ^5.0.0, found ^0.9.0.',
   ])
 })
 
@@ -156,7 +156,7 @@ test('rejects a package suite that fails when imported by a fresh consumer', { t
       await mkdir(join(directory, 'dist'), { recursive: true })
       await writeFile(join(directory, 'package.json'), `${JSON.stringify({
         name: `@canvaskit/${packageName}`,
-        version: '4.0.0',
+        version: '5.0.0',
         type: 'module',
         license: 'MIT',
         files: ['dist'],

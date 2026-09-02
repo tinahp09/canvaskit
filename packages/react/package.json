@@ -1,17 +1,17 @@
 {
   "name": "@canvaskit/react",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "license": "MIT",
   "type": "module",
   "files": ["dist"],
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
   "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc -p tsconfig.json --noEmit" },
   "devDependencies": {
-    "@canvaskit/plugins": "workspace:^4.0.0"
+    "@canvaskit/plugins": "workspace:^5.0.0"
   },
   "peerDependencies": {
-    "@canvaskit/core": "workspace:^4.0.0",
-    "@canvaskit/renderer-canvas": "workspace:^4.0.0",
+    "@canvaskit/core": "workspace:^5.0.0",
+    "@canvaskit/renderer-canvas": "workspace:^5.0.0",
     "react": ">=18",
     "react-dom": ">=18"
   }

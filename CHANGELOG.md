@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.0.0 — 2026-09-02
+
+CanvasKit 5.0.0 makes V4 collaboration usable in browser hosts through a
+separate adapter package. It adds BroadcastChannel and injected WebSocket
+transports, versioned envelope validation, presence relay, status lifecycle,
+bounded FIFO replay, overflow diagnostics, and a browser-tested two-peer demo.
+
+Breaking changes: all public packages now use the 5.x suite. Scene V7 is
+unchanged; V5 does not add a backend, auth, persistence, CRDT, or encryption.
+
 ## 4.0.0 — 2026-09-02
 
 CanvasKit 4.0.0 provides a framework-neutral collaboration foundation for

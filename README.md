@@ -2,17 +2,25 @@
 
 CanvasKit is a TypeScript-first engine for interactive visual editors on an infinite canvas.
 
-CanvasKit `4.0.0` adds a transport-agnostic collaboration foundation to the
+CanvasKit `5.0.0` adds production-ready browser collaboration adapters to the
 professional diagram-editor runtime. Package-root exports follow the documented
-compatibility policy; start with the [V4 release notes](docs/release-notes-v4.md)
-and [collaboration architecture](docs/architecture/v4-collaboration-runtime.md).
+compatibility policy; start with the [V5 release notes](docs/release-notes-v5.md)
+and [adapter architecture](docs/architecture/v5-production-collaboration-adapters.md).
 The project is available under the [MIT License](LICENSE).
 
 ## Current capabilities
 
 CanvasKit provides rectangle, circle, text, and asset-backed image scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
 
-## V4 collaboration foundation
+## V5 production collaboration adapters
+
+V5 adds `@canvaskit/collaboration-adapters`: a same-origin BroadcastChannel
+transport and an injected WebSocket transport with bounded replay and status
+reporting. Core remains server-, auth-, CRDT-, and persistence-agnostic. Run:
+
+```sh
+pnpm --filter @canvaskit/collaboration-adapters-example dev
+```
 
 V4 adds serializable whole-scene collaboration operations, deterministic
 Lamport ordering, duplicate and stale-operation rejection, and ephemeral

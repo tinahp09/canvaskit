@@ -33,8 +33,11 @@ const releaseArtifacts = [
   'docs/release-notes-v2.md',
   'docs/release-notes-v3.md',
   'docs/release-notes-v4.md',
+  'docs/release-notes-v5.md',
   'docs/release-assets-v4.md',
+  'docs/release-assets-v5.md',
   'docs/architecture/v4-collaboration-runtime.md',
+  'docs/architecture/v5-production-collaboration-adapters.md',
   'docs/upgrading-to-v1.md',
   'docs/upgrading-to-v2.md',
   'docs/publishing.md',
@@ -48,7 +51,7 @@ test('the dry run starts with the dependency-ordered clean release build', async
   assert.match(manifest.scripts['publish:dry-run'], /^pnpm build:release &&/)
 })
 
-async function createRepository(version = '4.0.0') {
+async function createRepository(version = '5.0.0') {
   const root = await mkdtemp(join(tmpdir(), 'canvaskit-release-'))
 
   for (const name of packages) {
@@ -122,7 +125,7 @@ test('rejects a publishable package version that is not 4.0.0', async () => {
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
 
     assert.deepEqual(await verifyStableRelease(root), [
-      'packages/core/package.json: expected version 4.0.0, found 0.9.0.',
+      'packages/core/package.json: expected version 5.0.0, found 0.9.0.',
     ])
   })
 })
@@ -135,7 +138,7 @@ test('rejects a stale internal published-package dependency range', async () => 
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
 
     assert.deepEqual(await verifyStableRelease(root), [
-      'packages/react/package.json: @canvaskit/core must use workspace:^4.0.0, found workspace:^0.9.0.',
+      'packages/react/package.json: @canvaskit/core must use workspace:^5.0.0, found workspace:^0.9.0.',
     ])
   })
 })
