@@ -10,7 +10,7 @@ import { PUBLISHED_PACKAGES } from './bundle-size.mjs'
 const execFile = promisify(executeFile)
 const REQUIRED_PACKED_FILES = ['dist/index.d.ts', 'dist/index.js', 'package.json']
 const PUBLISHED_PACKAGE_NAMES = new Set(PUBLISHED_PACKAGES.map((name) => `@canvaskit/${name}`))
-const DEFAULT_STABLE_VERSION = '3.0.0'
+const DEFAULT_STABLE_VERSION = '4.0.0'
 const PNPM_BINARY = process.env.CANVASKIT_PNPM_BIN ?? 'pnpm'
 
 export function verifyPackedPackage(packageName, packedPackage) {

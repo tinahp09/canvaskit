@@ -27,8 +27,9 @@ export default defineConfig({
       { text: 'Export & accessibility API', link: '/api/export-accessibility' },
       { text: 'Plugin platform API', link: '/api/plugin-platform' },
       { text: 'Editor workflow API', link: '/api/editor-workflow' },
+      { text: 'Collaboration API', link: '/api/core#collaboration-foundation' },
       { text: 'Examples', link: '/examples' },
-      { text: 'V3 release', link: '/release-notes-v3' },
+      { text: 'V4 release', link: '/release-notes-v4' },
     ],
     sidebar: {
       '/api/': [
@@ -37,6 +38,7 @@ export default defineConfig({
           items: [
             { text: 'Geometry', link: '/api/geometry' },
             { text: 'Core', link: '/api/core' },
+            { text: 'Collaboration foundation', link: '/api/core#collaboration-foundation' },
             { text: 'Transform tools', link: '/api/transform-tools' },
             { text: 'Document & layers', link: '/api/document-layers' },
             { text: 'Diagram toolkit', link: '/api/diagram-toolkit' },
@@ -80,6 +82,9 @@ export default defineConfig({
             { text: 'CanvasKit 1.0.0', link: '/release-notes-v1' },
             { text: 'CanvasKit 2.0.0', link: '/release-notes-v2' },
             { text: 'CanvasKit 3.0.0', link: '/release-notes-v3' },
+            { text: 'CanvasKit 4.0.0', link: '/release-notes-v4' },
+            { text: 'V4 collaboration architecture', link: '/architecture/v4-collaboration-runtime' },
+            { text: 'V4 release asset manifest', link: '/release-assets-v4' },
             { text: 'V3 professional diagram architecture', link: '/architecture/v3-professional-diagram-runtime' },
             { text: 'V3 release asset manifest', link: '/release-assets-v3' },
             { text: 'CanvasKit V2.0 transform tools', link: '/release-notes-v2' },

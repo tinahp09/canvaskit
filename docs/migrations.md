@@ -74,3 +74,15 @@ V7 rejects duplicate direct membership, missing/self parent references, and
 parent cycles. Visibility and locking are inherited through all group
 ancestors. Existing nodes keep their `layerId`, geometry, and serialization
 order, so V6 documents preserve their visual result after migration.
+
+## CanvasKit 3.x to 4.x
+
+V4 does not change the Scene V7 schema, so serialized scenes require no
+migration. The major package-version change keeps the public package suite in
+lockstep. Applications adopting collaboration add an optional
+`CanvasKit({ collaboration: { actorId } })` configuration and connect a
+host-owned `CollaborationTransport`.
+
+Remote operations contain complete canonical Scene V7 snapshots and are not
+added to local undo history. Existing applications that construct `CanvasKit`
+without collaboration retain their V3 behavior.

@@ -22,7 +22,7 @@ const publishedPackages = [
 function stableCoreManifest(overrides = {}) {
   return {
     name: '@canvaskit/core',
-    version: '3.0.0',
+    version: '4.0.0',
     license: 'MIT',
     exports: {
       '.': {
@@ -36,7 +36,7 @@ function stableCoreManifest(overrides = {}) {
 
 test('accepts a pack result containing the public JavaScript and declaration entrypoints', () => {
   assert.deepEqual(verifyPackedPackage('@canvaskit/core', {
-    filename: 'canvaskit-core-3.0.0.tgz',
+    filename: 'canvaskit-core-4.0.0.tgz',
     files: [
       { path: 'dist/index.d.ts' },
       { path: 'dist/index.js' },
@@ -45,16 +45,16 @@ test('accepts a pack result containing the public JavaScript and declaration ent
   }), [])
 })
 
-test('uses the V3 stable version for packed manifests by default', () => {
+test('uses the V4 stable version for packed manifests by default', () => {
   assert.deepEqual(verifyPackedManifest('@canvaskit/core', {
-    ...stableCoreManifest({ version: '3.0.0' }),
-    dependencies: { '@canvaskit/geometry': '^3.0.0' },
+    ...stableCoreManifest({ version: '4.0.0' }),
+    dependencies: { '@canvaskit/geometry': '^4.0.0' },
   }), [])
 })
 
 test('rejects a packed package missing its declaration entrypoint', () => {
   assert.deepEqual(verifyPackedPackage('@canvaskit/core', {
-    filename: 'canvaskit-core-3.0.0.tgz',
+    filename: 'canvaskit-core-4.0.0.tgz',
     files: [
       { path: 'dist/index.js' },
       { path: 'package.json' },
@@ -79,7 +79,7 @@ test('rejects a pack result that did not produce a tarball artifact', () => {
 test('rejects a packed manifest that retains a workspace dependency range', () => {
   const manifest = stableCoreManifest({
     dependencies: {
-      '@canvaskit/geometry': 'workspace:^3.0.0',
+      '@canvaskit/geometry': 'workspace:^4.0.0',
     },
   })
 
@@ -94,7 +94,7 @@ test('rejects a packed manifest with the wrong stable version', () => {
   })
 
   assert.deepEqual(packageSmoke.verifyPackedManifest('@canvaskit/core', manifest), [
-    '@canvaskit/core: packed manifest version must be 3.0.0, found 0.9.0.',
+    '@canvaskit/core: packed manifest version must be 4.0.0, found 0.9.0.',
   ])
 })
 
@@ -106,7 +106,7 @@ test('rejects a packed manifest with a stale internal consumer range', () => {
   })
 
   assert.deepEqual(packageSmoke.verifyPackedManifest('@canvaskit/core', manifest), [
-    '@canvaskit/core: packed range for @canvaskit/geometry must be ^3.0.0, found ^0.9.0.',
+    '@canvaskit/core: packed range for @canvaskit/geometry must be ^4.0.0, found ^0.9.0.',
   ])
 })
 
@@ -128,14 +128,14 @@ test('rejects a packed manifest without the stable root export', () => {
   ])
 })
 
-test('accepts a later stable 3.x packed version and internal consumer range', () => {
+test('accepts a later stable 4.x packed version and internal consumer range', () => {
   const manifest = stableCoreManifest({
-    version: '3.2.3',
-    dependencies: { '@canvaskit/geometry': '^3.2.3' },
+    version: '4.2.3',
+    dependencies: { '@canvaskit/geometry': '^4.2.3' },
   })
 
   assert.deepEqual(packageSmoke.verifyPackedManifest('@canvaskit/core', manifest, {
-    version: '3.2.3',
+    version: '4.2.3',
   }), [])
 })
 
@@ -155,7 +155,7 @@ test('rejects a package suite that fails when imported by a fresh consumer', { t
       await mkdir(join(directory, 'dist'), { recursive: true })
       await writeFile(join(directory, 'package.json'), `${JSON.stringify({
         name: `@canvaskit/${packageName}`,
-        version: '3.0.0',
+        version: '4.0.0',
         type: 'module',
         license: 'MIT',
         files: ['dist'],

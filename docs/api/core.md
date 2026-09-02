@@ -34,7 +34,7 @@ Create and transform immutable scene values with:
 
 ## `CanvasKit` controller
 
-`new CanvasKit(options?)` owns one editable scene. `CanvasKitOptions` accepts an optional initial `scene`.
+`new CanvasKit(options?)` owns one editable scene. `CanvasKitOptions` accepts an optional initial `scene` and an optional `collaboration` configuration.
 
 - `getScene()` returns the current scene with its current viewport transform.
 - `setScene(scene)` replaces the scene, retains only valid selections, and clears history.
@@ -63,6 +63,33 @@ Create and transform immutable scene values with:
 - `createPointerEvent(screen, type)` turns a screen point into a `CanvasPointerEvent`, including its world point, and delivers it to pointer listeners.
 - `onPointer(listener)` subscribes to `CanvasPointerEvent` values; `subscribe(listener)` receives each scene snapshot as a `SceneListener`. Both return cleanup functions.
 - `use(plugin)` installs a `CanvasPlugin`; `dispose()` runs installed plugin cleanups.
+
+### Collaboration foundation
+
+Pass `{ collaboration: { actorId, target? } }` to create an optional
+`kit.collaboration` runtime. A host connects its own `CollaborationTransport`
+with `kit.connectCollaboration(transport)`. The transport receives a complete,
+canonical `CollaborationOperation` after a successful local scene mutation and
+supplies remote operations through `subscribe`; the returned cleanup disconnects
+the transport safely.
+
+- `CollaborationOperation` is a serializable `{ id, actorId, clock, target,
+  kind: 'scene', scene }` envelope. `validateCollaborationOperation(value)`
+  validates its fields and canonicalizes the Scene V7 snapshot.
+- `CollaborationRuntime` provides `recordLocal(scene, target?)`,
+  `applyRemote(operation, currentScene)`, `getClock()`, and presence methods.
+  A target converges by `(clock, actorId, id)` ordering; duplicate IDs and
+  lower tuples return `{ applied: false, reason }` without changing the scene.
+- `kit.applyRemoteOperation(operation)` applies only accepted remote scenes,
+  clears redo, notifies subscribers, and never creates an undo entry.
+- `PresenceSnapshot` is deliberately outside `CanvasScene`. Hosts may store or
+  relay it with `setPresence`, `removePresence`, and `getPresence` according to
+  their own identity and connection policy.
+
+CanvasKit intentionally does not provide a WebSocket server, durable storage,
+authentication, authorization, CRDT, or shared-cursor renderer. See the
+[V4 collaboration architecture](/architecture/v4-collaboration-runtime) for
+the host/runtime boundary.
 
 The instance exposes five public controllers: `viewport`, `selection`,
 `transform`, `nodes`, and `edges`.

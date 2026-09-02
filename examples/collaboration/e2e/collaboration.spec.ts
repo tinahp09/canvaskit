@@ -7,6 +7,7 @@ test('syncs an edit from Ada to Bea and exposes remote presence', async ({ page 
   await expect(page.getByRole('status')).toHaveText('Ada operation delivered to Bea.')
   await expect(page.getByRole('list', { name: 'Bea canvas content' }).getByRole('listitem')).toHaveText(['Rectangle: ada-rectangle'])
   await expect(page.getByRole('list', { name: 'Active collaborators' })).toContainText('Ada')
+  await expect(page.getByRole('list', { name: 'Operation log' })).toContainText('ada:1 · delivered')
 })
 
 test('delivers queued operations in order after reconnecting Bea', async ({ page }) => {

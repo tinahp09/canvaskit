@@ -1,5 +1,22 @@
 # Changelog
 
+## 4.0.0 — 2026-09-02
+
+CanvasKit 4.0.0 provides a framework-neutral collaboration foundation for
+hosts that need deterministic scene synchronization without a bundled backend.
+
+- Added serializable `CollaborationOperation` envelopes and canonical incoming
+  Scene V7 validation.
+- Added `CollaborationRuntime` with Lamport clocks, duplicate/stale rejection,
+  deterministic ordering ties, and isolated `PresenceSnapshot` state.
+- Added optional CanvasKit collaboration configuration, local operation
+  capture, remote scene application, and host-injected transport lifecycle.
+- Added a glassy two-client reference app with E2E coverage for sync,
+  reconnect replay, presence, and out-of-order delivery.
+
+Breaking changes: all public packages now use the 4.x suite. Scene V7 remains
+the canonical serialized format; no scene-document migration is required.
+
 ## 3.0.0 — 2026-09-01
 
 CanvasKit 3.0.0 is a headless runtime for professional diagram editors.

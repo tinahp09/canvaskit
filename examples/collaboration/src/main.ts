@@ -33,6 +33,7 @@ app.innerHTML = `<main class="shell">
     </article>
   </section>
   <aside class="presence-card"><div><p class="eyebrow">EPHEMERAL PRESENCE</p><h2>Active collaborators</h2></div><ul aria-label="Active collaborators" id="presence"></ul></aside>
+  <aside class="operation-card"><div><p class="eyebrow">TRANSPORT ACTIVITY</p><h2>Operation log</h2></div><ul aria-label="Operation log" id="operation-log"></ul></aside>
 </main>`
 
 const ada = new CanvasKit({ collaboration: { actorId: 'ada' } })
@@ -43,6 +44,7 @@ const receivers = new Map<Recipient, Set<(operation: CollaborationOperation) => 
 ])
 let beaConnected = true
 let queuedForBea: CollaborationOperation[] = []
+let operationLog: string[] = []
 let rectangleAdded = false
 let rectangleBlue = false
 
@@ -54,10 +56,12 @@ const createTransport = (author: Recipient, recipient: Recipient): Collaboration
   publish(operation) {
     if (recipient === 'bea' && !beaConnected) {
       queuedForBea.push(operation)
+      operationLog = [`${operation.id} · queued`, ...operationLog].slice(0, 5)
       render('Ada operation queued for Bea.')
       return
     }
     emit(recipient, operation)
+    operationLog = [`${operation.id} · delivered`, ...operationLog].slice(0, 5)
     render(`${author === 'ada' ? 'Ada' : 'Bea'} operation delivered to ${recipient === 'bea' ? 'Bea' : 'Ada'}.`)
   },
   subscribe(listener) {
@@ -114,6 +118,11 @@ function render(nextStatus?: string): void {
     item.innerHTML = `<span class="avatar ${snapshot.actorId}">${snapshot.actorId.slice(0, 1).toUpperCase()}</span><span><b>${snapshot.actorId === 'ada' ? 'Ada' : 'Bea'}</b><small>${snapshot.metadata?.role === 'offline' ? 'Offline · queueing changes' : snapshot.metadata?.role === 'author' ? 'Editing rectangle' : 'Connected'}</small></span>`
     return item
   }))
+  app.querySelector<HTMLUListElement>('#operation-log')!.replaceChildren(...operationLog.map((entry) => {
+    const item = document.createElement('li')
+    item.textContent = entry
+    return item
+  }))
   app.querySelector<HTMLElement>('#bea-connection')!.textContent = beaConnected ? 'Connected' : `Offline · ${queuedForBea.length} queued`
   app.querySelector<HTMLElement>('#bea-connection')!.classList.toggle('offline', !beaConnected)
   disconnectButton.disabled = !beaConnected
@@ -128,6 +137,7 @@ function deliverQueued(newestFirst: boolean): void {
   const operations = newestFirst ? [...queuedForBea].reverse() : queuedForBea
   queuedForBea = []
   operations.forEach((operation) => emit('bea', operation))
+  operationLog = operations.map((operation) => `${operation.id} · delivered`).reverse().concat(operationLog.filter((entry) => !operations.some((operation) => entry.startsWith(`${operation.id} ·`)))).slice(0, 5)
   beaConnected = true
   render(newestFirst ? 'Newest queued operation delivered to Bea; stale snapshots were ignored.' : 'Queued operations delivered to Bea.')
 }

@@ -30,6 +30,10 @@ const releaseArtifacts = [
   'docs/release-candidate-checklist.md',
   'docs/release-notes-v1.md',
   'docs/release-notes-v2.md',
+  'docs/release-notes-v3.md',
+  'docs/release-notes-v4.md',
+  'docs/release-assets-v4.md',
+  'docs/architecture/v4-collaboration-runtime.md',
   'docs/upgrading-to-v1.md',
   'docs/upgrading-to-v2.md',
   'docs/publishing.md',
@@ -43,7 +47,7 @@ test('the dry run starts with the dependency-ordered clean release build', async
   assert.match(manifest.scripts['publish:dry-run'], /^pnpm build:release &&/)
 })
 
-async function createRepository(version = '3.0.0') {
+async function createRepository(version = '4.0.0') {
   const root = await mkdtemp(join(tmpdir(), 'canvaskit-release-'))
 
   for (const name of packages) {
@@ -89,15 +93,15 @@ async function withRepository(run) {
   }
 }
 
-test('accepts a later stable 3.x candidate version and internal range', async () => {
-  const root = await createRepository('3.2.3')
+test('accepts a later stable 4.x candidate version and internal range', async () => {
+  const root = await createRepository('4.2.3')
   try {
     const path = join(root, 'packages', 'core', 'package.json')
     const manifest = JSON.parse(await readFile(path, 'utf8'))
-    manifest.dependencies = { '@canvaskit/geometry': 'workspace:^3.2.3' }
+    manifest.dependencies = { '@canvaskit/geometry': 'workspace:^4.2.3' }
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
 
-    assert.deepEqual(await verifyStableRelease(root, { version: '3.2.3' }), [])
+    assert.deepEqual(await verifyStableRelease(root, { version: '4.2.3' }), [])
   } finally {
     await rm(root, { recursive: true, force: true })
   }
@@ -109,7 +113,7 @@ test('accepts a complete stable release repository', async () => {
   })
 })
 
-test('rejects a publishable package version that is not 3.0.0', async () => {
+test('rejects a publishable package version that is not 4.0.0', async () => {
   await withRepository(async (root) => {
     const path = join(root, 'packages', 'core', 'package.json')
     const manifest = JSON.parse(await readFile(path, 'utf8'))
@@ -117,7 +121,7 @@ test('rejects a publishable package version that is not 3.0.0', async () => {
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
 
     assert.deepEqual(await verifyStableRelease(root), [
-      'packages/core/package.json: expected version 3.0.0, found 0.9.0.',
+      'packages/core/package.json: expected version 4.0.0, found 0.9.0.',
     ])
   })
 })
@@ -130,7 +134,7 @@ test('rejects a stale internal published-package dependency range', async () => 
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
 
     assert.deepEqual(await verifyStableRelease(root), [
-      'packages/react/package.json: @canvaskit/core must use workspace:^3.0.0, found workspace:^0.9.0.',
+      'packages/react/package.json: @canvaskit/core must use workspace:^4.0.0, found workspace:^0.9.0.',
     ])
   })
 })

@@ -2,14 +2,32 @@
 
 CanvasKit is a TypeScript-first engine for interactive visual editors on an infinite canvas.
 
-CanvasKit `3.0.0` is the professional diagram-editor runtime release. Package-root exports follow the
-documented compatibility policy; start with the [V3 release notes](docs/release-notes-v3.md)
-and [upgrade guide](docs/upgrading-to-v3.md).
+CanvasKit `4.0.0` adds a transport-agnostic collaboration foundation to the
+professional diagram-editor runtime. Package-root exports follow the documented
+compatibility policy; start with the [V4 release notes](docs/release-notes-v4.md)
+and [collaboration architecture](docs/architecture/v4-collaboration-runtime.md).
 The project is available under the [MIT License](LICENSE).
 
 ## Current capabilities
 
 CanvasKit provides rectangle, circle, text, and asset-backed image scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
+
+## V4 collaboration foundation
+
+V4 adds serializable whole-scene collaboration operations, deterministic
+Lamport ordering, duplicate and stale-operation rejection, and ephemeral
+presence snapshots. The host supplies authentication, persistence, and a
+`CollaborationTransport`; CanvasKit does not bundle a network protocol or
+backend. Local scene mutations publish operations, while applied remote changes
+update subscribers without entering local undo history. Run the two-client
+reference implementation with:
+
+```sh
+pnpm --filter @canvaskit/collaboration-example dev
+```
+
+See the [Core API](docs/api/core.md), [migration guidance](docs/migrations.md),
+and [V4 release notes](docs/release-notes-v4.md) for integration details.
 
 ## V3 professional diagram runtime
 

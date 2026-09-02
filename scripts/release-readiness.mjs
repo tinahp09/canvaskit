@@ -2,7 +2,7 @@ import { access, readdir, readFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const DEFAULT_STABLE_VERSION = '3.0.0'
+const DEFAULT_STABLE_VERSION = '4.0.0'
 const PACKAGE_NAMES = [
   'core',
   'geometry',
@@ -26,6 +26,10 @@ const RELEASE_ARTIFACTS = [
   'docs/release-candidate-checklist.md',
   'docs/release-notes-v1.md',
   'docs/release-notes-v2.md',
+  'docs/release-notes-v3.md',
+  'docs/release-notes-v4.md',
+  'docs/release-assets-v4.md',
+  'docs/architecture/v4-collaboration-runtime.md',
   'docs/upgrading-to-v1.md',
   'docs/upgrading-to-v2.md',
   'docs/publishing.md',

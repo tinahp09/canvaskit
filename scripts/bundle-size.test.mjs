@@ -18,8 +18,8 @@ const packages = [
   'vue',
 ]
 
-test('sets the Core V3 baseline below 130 KB while allowing its public editor runtimes', () => {
-  assert.equal(BUNDLE_BUDGETS.core, 130_000)
+test('sets the Core V4 budget above its collaboration-runtime baseline', () => {
+  assert.equal(BUNDLE_BUDGETS.core, 140_000)
 })
 
 async function createRepository() {

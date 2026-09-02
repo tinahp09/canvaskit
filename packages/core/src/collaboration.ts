@@ -98,8 +98,7 @@ export function validateCollaborationOperation(value: unknown): CollaborationOpe
   if (!isRecord(value)
     || !isNonEmptyString(value.id)
     || !isNonEmptyString(value.actorId)
-    || !Number.isSafeInteger(value.clock)
-    || value.clock < 0
+    || !isSafeNonNegativeInteger(value.clock)
     || !isNonEmptyString(value.target)
     || value.kind !== 'scene') {
     throw new Error('Invalid collaboration operation.')
@@ -121,6 +120,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
+}
+
+function isSafeNonNegativeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }
 
 function compareOperationOrder(left: CollaborationOperation, right: CollaborationOperation): number {
