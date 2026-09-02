@@ -111,6 +111,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/renderer-canvas
 
+  examples/collaboration-adapters:
+    dependencies:
+      '@canvaskit/collaboration-adapters':
+        specifier: workspace:*
+        version: link:../../packages/collaboration-adapters
+      '@canvaskit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/diagram-editor:
     dependencies:
       '@canvaskit/core':
