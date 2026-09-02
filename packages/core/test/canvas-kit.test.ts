@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { addEdge, addGroup, addLayer, addRectangle, CanvasKit, ConnectorController, createScene, importScene, setLayerLocked, setLayerVisibility, type CanvasLayer, type CanvasScene, type CreateConnectorInput } from '../src/index.js'
+import { addEdge, addGroup, addLayer, addRectangle, CanvasKit, ConnectorController, createScene, importScene, setLayerLocked, setLayerVisibility, type CanvasLayer, type CanvasScene, type CollaborationOperation, type CreateConnectorInput } from '../src/index.js'
 
 type DocumentCommands = {
   createLayer(layer: CanvasLayer): boolean
@@ -31,6 +31,53 @@ function diagramScene(): CanvasScene {
     id: 'replacement', position: { x: 200, y: 40 }, size: { width: 20, height: 20 }, fill: '#123',
   })
 }
+
+function collaborationOperation(scene: CanvasScene): CollaborationOperation {
+  return { id: 'bea:1', actorId: 'bea', clock: 1, target: 'scene', kind: 'scene', scene }
+}
+
+it('publishes one collaboration operation for a successful local scene command', () => {
+  const kit = new CanvasKit({ collaboration: { actorId: 'ada' } })
+  const published: CollaborationOperation[] = []
+  const disconnect = kit.connectCollaboration({
+    publish: (operation) => published.push(operation),
+    subscribe: () => () => undefined,
+  })
+
+  kit.execute({
+    label: 'add rectangle',
+    execute: (scene) => addRectangle(scene, { id: 'local', position: { x: 1, y: 2 }, size: { width: 30, height: 40 }, fill: '#38bdf8' }),
+    undo: (scene) => scene,
+  })
+
+  expect(published).toHaveLength(1)
+  expect(published[0]).toMatchObject({ id: 'ada:1', actorId: 'ada', clock: 1, target: 'scene' })
+  disconnect()
+})
+
+it('applies a remote collaboration operation without adding an undo entry', () => {
+  const remoteScene = addRectangle(createScene(), {
+    id: 'remote', position: { x: 20, y: 30 }, size: { width: 60, height: 40 }, fill: '#34d399',
+  })
+  const kit = new CanvasKit({ collaboration: { actorId: 'ada' } })
+
+  expect(kit.applyRemoteOperation(collaborationOperation(remoteScene))).toMatchObject({ applied: true })
+  expect(kit.getScene()).toEqual(remoteScene)
+  expect(kit.undo()).toEqual(remoteScene)
+})
+
+it('does not publish a collaboration operation for a no-op undo', () => {
+  const kit = new CanvasKit({ collaboration: { actorId: 'ada' } })
+  const published: CollaborationOperation[] = []
+  kit.connectCollaboration({
+    publish: (operation) => published.push(operation),
+    subscribe: () => () => undefined,
+  })
+
+  kit.undo()
+
+  expect(published).toEqual([])
+})
 
 it('creates, reconnects, removes, and restores one connector for each history command', () => {
   const scene = diagramScene()

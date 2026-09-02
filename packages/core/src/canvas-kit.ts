@@ -19,6 +19,7 @@ import { LayoutController, type AutoLayoutOptions, type SnapOptions, type SnapRe
 import { ContentController, type CreateImageInput } from './content.js'
 import { ExtensionRegistry, type CanvasCommandDefinition, type CanvasNodeDefinition, type CanvasToolDefinition, type InspectorSection } from './extensions.js'
 import { ToolRuntime, type BuiltInToolId, type ToolIntent } from './tool-runtime.js'
+import { CollaborationRuntime, type CollaborationApplyResult, type CollaborationOperation, type CollaborationTransport } from './collaboration.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel'
 
@@ -44,6 +45,12 @@ export interface MarqueeSelectionOptions {
 
 export interface CanvasKitOptions {
   scene?: CanvasScene
+  collaboration?: CanvasCollaborationOptions
+}
+
+export interface CanvasCollaborationOptions {
+  actorId: string
+  target?: string
 }
 
 export class CanvasKit {
@@ -57,6 +64,9 @@ export class CanvasKit {
   private activeLayoutGuides: CanvasGuide[] = []
   private readonly pluginIds = new Set<string>()
   private readonly pluginCleanups: Array<() => void> = []
+  private transport: CollaborationTransport | undefined
+  private transportCleanup: (() => void) | undefined
+  private readonly collaborationTarget: string | undefined
   private activeToolId: string | undefined
   private lastExtensionError: string | undefined
   viewport: ViewportController
@@ -68,9 +78,14 @@ export class CanvasKit {
   readonly content = new ContentController()
   readonly extensions = new ExtensionRegistry()
   readonly tools = new ToolRuntime()
+  readonly collaboration: CollaborationRuntime | undefined
 
   constructor(options: CanvasKitOptions = {}) {
     this.scene = options.scene ?? createScene()
+    this.collaboration = options.collaboration === undefined
+      ? undefined
+      : new CollaborationRuntime(options.collaboration.actorId)
+    this.collaborationTarget = options.collaboration?.target
     this.viewport = this.createViewport(this.scene)
     this.selection = new SelectionController(
       () => this.getScene(),
@@ -179,21 +194,54 @@ export class CanvasKit {
   }
 
   execute(command: SceneCommand): CanvasScene {
-    this.applyScene(this.history.execute(this.getScene(), command))
+    const before = this.getScene()
+    this.applyScene(this.history.execute(before, command))
+    if (JSON.stringify(before) !== JSON.stringify(this.getScene())) this.publishLocalCollaboration()
     this.notifyScene()
     return this.getScene()
   }
 
   undo(): CanvasScene {
-    this.applyScene(this.history.undo(this.getScene()))
+    const before = this.getScene()
+    this.applyScene(this.history.undo(before))
+    if (JSON.stringify(before) !== JSON.stringify(this.getScene())) this.publishLocalCollaboration()
     this.notifyScene()
     return this.getScene()
   }
 
   redo(): CanvasScene {
-    this.applyScene(this.history.redo(this.getScene()))
+    const before = this.getScene()
+    this.applyScene(this.history.redo(before))
+    if (JSON.stringify(before) !== JSON.stringify(this.getScene())) this.publishLocalCollaboration()
     this.notifyScene()
     return this.getScene()
+  }
+
+  /** Attaches a host-owned transport and returns an idempotent disconnect function. */
+  connectCollaboration(transport: CollaborationTransport): () => void {
+    if (!this.collaboration) throw new Error('CanvasKit collaboration is not configured.')
+    this.transportCleanup?.()
+    this.transport = transport
+    const unsubscribe = transport.subscribe((operation) => this.applyRemoteOperation(operation))
+    const disconnect = () => {
+      if (this.transport !== transport) return
+      this.transport = undefined
+      this.transportCleanup = undefined
+      unsubscribe()
+    }
+    this.transportCleanup = disconnect
+    return disconnect
+  }
+
+  /** Applies an accepted remote operation without creating a local undo entry. */
+  applyRemoteOperation(operation: unknown): CollaborationApplyResult {
+    if (!this.collaboration) throw new Error('CanvasKit collaboration is not configured.')
+    const result = this.collaboration.applyRemote(operation, this.getScene())
+    if (!result.applied) return result
+    this.history.clearRedo()
+    this.applyScene(result.scene)
+    this.notifyScene()
+    return { scene: this.getScene(), applied: true }
   }
 
   clearHistory(): void {
@@ -493,6 +541,7 @@ export class CanvasKit {
   }
 
   dispose(): void {
+    this.transportCleanup?.()
     this.activateTool(undefined)
     while (this.pluginCleanups.length > 0) {
       this.pluginCleanups.pop()?.()
@@ -536,6 +585,12 @@ export class CanvasKit {
 
   private notifyScene(): void {
     this.sceneSubscription.notify(this.getScene())
+  }
+
+  private publishLocalCollaboration(): void {
+    if (!this.collaboration) return
+    const operation = this.collaboration.recordLocal(this.getScene(), this.collaborationTarget)
+    void this.transport?.publish(operation)
   }
 
   private executeTransform(label: string, before: CanvasScene, after: CanvasScene): boolean {
