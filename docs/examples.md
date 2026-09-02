@@ -9,6 +9,7 @@ Each example is a standalone Vite application that imports CanvasKit only throug
 | Whiteboard | Freeform shapes, group selection, import/export, and keyboard controls | `pnpm --filter @canvaskit/whiteboard dev` |
 | ERD | Entity nodes, relationship edges, import/export, and labelled actions | `pnpm --filter @canvaskit/erd dev` |
 | Architecture | Service and dependency graphs with graph editing controls | `pnpm --filter @canvaskit/architecture dev` |
+| Collaboration | Two editor clients, transport-owned operations, reconnect replay, and ephemeral presence | `pnpm --filter @canvaskit/collaboration-example dev` |
 
 ## Framework adapters
 

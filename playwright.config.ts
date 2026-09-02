@@ -48,5 +48,10 @@ export default defineConfig({
       url: 'http://127.0.0.1:4180',
       reuseExistingServer: true,
     },
+    {
+      command: './node_modules/.bin/vite examples/collaboration --host 127.0.0.1 --port 4181',
+      url: 'http://127.0.0.1:4181',
+      reuseExistingServer: true,
+    },
   ],
 })
