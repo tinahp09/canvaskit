@@ -11,6 +11,7 @@ const publishedPackages = [
   'core',
   'geometry',
   'accessibility',
+  'collaboration-adapters',
   'plugins',
   'react',
   'renderer-canvas',

@@ -10,6 +10,7 @@ const packages = [
   'core',
   'geometry',
   'accessibility',
+  'collaboration-adapters',
   'plugins',
   'react',
   'renderer-canvas',
@@ -54,12 +55,13 @@ test('reports every published package in stable package-name order using runtime
       { name: '@canvaskit/core', bytes: 5 },
       { name: '@canvaskit/geometry', bytes: 7 },
       { name: '@canvaskit/accessibility', bytes: 9 },
-      { name: '@canvaskit/plugins', bytes: 11 },
-      { name: '@canvaskit/react', bytes: 13 },
-      { name: '@canvaskit/renderer-canvas', bytes: 15 },
-      { name: '@canvaskit/renderer-pdf', bytes: 17 },
-      { name: '@canvaskit/renderer-svg', bytes: 19 },
-      { name: '@canvaskit/vue', bytes: 21 },
+      { name: '@canvaskit/collaboration-adapters', bytes: 11 },
+      { name: '@canvaskit/plugins', bytes: 13 },
+      { name: '@canvaskit/react', bytes: 15 },
+      { name: '@canvaskit/renderer-canvas', bytes: 17 },
+      { name: '@canvaskit/renderer-pdf', bytes: 19 },
+      { name: '@canvaskit/renderer-svg', bytes: 21 },
+      { name: '@canvaskit/vue', bytes: 23 },
     ])
   })
 })

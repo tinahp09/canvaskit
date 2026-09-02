@@ -102,6 +102,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/renderer-svg
 
+  examples/collaboration:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@canvaskit/renderer-canvas':
+        specifier: workspace:*
+        version: link:../../packages/renderer-canvas
+
   examples/diagram-editor:
     dependencies:
       '@canvaskit/core':
@@ -178,6 +187,12 @@ importers:
         version: link:../../packages/renderer-canvas
 
   packages/accessibility:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:^4.0.0
+        version: link:../core
+
+  packages/collaboration-adapters:
     dependencies:
       '@canvaskit/core':
         specifier: workspace:^4.0.0

@@ -164,6 +164,7 @@ async function verifyFreshConsumer(root, outputDirectory, archivePaths) {
     "import * as core from '@canvaskit/core'",
     "import * as geometry from '@canvaskit/geometry'",
     "import * as accessibility from '@canvaskit/accessibility'",
+    "import * as collaborationAdapters from '@canvaskit/collaboration-adapters'",
     "import * as plugins from '@canvaskit/plugins'",
     "import * as react from '@canvaskit/react'",
     "import * as canvasRenderer from '@canvaskit/renderer-canvas'",
@@ -171,9 +172,9 @@ async function verifyFreshConsumer(root, outputDirectory, archivePaths) {
     "import * as svgRenderer from '@canvaskit/renderer-svg'",
     "import * as vue from '@canvaskit/vue'",
     '',
-    'const packageRoots = [core, geometry, accessibility, plugins, react, canvasRenderer, pdfRenderer, svgRenderer, vue]',
+    'const packageRoots = [core, geometry, accessibility, collaborationAdapters, plugins, react, canvasRenderer, pdfRenderer, svgRenderer, vue]',
     "if (packageRoots.some((packageRoot) => typeof packageRoot !== 'object')) throw new Error('package root import failed')",
-    "console.log('Imported all 9 packed package roots.')",
+    "console.log('Imported all 10 packed package roots.')",
     '',
   ].join('\n'))
 

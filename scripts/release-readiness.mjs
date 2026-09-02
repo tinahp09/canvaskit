@@ -7,6 +7,7 @@ const PACKAGE_NAMES = [
   'core',
   'geometry',
   'accessibility',
+  'collaboration-adapters',
   'plugins',
   'react',
   'renderer-canvas',
@@ -51,7 +52,7 @@ const IGNORED_DIRECTORIES = new Set([
   'node_modules',
   'storybook-static',
 ])
-const PACKAGE_IMPORT = /@canvaskit\/(accessibility|core|geometry|plugins|react|renderer-canvas|renderer-pdf|renderer-svg|vue)(\/[\w./-]+)/g
+const PACKAGE_IMPORT = /@canvaskit\/(accessibility|collaboration-adapters|core|geometry|plugins|react|renderer-canvas|renderer-pdf|renderer-svg|vue)(\/[\w./-]+)/g
 
 async function exists(path) {
   try {

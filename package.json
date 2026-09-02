@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.0.0",
   "scripts": {
     "build": "turbo run build",
-    "build:release": "pnpm --filter @canvaskit/geometry build && pnpm --filter @canvaskit/core build && pnpm --filter @canvaskit/plugins build && pnpm --filter @canvaskit/renderer-canvas build && pnpm --filter @canvaskit/renderer-svg build && pnpm --filter @canvaskit/renderer-pdf build && pnpm --filter @canvaskit/accessibility build && pnpm --filter @canvaskit/react build && pnpm --filter @canvaskit/vue build",
+    "build:release": "pnpm --filter @canvaskit/geometry build && pnpm --filter @canvaskit/core build && pnpm --filter @canvaskit/collaboration-adapters build && pnpm --filter @canvaskit/plugins build && pnpm --filter @canvaskit/renderer-canvas build && pnpm --filter @canvaskit/renderer-svg build && pnpm --filter @canvaskit/renderer-pdf build && pnpm --filter @canvaskit/accessibility build && pnpm --filter @canvaskit/react build && pnpm --filter @canvaskit/vue build",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
