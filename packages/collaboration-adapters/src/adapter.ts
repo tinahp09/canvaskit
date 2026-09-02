@@ -11,6 +11,10 @@ export type CollaborationConnectionStatus =
   | { state: 'error'; message: string }
 
 export type PresenceEvent = PresenceSnapshot | { actorId: string; type: 'leave' }
+export type CollaborationEnvelopePayload =
+  | { type: 'operation'; operation: CollaborationOperation }
+  | { type: 'presence'; presence: PresenceSnapshot }
+  | { type: 'leave' }
 
 export interface CollaborationAdapter extends CollaborationTransport {
   readonly status: CollaborationConnectionStatus
@@ -58,7 +62,7 @@ export abstract class CollaborationAdapterBase implements CollaborationAdapter {
     return () => this.statusListeners.delete(listener)
   }
 
-  protected createEnvelope(payload: Omit<CollaborationEnvelope, 'version' | 'roomId' | 'senderId'>): string {
+  protected createEnvelope(payload: CollaborationEnvelopePayload): string {
     return encodeEnvelope({ version: 1, roomId: this.roomId, senderId: this.senderId, ...payload } as CollaborationEnvelope)
   }
 

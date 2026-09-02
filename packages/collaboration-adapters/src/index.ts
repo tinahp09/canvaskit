@@ -16,3 +16,11 @@ export {
   type BroadcastChannelLike,
   type BroadcastChannelTransportOptions,
 } from './broadcast-channel.js'
+export {
+  WebSocketTransport,
+  type CollaborationDiagnostic,
+  type ReconnectPolicy,
+  type WebSocketFactory,
+  type WebSocketLike,
+  type WebSocketTransportOptions,
+} from './websocket.js'
