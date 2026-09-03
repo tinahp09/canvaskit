@@ -1,4 +1,6 @@
 import { CanvasKit } from './canvas-kit.js'
+import { CommandRegistry, type CommandResult, type CommandSnapshot, type EditorCommandDefinition } from './command-registry.js'
+import type { EditorCommand } from './editor-command.js'
 import { serializeScene } from './serialization.js'
 
 export interface EditorDocumentInput {
@@ -26,6 +28,78 @@ export interface CloseDocumentOptions {
   readonly force?: boolean
 }
 
+/** Command surface bound to the session's active document. */
+export class EditorSessionCommands {
+  private readonly registry = new CommandRegistry()
+
+  constructor(
+    private readonly getActiveDocument: () => CanvasKit | undefined,
+    private readonly getActiveDocumentId: () => string | undefined,
+  ) {
+    for (const command of builtInCommands) {
+      this.registry.register({
+        id: command.id,
+        title: command.title,
+        ...(command.shortcut ? { shortcut: command.shortcut } : {}),
+        isEnabled: () => this.isBuiltInEnabled(command.id),
+        execute: () => { this.getActiveDocument()?.executeCommand(command.id) },
+      })
+    }
+  }
+
+  register(definition: EditorCommandDefinition): void {
+    this.registry.register(definition)
+  }
+
+  unregister(id: string): boolean {
+    return this.registry.unregister(id)
+  }
+
+  getSnapshot(): readonly CommandSnapshot[] {
+    return Object.freeze(this.registry.getSnapshot(this.context()).filter((command) => command.enabled))
+  }
+
+  findByShortcut(shortcut: string): CommandSnapshot | undefined {
+    const command = this.registry.findByShortcut(shortcut)
+    return this.getSnapshot().find((snapshot) => snapshot.id === command?.id)
+  }
+
+  execute(id: string): CommandResult {
+    return this.registry.execute(id, this.context())
+  }
+
+  private context() {
+    const activeDocumentId = this.getActiveDocumentId()
+    return activeDocumentId === undefined ? {} : { activeDocumentId }
+  }
+
+  private isBuiltInEnabled(command: EditorCommand): boolean {
+    const kit = this.getActiveDocument()
+    if (!kit) return false
+    const selectionCount = kit.selection.get().length
+    const hasSelection = selectionCount > 0 || kit.getSelectedConnector() !== undefined
+    switch (command) {
+      case 'select-all': return kit.getScene().nodes.some((node) => kit.isNodeInteractive(node.id))
+      case 'clear-selection':
+      case 'delete-selection': return hasSelection
+      case 'group-selection':
+      case 'ungroup-selection':
+      case 'copy':
+      case 'cut':
+      case 'duplicate': return selectionCount > 0
+      case 'align-left':
+      case 'align-center':
+      case 'align-right':
+      case 'align-top':
+      case 'align-middle':
+      case 'align-bottom':
+      case 'distribute-horizontal':
+      case 'distribute-vertical': return selectionCount > 1
+      case 'paste': return true
+    }
+  }
+}
+
 type SessionDocument = {
   id: string
   title: string
@@ -38,6 +112,10 @@ export class EditorSession {
   private readonly documents = new Map<string, SessionDocument>()
   private readonly listeners = new Set<(snapshot: EditorSessionSnapshot) => void>()
   private activeDocumentId: string | undefined
+  readonly commands = new EditorSessionCommands(
+    () => this.getActiveDocument(),
+    () => this.activeDocumentId,
+  )
 
   openDocument(input: EditorDocumentInput): void {
     if (this.documents.has(input.id)) {
@@ -127,3 +205,23 @@ export class EditorSession {
     this.listeners.forEach((listener) => listener(snapshot))
   }
 }
+
+const builtInCommands: readonly Readonly<{ id: EditorCommand; title: string; shortcut?: string }>[] = [
+  { id: 'select-all', title: 'Select all', shortcut: 'Mod+A' },
+  { id: 'clear-selection', title: 'Clear selection', shortcut: 'Escape' },
+  { id: 'delete-selection', title: 'Delete selection', shortcut: 'Backspace' },
+  { id: 'group-selection', title: 'Group selection', shortcut: 'Mod+G' },
+  { id: 'ungroup-selection', title: 'Ungroup selection', shortcut: 'Mod+Shift+G' },
+  { id: 'copy', title: 'Copy', shortcut: 'Mod+C' },
+  { id: 'cut', title: 'Cut', shortcut: 'Mod+X' },
+  { id: 'paste', title: 'Paste', shortcut: 'Mod+V' },
+  { id: 'duplicate', title: 'Duplicate', shortcut: 'Mod+D' },
+  { id: 'align-left', title: 'Align left' },
+  { id: 'align-center', title: 'Align center' },
+  { id: 'align-right', title: 'Align right' },
+  { id: 'align-top', title: 'Align top' },
+  { id: 'align-middle', title: 'Align middle' },
+  { id: 'align-bottom', title: 'Align bottom' },
+  { id: 'distribute-horizontal', title: 'Distribute horizontally' },
+  { id: 'distribute-vertical', title: 'Distribute vertically' },
+]

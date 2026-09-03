@@ -74,3 +74,43 @@ it('detaches its CanvasKit subscription when a document closes', () => {
 
   expect(snapshots).toHaveLength(snapshotCountAfterClose)
 })
+
+it('runs palette commands against only the active document', () => {
+  const session = new EditorSession()
+  const brief = createKit()
+  const poster = createKit()
+  addTestRectangle(brief, 'brief-rectangle')
+  addTestRectangle(poster, 'poster-rectangle')
+  session.openDocument({ id: 'brief', title: 'Creative brief', kit: brief })
+  session.openDocument({ id: 'poster', title: 'Poster', kit: poster })
+  session.activateDocument('poster')
+
+  expect(session.commands.getSnapshot().some((command) => command.id === 'select-all')).toBe(true)
+  expect(session.commands.execute('select-all')).toEqual({ executed: true })
+  expect(brief.selection.get()).toEqual([])
+  expect(poster.selection.get()).toEqual(['poster-rectangle'])
+})
+
+it('hides delete-selection from palette snapshots and rejects it without a selection', () => {
+  const session = new EditorSession()
+  session.openDocument({ id: 'brief', title: 'Creative brief', kit: createKit() })
+
+  expect(session.commands.getSnapshot().some((command) => command.id === 'delete-selection')).toBe(false)
+  expect(session.commands.execute('delete-selection')).toEqual({ executed: false, reason: 'disabled' })
+})
+
+it('gives host commands the active document context', () => {
+  const session = new EditorSession()
+  session.openDocument({ id: 'brief', title: 'Creative brief', kit: createKit() })
+  session.openDocument({ id: 'poster', title: 'Poster', kit: createKit() })
+  session.activateDocument('poster')
+  let observedActiveDocumentId: string | undefined
+  session.commands.register({
+    id: 'inspect-active-document',
+    title: 'Inspect active document',
+    execute: (context) => { observedActiveDocumentId = context.activeDocumentId },
+  })
+
+  expect(session.commands.execute('inspect-active-document')).toEqual({ executed: true })
+  expect(observedActiveDocumentId).toBe('poster')
+})
