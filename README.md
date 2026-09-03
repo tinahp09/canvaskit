@@ -2,15 +2,29 @@
 
 CanvasKit is a TypeScript-first engine for interactive visual editors on an infinite canvas.
 
-CanvasKit `5.0.0` adds production-ready browser collaboration adapters to the
-professional diagram-editor runtime. Package-root exports follow the documented
-compatibility policy; start with the [V5 release notes](docs/release-notes-v5.md)
-and [adapter architecture](docs/architecture/v5-production-collaboration-adapters.md).
+CanvasKit `6.0.0` adds headless editor sessions and a context-aware command
+layer to the professional diagram-editor runtime. Package-root exports follow
+the documented compatibility policy; start with the [V6 release notes](docs/release-notes-v6.md)
+and [editor-session architecture](docs/architecture/v6-editor-session-commands.md).
 The project is available under the [MIT License](LICENSE).
 
 ## Current capabilities
 
 CanvasKit provides rectangle, circle, text, and asset-backed image scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
+
+## V6 editor sessions and commands
+
+V6 adds host-owned multi-document sessions, canonical dirty-state baselines,
+confirmation-aware close behavior, and immutable command-palette data for the
+active document. It intentionally leaves persistence, browser tabs, autosave,
+auth, and cross-document transactions to the host. Run the reference editor:
+
+```sh
+pnpm --filter @canvaskit/editor-session-example dev
+```
+
+See the [Editor Session API](docs/api/editor-session.md) and the [V6 release
+notes](docs/release-notes-v6.md) for the integration boundary.
 
 ## V5 production collaboration adapters
 

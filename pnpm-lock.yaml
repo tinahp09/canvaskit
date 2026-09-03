@@ -129,6 +129,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/renderer-canvas
 
+  examples/editor-session:
+    dependencies:
+      '@canvaskit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/erd:
     dependencies:
       '@canvaskit/core':
@@ -198,19 +204,19 @@ importers:
   packages/accessibility:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../core
 
   packages/collaboration-adapters:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../core
 
   packages/core:
     dependencies:
       '@canvaskit/geometry':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../geometry
 
   packages/geometry: {}
@@ -218,16 +224,16 @@ importers:
   packages/plugins:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../core
 
   packages/react:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../core
       '@canvaskit/renderer-canvas':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../renderer-canvas
       react:
         specifier: '>=18'
@@ -237,34 +243,34 @@ importers:
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@canvaskit/plugins':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../plugins
 
   packages/renderer-canvas:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../core
 
   packages/renderer-pdf:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../core
 
   packages/renderer-svg:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../core
 
   packages/vue:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../core
       '@canvaskit/renderer-canvas':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^6.0.0
         version: link:../renderer-canvas
       vue:
         specifier: '>=3.3'

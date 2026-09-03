@@ -1,5 +1,16 @@
 # Changelog
 
+## 6.0.0 — 2026-09-03
+
+CanvasKit 6.0.0 adds headless multi-document editor sessions and a deterministic
+command/keybinding foundation for professional hosts. It includes canonical
+dirty baselines, confirmation-aware close, active-document command contexts,
+shortcut normalization, and a browser-tested glassy reference editor.
+
+Breaking changes: all public packages now use the 6.x suite. Scene V7 is
+unchanged; V6 does not add storage, browser-tab control, autosave, a backend,
+CRDT, or cross-document transactions.
+
 ## 5.0.0 — 2026-09-02
 
 CanvasKit 5.0.0 makes V4 collaboration usable in browser hosts through a

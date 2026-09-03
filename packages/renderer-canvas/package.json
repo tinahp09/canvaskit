@@ -1,10 +1,10 @@
 {
   "name": "@canvaskit/renderer-canvas",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "license": "MIT",
   "type": "module",
   "files": ["dist"],
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
   "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc -p tsconfig.json --noEmit" },
-  "dependencies": { "@canvaskit/core": "workspace:^5.0.0" }
+  "dependencies": { "@canvaskit/core": "workspace:^6.0.0" }
 }
