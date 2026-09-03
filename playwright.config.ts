@@ -58,5 +58,10 @@ export default defineConfig({
       url: 'http://127.0.0.1:4185',
       reuseExistingServer: true,
     },
+    {
+      command: './node_modules/.bin/vite examples/editor-session --host 127.0.0.1 --port 4186',
+      url: 'http://127.0.0.1:4186',
+      reuseExistingServer: true,
+    },
   ],
 })

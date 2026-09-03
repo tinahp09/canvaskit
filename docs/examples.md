@@ -11,6 +11,7 @@ Each example is a standalone Vite application that imports CanvasKit only throug
 | Architecture | Service and dependency graphs with graph editing controls | `pnpm --filter @canvaskit/architecture dev` |
 | Collaboration | Two editor clients, transport-owned operations, reconnect replay, and ephemeral presence | `pnpm --filter @canvaskit/collaboration-example dev` |
 | Collaboration adapters | Two browser peers connected by `BroadcastChannel`, presence relay, and unavailable-transport state | `pnpm --filter @canvaskit/collaboration-adapters-example dev` |
+| Editor session | Headless multi-document sessions, canonical dirty state, and active-document command palette | `pnpm --filter @canvaskit/editor-session-example dev` |
 
 ## Framework adapters
 
