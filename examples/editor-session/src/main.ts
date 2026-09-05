@@ -5,7 +5,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
   <main class="editor-shell">
     <header class="topbar glass">
-      <div class="brand"><span class="brand-mark">C</span><div><strong>CanvasKit</strong><small>V6 · Editor Session</small></div></div>
+      <div class="brand"><span class="brand-mark">C</span><div><strong>CanvasKit</strong><small>V7 · Persistence & Recovery</small></div></div>
       <div class="topbar-actions"><button id="restore" class="secondary">Restore workspace</button><button id="save" class="secondary">Save active</button><button id="simulate-failure" class="secondary">Simulate save failure</button><button id="retry-save" class="secondary">Retry save</button><button id="palette-open" class="primary">Open command palette <kbd>⌘ K</kbd></button></div>
     </header>
     <section class="workspace glass">

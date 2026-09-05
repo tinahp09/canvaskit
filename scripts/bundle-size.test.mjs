@@ -19,8 +19,8 @@ const packages = [
   'vue',
 ]
 
-test('sets the Core V4 budget above its collaboration-runtime baseline', () => {
-  assert.equal(BUNDLE_BUDGETS.core, 140_000)
+test('sets the Core V7 budget above the persistence-runtime baseline', () => {
+  assert.equal(BUNDLE_BUDGETS.core, 160_000)
 })
 
 async function createRepository() {

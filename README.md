@@ -2,15 +2,29 @@
 
 CanvasKit is a TypeScript-first engine for interactive visual editors on an infinite canvas.
 
-CanvasKit `6.0.0` adds headless editor sessions and a context-aware command
-layer to the professional diagram-editor runtime. Package-root exports follow
-the documented compatibility policy; start with the [V6 release notes](docs/release-notes-v6.md)
-and [editor-session architecture](docs/architecture/v6-editor-session-commands.md).
+CanvasKit `7.0.0` adds a storage-neutral persistence and recovery layer to the
+professional editor runtime. Package-root exports follow the documented
+compatibility policy; start with the [V7 release notes](docs/release-notes-v7.md)
+and [persistence architecture](docs/architecture/v7-persistence-recovery.md).
 The project is available under the [MIT License](LICENSE).
 
 ## Current capabilities
 
 CanvasKit provides rectangle, circle, text, and asset-backed image scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
+
+## V7 persistence and recovery
+
+V7 adds an injected `DocumentStorageAdapter` and `PersistentEditorSession` for
+async save, restore, error status, and retry without coupling Core to a
+browser database or backend. Canonical captured-save rules keep later edits
+dirty when an earlier async save completes. Run the reference editor:
+
+```sh
+pnpm --filter @canvaskit/editor-session-example dev
+```
+
+See the [Persistent Editor Session API](docs/api/persistent-editor-session.md)
+and [V7 release notes](docs/release-notes-v7.md).
 
 ## V6 editor sessions and commands
 

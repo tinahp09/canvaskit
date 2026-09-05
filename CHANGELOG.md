@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.0.0 — 2026-09-05
+
+CanvasKit 7.0.0 adds an adapter-driven persistence and recovery foundation for
+professional editor hosts. It includes canonical document storage contracts,
+async restore/load/save state, explicit save retry, immutable persistence
+metadata, and stale-save protection that preserves edits made during a write.
+
+Breaking changes: all public packages now use the 7.x suite. Scene V7 is
+unchanged; V7 does not add a built-in database, browser storage, backend,
+autosave, authentication, merge, or conflict-resolution policy.
+
 ## 6.0.0 — 2026-09-03
 
 CanvasKit 6.0.0 adds headless multi-document editor sessions and a deterministic

@@ -340,7 +340,7 @@ pnpm test:release
 pnpm build:release
 pnpm test:bundle-size
 pnpm bundle:size
-pnpm test:smoke
+pnpm test:pack
 pnpm test:e2e
 ```
 
@@ -358,4 +358,3 @@ git commit -m "release: prepare CanvasKit v7.0.0"
 - Spec coverage: Tasks 1–3 cover storage neutrality, validation, lifecycle, immutable status, stale-save protection, errors, retry, and future conflict metadata. Task 4 provides browser proof. Task 5 covers all release evidence and gates.
 - Placeholder scan: no incomplete requirements appear; autosave, offline replication, merging, and concrete backend adapters are deliberately stated V7 non-goals.
 - Type consistency: `DocumentStorageAdapter`, `StoredDocument`, `PersistentEditorSession`, `saveDocument`, `retrySave`, and `markDocumentSaved` use the same names and contracts throughout.
-
