@@ -33,3 +33,23 @@ test('palette Select all affects only the active document', async ({ page }) => 
   await page.getByRole('tab', { name: 'Creative brief' }).click()
   await expect(page.getByLabel('Creative brief selection')).toHaveText('0 selected')
 })
+
+test('saves and restores the active document through the V7 adapter', async ({ page }) => {
+  await page.goto(url)
+  await page.getByRole('button', { name: 'Add rectangle' }).click()
+  await page.getByRole('button', { name: 'Save active' }).click()
+
+  await expect(page.getByLabel('Creative brief persistence')).toHaveText('Saved')
+  await page.getByRole('button', { name: 'Restore workspace' }).click()
+  await expect(page.getByRole('tabpanel')).toContainText('1 rectangle')
+})
+
+test('shows an adapter failure and retries the current document save', async ({ page }) => {
+  await page.goto(url)
+  await page.getByRole('button', { name: 'Simulate save failure' }).click()
+  await page.getByRole('button', { name: 'Save active' }).click()
+
+  await expect(page.getByLabel('Creative brief persistence')).toHaveText('Error')
+  await page.getByRole('button', { name: 'Retry save' }).click()
+  await expect(page.getByLabel('Creative brief persistence')).toHaveText('Saved')
+})
