@@ -1,7 +1,7 @@
 import { CanvasKit } from './canvas-kit.js'
 import type { DocumentPersistenceStatus, DocumentStorageAdapter, StoredDocument } from './document-storage.js'
 import { EditorSession, type EditorDocumentInput, type EditorDocumentSnapshot } from './editor-session.js'
-import { loadScene } from './serialization.js'
+import { loadScene, serializeScene } from './serialization.js'
 
 export interface PersistentEditorSessionOptions {
   readonly storage: DocumentStorageAdapter
@@ -85,6 +85,41 @@ export class PersistentEditorSession {
     }
   }
 
+  async saveDocument(id = this.session.getSnapshot().activeDocumentId): Promise<boolean> {
+    this.assertNotDisposed()
+    if (id === undefined) return false
+    const document = this.session.getSnapshot().documents.find((candidate) => candidate.id === id)
+    const kit = this.session.getDocument(id)
+    const current = this.states.get(id)
+    if (!document || !kit || current?.persistence === 'saving') return false
+
+    const capturedScene = serializeScene(kit.getScene())
+    this.setState(id, { ...current, persistence: 'saving', error: undefined })
+    try {
+      const persisted = await this.options.storage.save({
+        id,
+        title: document.title,
+        scene: capturedScene,
+        updatedAt: current?.updatedAt ?? new Date().toISOString(),
+        ...(current?.revision === undefined ? {} : { revision: current.revision }),
+      })
+      this.setState(id, {
+        persistence: 'saved',
+        updatedAt: persisted.updatedAt,
+        ...(persisted.revision === undefined ? {} : { revision: persisted.revision }),
+      })
+      this.session.markDocumentSaved(id, capturedScene)
+      return true
+    } catch (error) {
+      this.setState(id, { ...current, persistence: 'error', error: messageFor(error, 'Unable to save document.') })
+      return false
+    }
+  }
+
+  retrySave(id = this.session.getSnapshot().activeDocumentId): Promise<boolean> {
+    return this.saveDocument(id)
+  }
+
   activateDocument(id: string): boolean { return this.session.activateDocument(id) }
   getDocument(id: string): CanvasKit | undefined { return this.session.getDocument(id) }
   getActiveDocument(): CanvasKit | undefined { return this.session.getActiveDocument() }
@@ -158,6 +193,6 @@ export class PersistentEditorSession {
   }
 }
 
-function messageFor(error: unknown): string {
-  return error instanceof Error ? error.message : 'Unable to load document.'
+function messageFor(error: unknown, fallback = 'Unable to load document.'): string {
+  return error instanceof Error ? error.message : fallback
 }
