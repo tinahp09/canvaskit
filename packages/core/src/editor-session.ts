@@ -160,6 +160,19 @@ export class EditorSession {
     return true
   }
 
+  /**
+   * Records a successful external save only when the supplied serialization is
+   * still the document's live scene. This prevents a pending save from
+   * clearing a change made after it began.
+   */
+  markDocumentSaved(id: string, serializedScene: string): boolean {
+    const document = this.documents.get(id)
+    if (!document || serializeScene(document.kit.getScene()) !== serializedScene) return false
+    document.baseline = serializedScene
+    this.notify()
+    return true
+  }
+
   closeDocument(id: string, options: CloseDocumentOptions = {}): CloseDocumentResult {
     const document = this.documents.get(id)
     if (!document) return { closed: false, reason: 'missing' }

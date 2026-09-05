@@ -13,6 +13,7 @@ export type { CommandContext, CommandResult, CommandSnapshot, EditorCommandDefin
 export { EditorSession } from './editor-session.js'
 export { EditorSessionCommands } from './editor-session.js'
 export type { CloseDocumentOptions, CloseDocumentResult, EditorDocumentInput, EditorDocumentSnapshot, EditorSessionSnapshot } from './editor-session.js'
+export type { DocumentPersistenceStatus, DocumentStorageAdapter, StoredDocument } from './document-storage.js'
 export { hitTestConnector, hitTestEdge, nodeCenter } from './graph-interaction.js'
 export { exportScene, importScene, InvalidSceneError, loadScene, serializeScene, UnsupportedSceneVersionError } from './serialization.js'
 export { migrateScene } from './migrations.js'
