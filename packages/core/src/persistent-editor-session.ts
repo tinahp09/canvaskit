@@ -1,6 +1,6 @@
 import { CanvasKit } from './canvas-kit.js'
 import type { DocumentPersistenceStatus, DocumentStorageAdapter, StoredDocument } from './document-storage.js'
-import { EditorSession, type EditorDocumentInput, type EditorDocumentSnapshot } from './editor-session.js'
+import { EditorSession, type CloseDocumentOptions, type CloseDocumentResult, type EditorDocumentInput, type EditorDocumentSnapshot } from './editor-session.js'
 import { loadScene, serializeScene } from './serialization.js'
 
 export interface PersistentEditorSessionOptions {
@@ -121,6 +121,12 @@ export class PersistentEditorSession {
   }
 
   activateDocument(id: string): boolean { return this.session.activateDocument(id) }
+  closeDocument(id: string, options: CloseDocumentOptions = {}): CloseDocumentResult {
+    this.assertNotDisposed()
+    const result = this.session.closeDocument(id, options)
+    if (result.closed) this.states.delete(id)
+    return result
+  }
   getDocument(id: string): CanvasKit | undefined { return this.session.getDocument(id) }
   getActiveDocument(): CanvasKit | undefined { return this.session.getActiveDocument() }
 

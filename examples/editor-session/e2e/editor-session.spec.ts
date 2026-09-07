@@ -40,8 +40,21 @@ test('saves and restores the active document through the V7 adapter', async ({ p
   await page.getByRole('button', { name: 'Save active' }).click()
 
   await expect(page.getByLabel('Creative brief persistence')).toHaveText('Saved')
-  await page.getByRole('button', { name: 'Restore workspace' }).click()
+  await page.getByRole('button', { name: 'Restore documents' }).click()
   await expect(page.getByRole('tabpanel')).toContainText('1 rectangle')
+})
+
+test('saves a local-first workspace manifest and restores its active tab', async ({ page }) => {
+  await page.goto(url)
+  await page.getByRole('tab', { name: 'Poster' }).click()
+  await page.getByRole('button', { name: 'Save workspace' }).click()
+  await expect(page.getByLabel('Workspace recovery status')).toHaveText('Ready')
+  await expect(page.getByLabel('Recent documents')).toContainText('Creative brief')
+  await expect(page.getByLabel('Recent documents')).toContainText('Poster')
+
+  await page.getByRole('tab', { name: 'Creative brief' }).click()
+  await page.getByRole('button', { name: 'Restore previous workspace' }).click()
+  await expect(page.getByRole('tab', { name: 'Poster' })).toHaveAttribute('aria-selected', 'true')
 })
 
 test('shows an adapter failure and retries the current document save', async ({ page }) => {

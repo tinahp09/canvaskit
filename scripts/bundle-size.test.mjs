@@ -19,7 +19,7 @@ const packages = [
   'vue',
 ]
 
-test('sets the Core V7 budget above the persistence-runtime baseline', () => {
+test('sets the Core V8 budget above the persistence-runtime baseline', () => {
   assert.equal(BUNDLE_BUDGETS.core, 160_000)
 })
 

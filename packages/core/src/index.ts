@@ -16,6 +16,8 @@ export type { CloseDocumentOptions, CloseDocumentResult, EditorDocumentInput, Ed
 export type { DocumentPersistenceStatus, DocumentStorageAdapter, StoredDocument } from './document-storage.js'
 export { PersistentEditorSession } from './persistent-editor-session.js'
 export type { PersistentEditorDocumentSnapshot, PersistentEditorSessionOptions, PersistentEditorSessionSnapshot } from './persistent-editor-session.js'
+export { WorkspaceRecoveryController } from './workspace-recovery.js'
+export type { WorkspaceDocumentReference, WorkspaceRecoveryControllerOptions, WorkspaceRecoverySnapshot, WorkspaceRecoveryStatus, WorkspaceSnapshot, WorkspaceStorageAdapter } from './workspace-recovery.js'
 export { hitTestConnector, hitTestEdge, nodeCenter } from './graph-interaction.js'
 export { exportScene, importScene, InvalidSceneError, loadScene, serializeScene, UnsupportedSceneVersionError } from './serialization.js'
 export { migrateScene } from './migrations.js'

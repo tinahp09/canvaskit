@@ -2,15 +2,33 @@
 
 CanvasKit is a TypeScript-first engine for interactive visual editors on an infinite canvas.
 
-CanvasKit `7.0.0` adds a storage-neutral persistence and recovery layer to the
+CanvasKit `8.0.0` adds local-first workspace recovery to the storage-neutral
 professional editor runtime. Package-root exports follow the documented
-compatibility policy; start with the [V7 release notes](docs/release-notes-v7.md)
-and [persistence architecture](docs/architecture/v7-persistence-recovery.md).
+compatibility policy; start with the [V8 release notes](docs/release-notes-v8.md)
+and [workspace recovery architecture](docs/architecture/v8-workspace-recovery.md).
 The project is available under the [MIT License](LICENSE).
 
 ## Current capabilities
 
 CanvasKit provides rectangle, circle, text, and asset-backed image scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
+
+## V8 local-first workspace recovery
+
+V8 adds an injected `WorkspaceStorageAdapter` and
+`WorkspaceRecoveryController`. It records ordered open-document references,
+the active tab, and recents as a host-owned manifest, then reloads documents
+through V7 persistence. Missing or malformed manifests preserve the working
+in-memory workspace; Core bundles no storage implementation, autosave, cloud
+sync, or conflict policy.
+
+Run the reference editor:
+
+```sh
+pnpm --filter @canvaskit/editor-session-example dev
+```
+
+See the [Workspace Recovery API](docs/api/workspace-recovery.md) and [V8
+release notes](docs/release-notes-v8.md).
 
 ## V7 persistence and recovery
 
