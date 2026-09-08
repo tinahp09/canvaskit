@@ -66,3 +66,14 @@ test('shows an adapter failure and retries the current document save', async ({ 
   await page.getByRole('button', { name: 'Retry save' }).click()
   await expect(page.getByLabel('Creative brief persistence')).toHaveText('Saved')
 })
+
+test('autosaves a dirty document and exposes recovery actions', async ({ page }) => {
+  await page.goto(url)
+  await page.getByRole('button', { name: 'Simulate save failure' }).click()
+  await page.getByRole('button', { name: 'Add rectangle' }).click()
+  await expect(page.getByLabel('Autosave status')).toHaveText('Error')
+  await page.getByRole('button', { name: 'Recover changes' }).click()
+  await expect(page.getByRole('status')).toContainText('Recovered')
+  await page.getByRole('button', { name: 'Discard recovery' }).click()
+  await expect(page.getByRole('status')).toContainText('discarded')
+})

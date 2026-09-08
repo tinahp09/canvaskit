@@ -1,15 +1,15 @@
 # Changelog
 
-## 8.0.0 — 2026-09-07
+## 9.0.0 — 2026-09-07
 
-CanvasKit 8.0.0 adds a local-first workspace recovery boundary for professional
+CanvasKit 9.0.0 adds a local-first workspace recovery boundary for professional
 editor hosts. It includes host-injected workspace manifest storage, ordered
 document references, active-tab restoration, recents metadata, immutable
 recovery state, partial recovery, and protection against malformed manifests
 erasing the live workspace.
 
 Breaking changes: all public packages now use the 8.x suite. Scene V7 is
-unchanged; V8 does not add a concrete store, browser persistence, autosave,
+unchanged; V9 does not add a concrete store, browser persistence, autosave,
 offline queue, backend, cloud sync, merging, or conflict-resolution policy.
 
 ## 7.0.0 — 2026-09-05

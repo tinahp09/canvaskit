@@ -20,7 +20,7 @@ export const PUBLISHED_PACKAGES = [
 // intentional changes while catching accidental package growth. The Core V4
 // baseline adds the public collaboration runtime and CanvasKit transport bridge.
 export const BUNDLE_BUDGETS = {
-  core: 160_000,
+  core: 165_000,
   geometry: 1_100,
   accessibility: 3_000,
   'collaboration-adapters': 12_000,

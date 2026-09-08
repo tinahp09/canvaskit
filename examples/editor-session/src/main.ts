@@ -1,12 +1,12 @@
-import { addRectangle, CanvasKit, PersistentEditorSession, serializeScene, WorkspaceRecoveryController, type DocumentStorageAdapter, type StoredDocument, type WorkspaceSnapshot, type WorkspaceStorageAdapter } from '@canvaskit/core'
+import { addRectangle, AutosaveController, CanvasKit, PersistentEditorSession, RecoveryJournalController, serializeScene, WorkspaceRecoveryController, type DocumentStorageAdapter, type RecoveryJournalEntry, type RecoveryJournalStorageAdapter, type StoredDocument, type WorkspaceSnapshot, type WorkspaceStorageAdapter } from '@canvaskit/core'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
   <main class="editor-shell">
     <header class="topbar glass">
-      <div class="brand"><span class="brand-mark">C</span><div><strong>CanvasKit</strong><small>V8 · Local-first Workspace Recovery</small></div></div>
-      <div class="topbar-actions"><button id="restore" class="secondary">Restore documents</button><button id="save-workspace" class="secondary">Save workspace</button><button id="restore-workspace" class="secondary">Restore previous workspace</button><button id="save" class="secondary">Save active</button><button id="simulate-failure" class="secondary">Simulate save failure</button><button id="retry-save" class="secondary">Retry save</button><button id="palette-open" class="primary">Open command palette <kbd>⌘ K</kbd></button></div>
+      <div class="brand"><span class="brand-mark">C</span><div><strong>CanvasKit</strong><small>V9 · Autosave & Recovery Journal</small></div></div>
+      <div class="topbar-actions"><button id="restore" class="secondary">Restore documents</button><button id="save-workspace" class="secondary">Save workspace</button><button id="restore-workspace" class="secondary">Restore previous workspace</button><button id="save" class="secondary">Save active</button><button id="simulate-failure" class="secondary">Simulate save failure</button><button id="recover" class="secondary">Recover changes</button><button id="discard" class="secondary">Discard recovery</button><button id="retry-save" class="secondary">Retry save</button><button id="palette-open" class="primary">Open command palette <kbd>⌘ K</kbd></button></div>
     </header>
     <section class="workspace glass">
       <div class="workspace-head"><div><p class="eyebrow">MULTI-DOCUMENT WORKSPACE</p><h1>Keep focused work in context.</h1></div><p id="live-status" role="status" aria-live="polite">Ready</p></div>
@@ -16,7 +16,7 @@ app.innerHTML = `
         <div class="stage-footer"><span class="document-summary"></span><span class="selection-summary"></span><button id="add-rectangle" class="add-button">Add rectangle</button></div>
       </section>
     </section>
-    <aside class="inspector glass"><p class="eyebrow">SESSION INSPECTOR</p><h2>Local-first recovery</h2><p>Document storage stays host-owned. A separate workspace manifest restores document order and the active tab without a cloud dependency.</p><dl><div><dt>Storage</dt><dd>Injected adapters</dd></div><div><dt>Persistence</dt><dd id="persistence-detail">Ready</dd></div><div><dt>Workspace</dt><dd id="workspace-recovery-status" aria-label="Workspace recovery status">Idle</dd></div><div><dt>Recent</dt><dd><ul id="recent-documents" aria-label="Recent documents"></ul></dd></div></dl></aside>
+    <aside class="inspector glass"><p class="eyebrow">SESSION INSPECTOR</p><h2>Autosave recovery</h2><p>Dirty work is journaled before durable save.</p><dl><div><dt>Storage</dt><dd>Injected adapters</dd></div><div><dt>Persistence</dt><dd id="persistence-detail">Ready</dd></div><div><dt>Autosave</dt><dd id="autosave-status" aria-label="Autosave status">Idle</dd></div><div><dt>Workspace</dt><dd id="workspace-recovery-status" aria-label="Workspace recovery status">Idle</dd></div><div><dt>Recent</dt><dd><ul id="recent-documents" aria-label="Recent documents"></ul></dd></div></dl></aside>
   </main>
   <div id="palette-dialog" class="dialog-backdrop" role="dialog" aria-modal="true" aria-label="Command palette" hidden><section class="command-dialog glass"><div class="dialog-heading"><div><p class="eyebrow">ACTIVE DOCUMENT</p><h2>Command palette</h2></div><button id="palette-close" class="icon-button" aria-label="Close command palette">Close</button></div><div id="commands" class="command-list"></div></section></div>
 `
@@ -24,6 +24,7 @@ app.innerHTML = `
 const storedDocuments = new Map<string, StoredDocument>()
 let storedWorkspace: WorkspaceSnapshot | undefined
 let failNextSave = false
+const journalEntries = new Map<string, RecoveryJournalEntry>()
 const storage: DocumentStorageAdapter = {
   list: async () => { await pause(); return [...storedDocuments.values()] },
   load: async (id) => { await pause(); return storedDocuments.get(id) },
@@ -44,6 +45,9 @@ const workspaceStorage: WorkspaceStorageAdapter = {
   save: async (workspace) => { await pause(); storedWorkspace = workspace },
 }
 const recovery = new WorkspaceRecoveryController({ session, storage: workspaceStorage })
+const journalStorage: RecoveryJournalStorageAdapter = { load: async (id) => journalEntries.get(id), save: async (entry) => { journalEntries.set(entry.document.id, entry) }, remove: async (id) => { journalEntries.delete(id) } }
+const journal = new RecoveryJournalController({ session, storage: journalStorage })
+const autosave = new AutosaveController({ session, journal: journalStorage, delayMs: 180 })
 for (const document of [
   { id: 'brief', title: 'Creative brief' },
   { id: 'poster', title: 'Poster' },
@@ -60,6 +64,7 @@ const documentSummary = app.querySelector<HTMLElement>('.document-summary')!
 const selectionSummary = app.querySelector<HTMLElement>('.selection-summary')!
 const liveStatus = app.querySelector<HTMLElement>('#live-status')!
 const persistenceDetail = app.querySelector<HTMLElement>('#persistence-detail')!
+const autosaveStatus = app.querySelector<HTMLElement>('#autosave-status')!
 const workspaceRecoveryStatus = app.querySelector<HTMLElement>('#workspace-recovery-status')!
 const recentDocuments = app.querySelector<HTMLUListElement>('#recent-documents')!
 const dialog = app.querySelector<HTMLDivElement>('#palette-dialog')!
@@ -105,6 +110,8 @@ function render() {
   selectionSummary.textContent = `${selected.length} selected`
   selectionSummary.setAttribute('aria-label', `${active.title} selection`)
   persistenceDetail.textContent = `${persistenceLabel(active.persistence)}${active.error ? ` · ${active.error}` : ''}`
+  const autosaved = autosave.getSnapshot().documents.find((item) => item.id === active.id)
+  autosaveStatus.textContent = autosaved ? autosaved.status[0]!.toUpperCase() + autosaved.status.slice(1) : 'Idle'
   const workspace = recovery.getSnapshot()
   workspaceRecoveryStatus.textContent = `${workspaceLabel(workspace.status)}${workspace.error ? ` · ${workspace.error}` : ''}`
   recentDocuments.replaceChildren(...workspace.recentDocuments.map((item) => Object.assign(document.createElement('li'), { textContent: item.title })))
@@ -153,6 +160,8 @@ app.querySelector<HTMLButtonElement>('#restore')!.onclick = () => { void session
 app.querySelector<HTMLButtonElement>('#save-workspace')!.onclick = () => { void recovery.saveWorkspace().then((saved) => { liveStatus.textContent = saved ? 'Workspace manifest saved locally.' : 'Workspace save failed.' }) }
 app.querySelector<HTMLButtonElement>('#restore-workspace')!.onclick = () => { void recovery.restoreWorkspace().then((restored) => { liveStatus.textContent = restored ? 'Previous workspace restored locally.' : 'No previous workspace could be restored.' }) }
 app.querySelector<HTMLButtonElement>('#simulate-failure')!.onclick = () => { failNextSave = true; liveStatus.textContent = 'The next save will fail so retry can be inspected.' }
+app.querySelector<HTMLButtonElement>('#recover')!.onclick = () => { const id = session.getSnapshot().activeDocumentId; if (id) void journal.restoreRecovery(id).then((ok) => { liveStatus.textContent = ok ? 'Recovered journal changes.' : 'No recovery found.'; render() }) }
+app.querySelector<HTMLButtonElement>('#discard')!.onclick = () => { const id = session.getSnapshot().activeDocumentId; if (id) void journal.discardRecovery(id).then((ok) => { liveStatus.textContent = ok ? 'Recovery discarded.' : 'Recovery discard failed.'; render() }) }
 app.querySelector<HTMLButtonElement>('#palette-open')!.onclick = openPalette
 app.querySelector<HTMLButtonElement>('#palette-close')!.onclick = closePalette
 window.addEventListener('keydown', (event) => {
@@ -161,6 +170,7 @@ window.addEventListener('keydown', (event) => {
 })
 session.subscribe(render)
 recovery.subscribe(render)
+autosave.subscribe(render)
 render()
 
 function persistenceLabel(status: 'idle' | 'loading' | 'saving' | 'saved' | 'error'): string {
