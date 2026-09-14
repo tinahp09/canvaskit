@@ -204,19 +204,19 @@ importers:
   packages/accessibility:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../core
 
   packages/collaboration-adapters:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../core
 
   packages/core:
     dependencies:
       '@canvaskit/geometry':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../geometry
 
   packages/geometry: {}
@@ -224,16 +224,16 @@ importers:
   packages/plugins:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../core
 
   packages/react:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../core
       '@canvaskit/renderer-canvas':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../renderer-canvas
       react:
         specifier: '>=18'
@@ -243,34 +243,34 @@ importers:
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@canvaskit/plugins':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../plugins
 
   packages/renderer-canvas:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../core
 
   packages/renderer-pdf:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../core
 
   packages/renderer-svg:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../core
 
   packages/vue:
     dependencies:
       '@canvaskit/core':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../core
       '@canvaskit/renderer-canvas':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../renderer-canvas
       vue:
         specifier: '>=3.3'
@@ -481,9 +481,9 @@ packages:
   '@docsearch/react@3.8.2':
     resolution: {integrity: sha512-xCRrJQlTt8N9GU0DG4ptwHRkfnSnD/YpdeaXe02iKfqs97TkZJv60yE+1eq/tjPcVnTW8dP5qLP7itifFVV5eg==}
     peerDependencies:
-      '@types/react': '>= 16.8.0 < 19.0.0'
-      react: '>= 16.8.0 < 19.0.0'
-      react-dom: '>= 16.8.0 < 19.0.0'
+      '@types/react': '>= 16.8.0 < 110.0.0'
+      react: '>= 16.8.0 < 110.0.0'
+      react-dom: '>= 16.8.0 < 110.0.0'
       search-insights: '>= 1 < 3'
     peerDependenciesMeta:
       '@types/react':
@@ -1046,8 +1046,8 @@ packages:
   '@storybook/react-dom-shim@8.6.18':
     resolution: {integrity: sha512-N4xULcAWZQTUv4jy1/d346Tyb4gufuC3UaLCuU/iVSZ1brYF4OW3ANr+096btbMxY8pR/65lmtoqr5CTGwnBvA==}
     peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
-      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^110.0.0-beta
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^110.0.0-beta
       storybook: ^8.6.18
 
   '@storybook/react-vite@8.6.18':
@@ -1055,8 +1055,8 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@storybook/test': 8.6.18
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
-      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^110.0.0-beta
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^110.0.0-beta
       storybook: ^8.6.18
       vite: ^4.0.0 || ^5.0.0 || ^6.0.0
     peerDependenciesMeta:
@@ -1068,8 +1068,8 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@storybook/test': 8.6.18
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
-      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^110.0.0-beta
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^110.0.0-beta
       storybook: ^8.6.18
       typescript: '>= 4.2.x'
     peerDependenciesMeta:
@@ -1110,10 +1110,10 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       '@testing-library/dom': ^10.0.0
-      '@types/react': ^18.0.0 || ^19.0.0
-      '@types/react-dom': ^18.0.0 || ^19.0.0
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
+      '@types/react': ^18.0.0 || ^110.0.0
+      '@types/react-dom': ^18.0.0 || ^110.0.0
+      react: ^18.0.0 || ^110.0.0
+      react-dom: ^18.0.0 || ^110.0.0
     peerDependenciesMeta:
       '@types/react':
         optional: true

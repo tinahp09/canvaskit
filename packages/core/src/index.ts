@@ -23,7 +23,7 @@ export type { RecoveryJournalControllerOptions, RecoveryJournalEntry, RecoveryJo
 export { AutosaveController } from './autosave.js'
 export type { AutosaveControllerOptions, AutosaveDocumentSnapshot, AutosaveSnapshot, AutosaveStatus } from './autosave.js'
 export { createMemorySyncAdapter, SyncController } from './sync.js'
-export type { SyncAdapter, SyncConflictResolution, SyncControllerOptions, SyncDocumentRevision, SyncDocumentSnapshot, SyncOutboxEntry, SyncPullRequest, SyncPullResult, SyncPushResult, SyncQueueStorageAdapter, SyncRemoteDocument, SyncSnapshot, SyncStatus } from './sync.js'
+export type { SyncAdapter, SyncConflict, SyncConflictResolution, SyncControllerOptions, SyncDocumentRevision, SyncDocumentSnapshot, SyncOutboxEntry, SyncPullRequest, SyncPullResult, SyncPushResult, SyncQueueStorageAdapter, SyncRemoteDocument, SyncSnapshot, SyncStatus } from './sync.js'
 export { hitTestConnector, hitTestEdge, nodeCenter } from './graph-interaction.js'
 export { exportScene, importScene, InvalidSceneError, loadScene, serializeScene, UnsupportedSceneVersionError } from './serialization.js'
 export { migrateScene } from './migrations.js'

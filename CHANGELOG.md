@@ -1,5 +1,18 @@
 # Changelog
 
+## 10.0.0 — 2026-09-14
+
+CanvasKit 10.0.0 adds host-controlled, local-first synchronization. It
+includes a backend-neutral `SyncAdapter`, durable outbox boundary,
+pull-before-push flow, acknowledged operation removal, retry-safe error state,
+revision conflict detection, and explicit accept-remote, keep-local, or merge
+resolution. The reference editor demonstrates opt-in queueing and sync through
+an in-memory adapter.
+
+Breaking changes: all public packages now use the 10.x suite. Scene V7 is
+unchanged; V10 does not bundle a backend, browser store, credentials, CRDT, or
+automatic merge policy.
+
 ## 9.0.0 — 2026-09-07
 
 CanvasKit 9.0.0 adds a local-first workspace recovery boundary for professional

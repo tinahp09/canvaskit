@@ -1,5 +1,27 @@
 # Release Checklist
 
+## CanvasKit V10
+
+### Code
+
+- [x] Features complete / feature freeze confirmed (CanvasKit V10)
+- [ ] Tests passing (full unit, browser E2E, release validation, package smoke)
+- [ ] Performance checked (bundle budgets and spatial-index benchmark)
+- [x] Breaking changes documented (all public packages move to 10.0.0; Scene V7 is unchanged)
+
+### Documentation and media
+
+- [x] README, API, architecture, and release notes updated
+- [ ] Three screenshots captured from the V10 reference demo
+- [ ] 5–15 second sync GIF captured from the V10 reference demo
+
+### Release
+
+- [x] Version bumped (all ten public packages: 10.0.0)
+- [x] CHANGELOG updated (`CHANGELOG.md`)
+- [x] Release notes written (`docs/release-notes-v10.md`)
+- [ ] GitHub Release created (requires explicit publication approval)
+
 ## Code
 
 - [x] Features complete / feature freeze confirmed (CanvasKit V9)

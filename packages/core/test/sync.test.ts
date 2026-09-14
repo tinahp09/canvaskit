@@ -40,8 +40,24 @@ it('keeps a conflicting local entry until the host explicitly keeps it', async (
   const sync = new SyncController({ session, queue, adapter: createMemorySyncAdapter([document('brief', 'r2')]), createOperationId: () => entries.length ? 'op-2' : 'op-1' })
   await sync.queueDocument('brief')
   await expect(sync.syncDocument('brief')).resolves.toBe(false)
-  expect(sync.getSnapshot().documents[0]).toMatchObject({ status: 'conflict' })
+  expect(sync.getSnapshot().documents[0]).toMatchObject({ status: 'conflict', conflict: { local: { operationId: 'op-1' }, remote: { revision: { revision: 'r2' } } } })
   await expect(sync.resolveConflict('brief', { kind: 'keep-local' })).resolves.toBe(true)
   expect(entries).toHaveLength(1)
   expect(entries[0]).toMatchObject({ operationId: 'op-2', baseRevision: 'r2' })
+})
+
+it('accepts a validated remote document only after explicit conflict resolution', async () => {
+  const entries: SyncOutboxEntry[] = []
+  const revisions = new Map<string, string>([['brief', 'r1']])
+  const queue: SyncQueueStorageAdapter = { list: async () => entries, enqueue: async (entry) => { entries.push(entry) }, remove: async (id) => { const index = entries.findIndex((entry) => entry.operationId === id); if (index >= 0) entries.splice(index, 1) }, loadRevision: async (id) => ({ documentId: id, revision: revisions.get(id)!, updatedAt: '2026-09-14T00:00:00.000Z' }), saveRevision: async (item) => { revisions.set(item.documentId, item.revision) } }
+  const session = new PersistentEditorSession({ storage: { list: async () => [], load: async () => undefined, save: async (item) => item } })
+  const local = new CanvasKit()
+  session.openDocument({ id: 'brief', title: 'Brief', kit: local })
+  const remoteDocument = { ...document('brief', 'r2'), scene: serializeScene(new CanvasKit().getScene()) }
+  const sync = new SyncController({ session, queue, adapter: createMemorySyncAdapter([remoteDocument]), createOperationId: () => 'op-1' })
+  await sync.queueDocument('brief')
+  await sync.syncDocument('brief')
+  await expect(sync.resolveConflict('brief', { kind: 'accept-remote' })).resolves.toBe(true)
+  expect(entries).toEqual([])
+  expect(sync.getSnapshot().documents[0]).toMatchObject({ status: 'synced' })
 })

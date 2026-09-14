@@ -12,7 +12,8 @@ export type SyncPushResult = { readonly status: 'acknowledged'; readonly revisio
 export interface SyncAdapter { pull(input: SyncPullRequest): Promise<SyncPullResult>; push(entry: SyncOutboxEntry): Promise<SyncPushResult> }
 export interface SyncQueueStorageAdapter { list(documentId: string): Promise<readonly SyncOutboxEntry[]>; enqueue(entry: SyncOutboxEntry): Promise<void>; remove(operationId: string): Promise<void>; loadRevision(documentId: string): Promise<SyncDocumentRevision | undefined>; saveRevision(revision: SyncDocumentRevision): Promise<void> }
 export type SyncStatus = 'idle' | 'queued' | 'syncing' | 'synced' | 'conflict' | 'error'
-export interface SyncDocumentSnapshot { readonly id: string; readonly status: SyncStatus; readonly error?: string; readonly remote?: SyncRemoteDocument }
+export interface SyncConflict { readonly local: SyncOutboxEntry; readonly remote?: SyncRemoteDocument }
+export interface SyncDocumentSnapshot { readonly id: string; readonly status: SyncStatus; readonly error?: string; readonly conflict?: SyncConflict }
 export interface SyncSnapshot { readonly documents: readonly SyncDocumentSnapshot[] }
 export interface SyncControllerOptions { readonly session: PersistentEditorSession; readonly queue: SyncQueueStorageAdapter; readonly adapter: SyncAdapter; readonly createOperationId?: () => string }
 export type SyncConflictResolution = { readonly kind: 'accept-remote' } | { readonly kind: 'keep-local' } | { readonly kind: 'merge-document'; readonly document: StoredDocument }
@@ -77,10 +78,10 @@ export class SyncController {
       if (!entry) { this.setState(id, { id, status: 'idle' }); return false }
       this.setState(id, { id, status: 'syncing' })
       const remote = await this.options.adapter.pull({ documentId: id, ...(entry.baseRevision === undefined ? {} : { revision: entry.baseRevision }) })
-      if (remote.status === 'document' && remote.revision.revision !== entry.baseRevision) { this.conflicts.set(id, { entry, remote }); this.setState(id, { id, status: 'conflict', remote }); return false }
+      if (remote.status === 'document' && remote.revision.revision !== entry.baseRevision) { this.conflicts.set(id, { entry, remote }); this.setState(id, { id, status: 'conflict', conflict: { local: entry, remote } }); return false }
       const result = await this.options.adapter.push(entry)
       if (result.status === 'acknowledged') { await this.options.queue.saveRevision(result.revision); await this.options.queue.remove(entry.operationId); this.setState(id, { id, status: 'synced' }); return true }
-      if (result.status === 'conflict') { this.conflicts.set(id, { entry, ...(result.remote === undefined ? {} : { remote: result.remote }) }); this.setState(id, { id, status: 'conflict', ...(result.remote === undefined ? {} : { remote: result.remote }) }); return false }
+      if (result.status === 'conflict') { this.conflicts.set(id, { entry, ...(result.remote === undefined ? {} : { remote: result.remote }) }); this.setState(id, { id, status: 'conflict', conflict: { local: entry, ...(result.remote === undefined ? {} : { remote: result.remote }) } }); return false }
       this.setState(id, { id, status: 'error', error: result.message }); return false
     } catch (error) { this.setState(id, { id, status: 'error', error: message(error) }); return false }
   }

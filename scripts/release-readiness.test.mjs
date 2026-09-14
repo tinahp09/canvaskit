@@ -61,7 +61,7 @@ test('the dry run starts with the dependency-ordered clean release build', async
   assert.match(manifest.scripts['publish:dry-run'], /^pnpm build:release &&/)
 })
 
-async function createRepository(version = '9.0.0') {
+async function createRepository(version = '10.0.0') {
   const root = await mkdtemp(join(tmpdir(), 'canvaskit-release-'))
 
   for (const name of packages) {
@@ -127,7 +127,7 @@ test('accepts a complete stable release repository', async () => {
   })
 })
 
-test('rejects a publishable package version that is not 9.0.0', async () => {
+test('rejects a publishable package version that is not 10.0.0', async () => {
   await withRepository(async (root) => {
     const path = join(root, 'packages', 'core', 'package.json')
     const manifest = JSON.parse(await readFile(path, 'utf8'))
@@ -135,7 +135,7 @@ test('rejects a publishable package version that is not 9.0.0', async () => {
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
 
     assert.deepEqual(await verifyStableRelease(root), [
-      'packages/core/package.json: expected version 9.0.0, found 0.9.0.',
+      'packages/core/package.json: expected version 10.0.0, found 0.9.0.',
     ])
   })
 })
@@ -148,7 +148,7 @@ test('rejects a stale internal published-package dependency range', async () => 
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
 
     assert.deepEqual(await verifyStableRelease(root), [
-      'packages/react/package.json: @canvaskit/core must use workspace:^9.0.0, found workspace:^0.9.0.',
+      'packages/react/package.json: @canvaskit/core must use workspace:^10.0.0, found workspace:^0.9.0.',
     ])
   })
 })

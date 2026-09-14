@@ -2,15 +2,24 @@
 
 CanvasKit is a TypeScript-first engine for interactive visual editors on an infinite canvas.
 
-CanvasKit `9.0.0` adds local-first workspace recovery to the storage-neutral
+CanvasKit `10.0.0` adds opt-in, backend-neutral synchronization to the storage-neutral
 professional editor runtime. Package-root exports follow the documented
-compatibility policy; start with the [V9 release notes](docs/release-notes-v9.md)
-and [workspace recovery architecture](docs/architecture/v9-autosave-recovery.md).
+compatibility policy; start with the [V10 release notes](docs/release-notes-v10.md)
+and [opt-in sync architecture](docs/architecture/v10-opt-in-sync.md).
 The project is available under the [MIT License](LICENSE).
 
 ## Current capabilities
 
 CanvasKit provides rectangle, circle, text, and asset-backed image scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
+
+## V10 opt-in sync
+
+V10 adds an injected `SyncAdapter`, a durable host-owned outbox, and explicit
+revision conflicts. The host queues a local document, chooses when to sync it,
+and decides whether to keep local work, accept a remote document, or provide a
+merged document. CanvasKit ships neither a cloud provider nor credentials.
+
+See the [Sync API](docs/api/opt-in-sync.md) and [V10 release notes](docs/release-notes-v10.md).
 
 ## V9 local-first workspace recovery
 
