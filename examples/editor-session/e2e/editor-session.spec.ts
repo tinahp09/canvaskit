@@ -86,3 +86,14 @@ test('queues a local document and synchronizes only after an explicit host actio
   await page.getByRole('button', { name: 'Sync now' }).click()
   await expect(page.getByRole('status')).toContainText('synchronized')
 })
+
+test('does not overwrite local work when sync finds a remote revision', async ({ page }) => {
+  await page.goto(url)
+  await page.getByRole('button', { name: 'Add rectangle' }).click()
+  await page.getByRole('button', { name: 'Queue for sync' }).click()
+  await page.getByRole('button', { name: 'Simulate remote edit' }).click()
+  await page.getByRole('button', { name: 'Sync now' }).click()
+  await expect(page.getByRole('status')).toContainText('conflict')
+  await page.getByRole('button', { name: 'Keep local version' }).click()
+  await expect(page.getByRole('status')).toContainText('Local version queued')
+})

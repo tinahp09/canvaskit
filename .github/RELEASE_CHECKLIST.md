@@ -12,8 +12,8 @@
 ### Documentation and media
 
 - [x] README, API, architecture, and release notes updated
-- [ ] Three screenshots captured from the V10 reference demo
-- [ ] 5–15 second sync GIF captured from the V10 reference demo
+- [x] Three screenshots captured from the V10 reference demo (`docs/public/releases/v10/`)
+- [x] 6-second sync GIF captured from the V10 reference demo (`docs/public/releases/v10/v10.0-opt-in-sync.gif`)
 
 ### Release
 

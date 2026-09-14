@@ -6,7 +6,7 @@ app.innerHTML = `
   <main class="editor-shell">
     <header class="topbar glass">
       <div class="brand"><span class="brand-mark">C</span><div><strong>CanvasKit</strong><small>V9 · Autosave & Recovery Journal</small></div></div>
-      <div class="topbar-actions"><button id="restore" class="secondary">Restore documents</button><button id="save-workspace" class="secondary">Save workspace</button><button id="restore-workspace" class="secondary">Restore previous workspace</button><button id="save" class="secondary">Save active</button><button id="queue-sync" class="secondary">Queue for sync</button><button id="run-sync" class="secondary">Sync now</button><button id="simulate-failure" class="secondary">Simulate save failure</button><button id="recover" class="secondary">Recover changes</button><button id="discard" class="secondary">Discard recovery</button><button id="retry-save" class="secondary">Retry save</button><button id="palette-open" class="primary">Open command palette <kbd>⌘ K</kbd></button></div>
+      <div class="topbar-actions"><button id="restore" class="secondary">Restore documents</button><button id="save-workspace" class="secondary">Save workspace</button><button id="restore-workspace" class="secondary">Restore previous workspace</button><button id="save" class="secondary">Save active</button><button id="queue-sync" class="secondary">Queue for sync</button><button id="simulate-remote" class="secondary">Simulate remote edit</button><button id="run-sync" class="secondary">Sync now</button><button id="keep-local" class="secondary">Keep local version</button><button id="simulate-failure" class="secondary">Simulate save failure</button><button id="recover" class="secondary">Recover changes</button><button id="discard" class="secondary">Discard recovery</button><button id="retry-save" class="secondary">Retry save</button><button id="palette-open" class="primary">Open command palette <kbd>⌘ K</kbd></button></div>
     </header>
     <section class="workspace glass">
       <div class="workspace-head"><div><p class="eyebrow">MULTI-DOCUMENT WORKSPACE</p><h1>Keep focused work in context.</h1></div><p id="live-status" role="status" aria-live="polite">Ready</p></div>
@@ -57,7 +57,8 @@ const syncQueue: SyncQueueStorageAdapter = {
   loadRevision: async (id) => syncRevisions.get(id),
   saveRevision: async (revision) => { syncRevisions.set(revision.documentId, revision) },
 }
-const sync = new SyncController({ session, queue: syncQueue, adapter: createMemorySyncAdapter() })
+const syncRemote = createMemorySyncAdapter()
+const sync = new SyncController({ session, queue: syncQueue, adapter: syncRemote })
 for (const document of [
   { id: 'brief', title: 'Creative brief' },
   { id: 'poster', title: 'Poster' },
@@ -168,7 +169,9 @@ function openPalette() {
 app.querySelector<HTMLButtonElement>('#add-rectangle')!.onclick = addActiveRectangle
 app.querySelector<HTMLButtonElement>('#save')!.onclick = () => { void session.saveDocument().then((saved) => { liveStatus.textContent = saved ? 'Saved active document through the host adapter.' : 'Save failed. Retry is available.' }) }
 app.querySelector<HTMLButtonElement>('#queue-sync')!.onclick = () => { const id = session.getSnapshot().activeDocumentId; if (id) void sync.queueDocument(id).then((queued) => { liveStatus.textContent = queued ? 'Local document queued for opt-in sync.' : 'Unable to queue document.' }) }
+app.querySelector<HTMLButtonElement>('#simulate-remote')!.onclick = () => { const id = session.getSnapshot().activeDocumentId; const kit = session.getActiveDocument(); if (id && kit) void syncRemote.push({ operationId: `remote-${Date.now()}`, document: { id, title: 'Remote edit', scene: serializeScene(kit.getScene()), updatedAt: new Date().toISOString() }, createdAt: new Date().toISOString() }).then(() => { liveStatus.textContent = 'Remote revision created. Sync will require a host decision.' }) }
 app.querySelector<HTMLButtonElement>('#run-sync')!.onclick = () => { const id = session.getSnapshot().activeDocumentId; if (id) void sync.syncDocument(id).then((synced) => { liveStatus.textContent = synced ? 'Document synchronized through the injected adapter.' : 'Sync requires retry or conflict resolution.' }) }
+app.querySelector<HTMLButtonElement>('#keep-local')!.onclick = () => { const id = session.getSnapshot().activeDocumentId; if (id) void sync.resolveConflict(id, { kind: 'keep-local' }).then((resolved) => { liveStatus.textContent = resolved ? 'Local version queued against the remote revision.' : 'No remote conflict to resolve.' }) }
 app.querySelector<HTMLButtonElement>('#retry-save')!.onclick = () => { void session.retrySave().then((saved) => { liveStatus.textContent = saved ? 'Saved active document after retry.' : 'Retry failed.' }) }
 app.querySelector<HTMLButtonElement>('#restore')!.onclick = () => { void session.restore().then((restored) => { liveStatus.textContent = restored ? 'Workspace restored from the host adapter.' : 'Workspace restore failed.' }) }
 app.querySelector<HTMLButtonElement>('#save-workspace')!.onclick = () => { void recovery.saveWorkspace().then((saved) => { liveStatus.textContent = saved ? 'Workspace manifest saved locally.' : 'Workspace save failed.' }) }
