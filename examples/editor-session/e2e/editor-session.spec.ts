@@ -77,3 +77,12 @@ test('autosaves a dirty document and exposes recovery actions', async ({ page })
   await page.getByRole('button', { name: 'Discard recovery' }).click()
   await expect(page.getByRole('status')).toContainText('discarded')
 })
+
+test('queues a local document and synchronizes only after an explicit host action', async ({ page }) => {
+  await page.goto(url)
+  await page.getByRole('button', { name: 'Add rectangle' }).click()
+  await page.getByRole('button', { name: 'Queue for sync' }).click()
+  await expect(page.getByRole('status')).toContainText('queued')
+  await page.getByRole('button', { name: 'Sync now' }).click()
+  await expect(page.getByRole('status')).toContainText('synchronized')
+})

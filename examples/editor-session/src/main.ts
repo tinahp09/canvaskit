@@ -1,4 +1,4 @@
-import { addRectangle, AutosaveController, CanvasKit, PersistentEditorSession, RecoveryJournalController, serializeScene, WorkspaceRecoveryController, type DocumentStorageAdapter, type RecoveryJournalEntry, type RecoveryJournalStorageAdapter, type StoredDocument, type WorkspaceSnapshot, type WorkspaceStorageAdapter } from '@canvaskit/core'
+import { addRectangle, AutosaveController, CanvasKit, createMemorySyncAdapter, PersistentEditorSession, RecoveryJournalController, serializeScene, SyncController, WorkspaceRecoveryController, type DocumentStorageAdapter, type RecoveryJournalEntry, type RecoveryJournalStorageAdapter, type StoredDocument, type SyncOutboxEntry, type SyncQueueStorageAdapter, type WorkspaceSnapshot, type WorkspaceStorageAdapter } from '@canvaskit/core'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -6,7 +6,7 @@ app.innerHTML = `
   <main class="editor-shell">
     <header class="topbar glass">
       <div class="brand"><span class="brand-mark">C</span><div><strong>CanvasKit</strong><small>V9 · Autosave & Recovery Journal</small></div></div>
-      <div class="topbar-actions"><button id="restore" class="secondary">Restore documents</button><button id="save-workspace" class="secondary">Save workspace</button><button id="restore-workspace" class="secondary">Restore previous workspace</button><button id="save" class="secondary">Save active</button><button id="simulate-failure" class="secondary">Simulate save failure</button><button id="recover" class="secondary">Recover changes</button><button id="discard" class="secondary">Discard recovery</button><button id="retry-save" class="secondary">Retry save</button><button id="palette-open" class="primary">Open command palette <kbd>⌘ K</kbd></button></div>
+      <div class="topbar-actions"><button id="restore" class="secondary">Restore documents</button><button id="save-workspace" class="secondary">Save workspace</button><button id="restore-workspace" class="secondary">Restore previous workspace</button><button id="save" class="secondary">Save active</button><button id="queue-sync" class="secondary">Queue for sync</button><button id="run-sync" class="secondary">Sync now</button><button id="simulate-failure" class="secondary">Simulate save failure</button><button id="recover" class="secondary">Recover changes</button><button id="discard" class="secondary">Discard recovery</button><button id="retry-save" class="secondary">Retry save</button><button id="palette-open" class="primary">Open command palette <kbd>⌘ K</kbd></button></div>
     </header>
     <section class="workspace glass">
       <div class="workspace-head"><div><p class="eyebrow">MULTI-DOCUMENT WORKSPACE</p><h1>Keep focused work in context.</h1></div><p id="live-status" role="status" aria-live="polite">Ready</p></div>
@@ -48,6 +48,16 @@ const recovery = new WorkspaceRecoveryController({ session, storage: workspaceSt
 const journalStorage: RecoveryJournalStorageAdapter = { load: async (id) => journalEntries.get(id), save: async (entry) => { journalEntries.set(entry.document.id, entry) }, remove: async (id) => { journalEntries.delete(id) } }
 const journal = new RecoveryJournalController({ session, storage: journalStorage })
 const autosave = new AutosaveController({ session, journal: journalStorage, delayMs: 180 })
+const syncEntries: SyncOutboxEntry[] = []
+const syncRevisions = new Map<string, { documentId: string; revision: string; updatedAt: string }>()
+const syncQueue: SyncQueueStorageAdapter = {
+  list: async (id) => syncEntries.filter((entry) => entry.document.id === id),
+  enqueue: async (entry) => { syncEntries.push(entry) },
+  remove: async (operationId) => { const index = syncEntries.findIndex((entry) => entry.operationId === operationId); if (index >= 0) syncEntries.splice(index, 1) },
+  loadRevision: async (id) => syncRevisions.get(id),
+  saveRevision: async (revision) => { syncRevisions.set(revision.documentId, revision) },
+}
+const sync = new SyncController({ session, queue: syncQueue, adapter: createMemorySyncAdapter() })
 for (const document of [
   { id: 'brief', title: 'Creative brief' },
   { id: 'poster', title: 'Poster' },
@@ -112,6 +122,8 @@ function render() {
   persistenceDetail.textContent = `${persistenceLabel(active.persistence)}${active.error ? ` · ${active.error}` : ''}`
   const autosaved = autosave.getSnapshot().documents.find((item) => item.id === active.id)
   autosaveStatus.textContent = autosaved ? autosaved.status[0]!.toUpperCase() + autosaved.status.slice(1) : 'Idle'
+  const syncState = sync.getSnapshot().documents.find((item) => item.id === active.id)
+  liveStatus.dataset.sync = syncState?.status ?? 'idle'
   const workspace = recovery.getSnapshot()
   workspaceRecoveryStatus.textContent = `${workspaceLabel(workspace.status)}${workspace.error ? ` · ${workspace.error}` : ''}`
   recentDocuments.replaceChildren(...workspace.recentDocuments.map((item) => Object.assign(document.createElement('li'), { textContent: item.title })))
@@ -155,6 +167,8 @@ function openPalette() {
 
 app.querySelector<HTMLButtonElement>('#add-rectangle')!.onclick = addActiveRectangle
 app.querySelector<HTMLButtonElement>('#save')!.onclick = () => { void session.saveDocument().then((saved) => { liveStatus.textContent = saved ? 'Saved active document through the host adapter.' : 'Save failed. Retry is available.' }) }
+app.querySelector<HTMLButtonElement>('#queue-sync')!.onclick = () => { const id = session.getSnapshot().activeDocumentId; if (id) void sync.queueDocument(id).then((queued) => { liveStatus.textContent = queued ? 'Local document queued for opt-in sync.' : 'Unable to queue document.' }) }
+app.querySelector<HTMLButtonElement>('#run-sync')!.onclick = () => { const id = session.getSnapshot().activeDocumentId; if (id) void sync.syncDocument(id).then((synced) => { liveStatus.textContent = synced ? 'Document synchronized through the injected adapter.' : 'Sync requires retry or conflict resolution.' }) }
 app.querySelector<HTMLButtonElement>('#retry-save')!.onclick = () => { void session.retrySave().then((saved) => { liveStatus.textContent = saved ? 'Saved active document after retry.' : 'Retry failed.' }) }
 app.querySelector<HTMLButtonElement>('#restore')!.onclick = () => { void session.restore().then((restored) => { liveStatus.textContent = restored ? 'Workspace restored from the host adapter.' : 'Workspace restore failed.' }) }
 app.querySelector<HTMLButtonElement>('#save-workspace')!.onclick = () => { void recovery.saveWorkspace().then((saved) => { liveStatus.textContent = saved ? 'Workspace manifest saved locally.' : 'Workspace save failed.' }) }
@@ -171,6 +185,7 @@ window.addEventListener('keydown', (event) => {
 session.subscribe(render)
 recovery.subscribe(render)
 autosave.subscribe(render)
+sync.subscribe(render)
 render()
 
 function persistenceLabel(status: 'idle' | 'loading' | 'saving' | 'saved' | 'error'): string {
