@@ -5,8 +5,8 @@
 ### Code
 
 - [x] Features complete / feature freeze confirmed (CanvasKit V10)
-- [ ] Tests passing (full unit, browser E2E, release validation, package smoke)
-- [ ] Performance checked (bundle budgets and spatial-index benchmark)
+- [x] Tests passing (329 unit tests, 64 browser E2E tests, release validation, package smoke)
+- [x] Performance checked (bundle budgets and spatial-index benchmark)
 - [x] Breaking changes documented (all public packages move to 10.0.0; Scene V7 is unchanged)
 
 ### Documentation and media
