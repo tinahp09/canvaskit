@@ -20,6 +20,7 @@ import { ContentController, type CreateImageInput } from './content.js'
 import { ExtensionRegistry, type CanvasCommandDefinition, type CanvasNodeDefinition, type CanvasToolDefinition, type InspectorSection } from './extensions.js'
 import { ToolRuntime, type BuiltInToolId, type ToolIntent } from './tool-runtime.js'
 import { CollaborationRuntime, type CollaborationApplyResult, type CollaborationOperation, type CollaborationTransport } from './collaboration.js'
+import { CrdtRuntime, type CrdtApplyResult, type CrdtOperation, type CrdtTransport } from './crdt.js'
 
 export type CanvasPointerEventType = 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel'
 
@@ -46,12 +47,14 @@ export interface MarqueeSelectionOptions {
 export interface CanvasKitOptions {
   scene?: CanvasScene
   collaboration?: CanvasCollaborationOptions
+  crdt?: CanvasCrdtOptions
 }
 
 export interface CanvasCollaborationOptions {
   actorId: string
   target?: string
 }
+export interface CanvasCrdtOptions { actorId: string; target?: string }
 
 export class CanvasKit {
   private scene: CanvasScene
@@ -66,6 +69,8 @@ export class CanvasKit {
   private readonly pluginCleanups: Array<() => void> = []
   private transport: CollaborationTransport | undefined
   private transportCleanup: (() => void) | undefined
+  private crdtTransport: CrdtTransport | undefined
+  private crdtCleanup: (() => void) | undefined
   private readonly collaborationTarget: string | undefined
   private activeToolId: string | undefined
   private lastExtensionError: string | undefined
@@ -79,12 +84,14 @@ export class CanvasKit {
   readonly extensions = new ExtensionRegistry()
   readonly tools = new ToolRuntime()
   readonly collaboration: CollaborationRuntime | undefined
+  readonly crdt: CrdtRuntime | undefined
 
   constructor(options: CanvasKitOptions = {}) {
     this.scene = options.scene ?? createScene()
     this.collaboration = options.collaboration === undefined
       ? undefined
       : new CollaborationRuntime(options.collaboration.actorId)
+    this.crdt = options.crdt === undefined ? undefined : new CrdtRuntime(options.crdt.actorId)
     this.collaborationTarget = options.collaboration?.target
     this.viewport = this.createViewport(this.scene)
     this.selection = new SelectionController(
@@ -196,7 +203,7 @@ export class CanvasKit {
   execute(command: SceneCommand): CanvasScene {
     const before = this.getScene()
     this.applyScene(this.history.execute(before, command))
-    if (JSON.stringify(before) !== JSON.stringify(this.getScene())) this.publishLocalCollaboration()
+    if (JSON.stringify(before) !== JSON.stringify(this.getScene())) { this.publishLocalCollaboration(); this.publishLocalCrdt(before, this.getScene()) }
     this.notifyScene()
     return this.getScene()
   }
@@ -231,6 +238,22 @@ export class CanvasKit {
     }
     this.transportCleanup = disconnect
     return disconnect
+  }
+
+  connectCrdt(transport: CrdtTransport): () => void {
+    if (!this.crdt) throw new Error('CanvasKit CRDT is not configured.')
+    this.crdtCleanup?.(); this.crdtTransport = transport
+    const unsubscribe = transport.subscribe((operation) => this.applyRemoteCrdtOperation(operation))
+    const disconnect = () => { if (this.crdtTransport !== transport) return; this.crdtTransport = undefined; this.crdtCleanup = undefined; unsubscribe() }
+    this.crdtCleanup = disconnect
+    return disconnect
+  }
+  applyRemoteCrdtOperation(operation: unknown): CrdtApplyResult {
+    if (!this.crdt) throw new Error('CanvasKit CRDT is not configured.')
+    const result = this.crdt.applyRemote(operation, this.getScene())
+    if (!result.applied) return result
+    this.history.clearRedo(); this.applyScene(result.scene); this.notifyScene()
+    return { ...result, scene: this.getScene() }
   }
 
   /** Applies an accepted remote operation without creating a local undo entry. */
@@ -591,6 +614,10 @@ export class CanvasKit {
     if (!this.collaboration) return
     const operation = this.collaboration.recordLocal(this.getScene(), this.collaborationTarget)
     void this.transport?.publish(operation)
+  }
+  private publishLocalCrdt(before: CanvasScene, after: CanvasScene): void {
+    if (!this.crdt) return
+    try { void this.crdtTransport?.publish(this.crdt.recordLocal(before, after)) } catch { /* Non-entity scene commands remain V4 snapshot-compatible. */ }
   }
 
   private executeTransform(label: string, before: CanvasScene, after: CanvasScene): boolean {

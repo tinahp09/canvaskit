@@ -11,6 +11,7 @@ export type CrdtOperation = {
   readonly node?: CanvasNode
 }
 export interface CrdtApplyResult { readonly scene: CanvasScene; readonly applied: boolean; readonly reason?: 'duplicate' | 'stale' }
+export interface CrdtTransport { publish(operation: CrdtOperation): void | Promise<void>; subscribe(listener: (operation: CrdtOperation) => void): () => void }
 
 /** Entity-register CRDT for independent Scene V7 node mutations. */
 export class CrdtRuntime {
