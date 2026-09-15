@@ -21,6 +21,15 @@ or persistence provider. Remote operations do not enter local undo history.
 
 See the [real-time CRDT API](docs/api/realtime-crdt.md) and [V11 release notes](docs/release-notes-v11.md).
 
+Run the two-peer reference demo:
+
+```sh
+pnpm --filter @canvaskit/collaboration-example dev
+```
+
+It demonstrates concurrent node edits, disconnected replay, and deterministic
+out-of-order delivery using an in-memory `CrdtTransport`.
+
 ## V10 opt-in sync
 
 V10 adds an injected `SyncAdapter`, a durable host-owned outbox, and explicit
