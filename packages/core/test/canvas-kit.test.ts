@@ -36,18 +36,19 @@ function collaborationOperation(scene: CanvasScene): CollaborationOperation {
   return { id: 'bea:1', actorId: 'bea', clock: 1, target: 'scene', kind: 'scene', scene }
 }
 
-it('converges independent CRDT node edits without placing remote work in local undo history', () => {
+it('preserves a local CRDT undo while excluding a remote node change from history', () => {
   const ada = new CanvasKit({ crdt: { actorId: 'ada' } })
   const bea = new CanvasKit({ crdt: { actorId: 'bea' } })
   const adaListeners = new Set<(operation: any) => void>()
   const beaListeners = new Set<(operation: any) => void>()
   ada.connectCrdt({ publish: (operation) => beaListeners.forEach((listener) => listener(operation)), subscribe: (listener) => { adaListeners.add(listener); return () => adaListeners.delete(listener) } })
   bea.connectCrdt({ publish: (operation) => adaListeners.forEach((listener) => listener(operation)), subscribe: (listener) => { beaListeners.add(listener); return () => beaListeners.delete(listener) } })
-  ada.execute({ label: 'ada node', execute: (scene) => addRectangle(scene, { id: 'ada-node', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' }), undo: () => createScene() })
+  ada.execute({ label: 'ada node', execute: (scene) => addRectangle(scene, { id: 'ada-node', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' }), undo: (scene) => ({ ...scene, nodes: scene.nodes.filter((node) => node.id !== 'ada-node') }) })
   bea.execute({ label: 'bea node', execute: (scene) => addRectangle(scene, { id: 'bea-node', position: { x: 20, y: 0 }, size: { width: 10, height: 10 }, fill: '#fff' }), undo: () => createScene() })
   expect(ada.getScene().nodes.map((node) => node.id).sort()).toEqual(['ada-node', 'bea-node'])
   expect(bea.getScene().nodes.map((node) => node.id).sort()).toEqual(['ada-node', 'bea-node'])
-  expect(ada.undo().nodes.map((node) => node.id).sort()).toEqual(['ada-node', 'bea-node'])
+  expect(ada.undo().nodes.map((node) => node.id).sort()).toEqual(['bea-node'])
+  expect(bea.getScene().nodes.map((node) => node.id).sort()).toEqual(['bea-node'])
 })
 
 it('publishes one collaboration operation for a successful local scene command', () => {

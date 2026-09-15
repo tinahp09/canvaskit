@@ -211,7 +211,7 @@ export class CanvasKit {
   undo(): CanvasScene {
     const before = this.getScene()
     this.applyScene(this.history.undo(before))
-    if (JSON.stringify(before) !== JSON.stringify(this.getScene())) this.publishLocalCollaboration()
+    if (JSON.stringify(before) !== JSON.stringify(this.getScene())) { this.publishLocalCollaboration(); this.publishLocalCrdt(before, this.getScene()) }
     this.notifyScene()
     return this.getScene()
   }
@@ -219,7 +219,7 @@ export class CanvasKit {
   redo(): CanvasScene {
     const before = this.getScene()
     this.applyScene(this.history.redo(before))
-    if (JSON.stringify(before) !== JSON.stringify(this.getScene())) this.publishLocalCollaboration()
+    if (JSON.stringify(before) !== JSON.stringify(this.getScene())) { this.publishLocalCollaboration(); this.publishLocalCrdt(before, this.getScene()) }
     this.notifyScene()
     return this.getScene()
   }
@@ -252,7 +252,7 @@ export class CanvasKit {
     if (!this.crdt) throw new Error('CanvasKit CRDT is not configured.')
     const result = this.crdt.applyRemote(operation, this.getScene())
     if (!result.applied) return result
-    this.history.clear(); this.applyScene(result.scene); this.notifyScene()
+    this.history.clearRedo(); this.applyScene(result.scene); this.notifyScene()
     return { ...result, scene: this.getScene() }
   }
 
