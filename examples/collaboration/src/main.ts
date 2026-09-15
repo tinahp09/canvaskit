@@ -1,4 +1,4 @@
-import { addRectangle, CanvasKit, type CollaborationOperation, type CollaborationTransport, type PresenceSnapshot } from '@canvaskit/core'
+import { addRectangle, CanvasKit, type CrdtOperation, type CrdtTransport, type PresenceSnapshot } from '@canvaskit/core'
 import { CanvasRenderer } from '@canvaskit/renderer-canvas'
 import './style.css'
 
@@ -7,13 +7,13 @@ type Recipient = 'ada' | 'bea'
 const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `<main class="shell">
   <header class="topbar">
-    <a class="brand" href="https://github.com/tinahp09/canvaskit" aria-label="CanvasKit home"><span class="brand-mark">◇</span><span><b>CanvasKit</b><small>Collaboration Foundation</small></span></a>
-    <div class="protocol"><span class="pulse"></span> In-memory transport · Lamport ordering</div>
+    <a class="brand" href="https://github.com/tinahp09/canvaskit" aria-label="CanvasKit home"><span class="brand-mark">◇</span><span><b>CanvasKit</b><small>Realtime CRDT Foundation</small></span></a>
+    <div class="protocol"><span class="pulse"></span> CRDT operation transport · Lamport ordering</div>
   </header>
   <section class="intro">
     <p class="eyebrow">REFERENCE IMPLEMENTATION</p>
     <h1>Two editors. One convergent scene.</h1>
-    <p>Local scene changes travel through a host-owned transport. Disconnected clients queue snapshots, then safely converge after reconnecting.</p>
+    <p>Local scene changes travel as granular CRDT operations. Disconnected clients queue operations, then safely converge after reconnecting.</p>
   </section>
   <section class="control-bar" aria-label="Collaboration controls">
     <div><button id="add-rectangle" class="primary">Ada: add rectangle</button><button id="recolor">Ada: recolor rectangle</button></div>
@@ -36,23 +36,23 @@ app.innerHTML = `<main class="shell">
   <aside class="operation-card"><div><p class="eyebrow">TRANSPORT ACTIVITY</p><h2>Operation log</h2></div><ul aria-label="Operation log" id="operation-log"></ul></aside>
 </main>`
 
-const ada = new CanvasKit({ collaboration: { actorId: 'ada' } })
-const bea = new CanvasKit({ collaboration: { actorId: 'bea' } })
-const receivers = new Map<Recipient, Set<(operation: CollaborationOperation) => void>>([
+const ada = new CanvasKit({ collaboration: { actorId: 'ada' }, crdt: { actorId: 'ada' } })
+const bea = new CanvasKit({ collaboration: { actorId: 'bea' }, crdt: { actorId: 'bea' } })
+const receivers = new Map<Recipient, Set<(operation: CrdtOperation) => void>>([
   ['ada', new Set()],
   ['bea', new Set()],
 ])
 let beaConnected = true
-let queuedForBea: CollaborationOperation[] = []
+let queuedForBea: CrdtOperation[] = []
 let operationLog: string[] = []
 let rectangleAdded = false
 let rectangleBlue = false
 
-const emit = (recipient: Recipient, operation: CollaborationOperation) => {
+const emit = (recipient: Recipient, operation: CrdtOperation) => {
   receivers.get(recipient)!.forEach((listener) => listener(operation))
 }
 
-const createTransport = (author: Recipient, recipient: Recipient): CollaborationTransport => ({
+const createTransport = (author: Recipient, recipient: Recipient): CrdtTransport => ({
   publish(operation) {
     if (recipient === 'bea' && !beaConnected) {
       queuedForBea.push(operation)
@@ -70,8 +70,8 @@ const createTransport = (author: Recipient, recipient: Recipient): Collaboration
   },
 })
 
-ada.connectCollaboration(createTransport('ada', 'bea'))
-bea.connectCollaboration(createTransport('bea', 'ada'))
+ada.connectCrdt(createTransport('ada', 'bea'))
+bea.connectCrdt(createTransport('bea', 'ada'))
 
 const canvases = app.querySelectorAll<HTMLCanvasElement>('canvas')
 const [adaCanvas, beaCanvas] = [...canvases]
@@ -139,7 +139,7 @@ function deliverQueued(newestFirst: boolean): void {
   operations.forEach((operation) => emit('bea', operation))
   operationLog = operations.map((operation) => `${operation.id} · delivered`).reverse().concat(operationLog.filter((entry) => !operations.some((operation) => entry.startsWith(`${operation.id} ·`)))).slice(0, 5)
   beaConnected = true
-  render(newestFirst ? 'Newest queued operation delivered to Bea; stale snapshots were ignored.' : 'Queued operations delivered to Bea.')
+  render(newestFirst ? 'Newest queued operation delivered to Bea; stale CRDT operations were ignored.' : 'Queued operations delivered to Bea.')
 }
 
 ada.subscribe(() => render())

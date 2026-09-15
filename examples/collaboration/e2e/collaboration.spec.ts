@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 test('syncs an edit from Ada to Bea and exposes remote presence', async ({ page }) => {
   await page.goto('http://127.0.0.1:4181')
 
+  await expect(page.getByText('CRDT operation transport')).toBeVisible()
   await page.getByRole('button', { name: 'Ada: add rectangle' }).click()
   await expect(page.getByRole('status')).toHaveText('Ada operation delivered to Bea.')
   await expect(page.getByRole('list', { name: 'Bea canvas content' }).getByRole('listitem')).toHaveText(['Rectangle: ada-rectangle'])
@@ -30,6 +31,6 @@ test('converges on the newest snapshot when queued operations arrive out of orde
   await page.getByRole('button', { name: 'Ada: recolor rectangle' }).click()
   await page.getByRole('button', { name: 'Deliver newest first' }).click()
 
-  await expect(page.getByRole('status')).toHaveText('Newest queued operation delivered to Bea; stale snapshots were ignored.')
+  await expect(page.getByRole('status')).toHaveText('Newest queued operation delivered to Bea; stale CRDT operations were ignored.')
   await expect(page.getByRole('list', { name: 'Bea canvas content' }).getByRole('listitem')).toHaveAttribute('data-fill', '#1976f3')
 })
