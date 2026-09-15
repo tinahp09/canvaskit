@@ -252,7 +252,7 @@ export class CanvasKit {
     if (!this.crdt) throw new Error('CanvasKit CRDT is not configured.')
     const result = this.crdt.applyRemote(operation, this.getScene())
     if (!result.applied) return result
-    this.history.clearRedo(); this.applyScene(result.scene); this.notifyScene()
+    this.history.clear(); this.applyScene(result.scene); this.notifyScene()
     return { ...result, scene: this.getScene() }
   }
 
