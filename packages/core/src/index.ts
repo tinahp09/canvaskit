@@ -64,3 +64,5 @@ export type { DiagramConnection, DiagramConnectionPolicy, DiagramEndpointPolicy 
 export { SpatialIndex } from './spatial-index.js'
 export { CollaborationRuntime, validateCollaborationOperation } from './collaboration.js'
 export type { CollaborationApplyResult, CollaborationOperation, CollaborationTransport, PresenceSnapshot } from './collaboration.js'
+export { CrdtRuntime, validateCrdtOperation } from './crdt.js'
+export type { CrdtApplyResult, CrdtOperation } from './crdt.js'
