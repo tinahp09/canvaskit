@@ -15,3 +15,25 @@ it('converges concurrent entity upserts regardless of delivery order', () => {
 
   expect(serializeScene(onAda.scene)).toBe(serializeScene(onBea.scene))
 })
+
+it('does not resurrect a node after a newer tombstone', () => {
+  const runtime = new CrdtRuntime('ada')
+  const withNode = addRectangle(createScene(), { id: 'node', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' })
+  const removed = { ...withNode, nodes: [] }
+  const remove = runtime.recordLocal(withNode, removed)
+  const staleUpsert = { id: 'bea:0', actorId: 'bea', clock: 0, target: 'scene', kind: 'node-upsert' as const, nodeId: 'node', node: withNode.nodes[0] }
+  const result = runtime.applyRemote(staleUpsert, removed)
+  expect(remove.kind).toBe('node-remove')
+  expect(result).toMatchObject({ applied: false, reason: 'stale' })
+  expect(result.scene.nodes).toEqual([])
+})
+
+it('is idempotent for duplicate remote operations', () => {
+  const source = new CrdtRuntime('ada')
+  const target = new CrdtRuntime('bea')
+  const base = createScene()
+  const scene = addRectangle(base, { id: 'node', position: { x: 0, y: 0 }, size: { width: 10, height: 10 }, fill: '#000' })
+  const operation = source.recordLocal(base, scene)
+  const applied = target.applyRemote(operation, base)
+  expect(target.applyRemote(operation, applied.scene)).toMatchObject({ applied: false, reason: 'duplicate' })
+})
