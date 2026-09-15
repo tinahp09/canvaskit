@@ -2,7 +2,7 @@ import { access, readdir, readFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const DEFAULT_STABLE_VERSION = '10.0.0'
+const DEFAULT_STABLE_VERSION = '11.0.0'
 const PACKAGE_NAMES = [
   'core',
   'geometry',
@@ -31,15 +31,21 @@ const RELEASE_ARTIFACTS = [
   'docs/release-notes-v4.md',
   'docs/release-notes-v5.md',
   'docs/release-notes-v6.md',
+  'docs/release-notes-v10.md',
+  'docs/release-notes-v11.md',
   'docs/release-notes-v9.md',
   'docs/release-assets-v4.md',
   'docs/release-assets-v5.md',
   'docs/release-assets-v6.md',
   'docs/release-assets-v9.md',
+  'docs/release-assets-v10.md',
+  'docs/release-assets-v11.md',
   'docs/architecture/v4-collaboration-runtime.md',
   'docs/architecture/v5-production-collaboration-adapters.md',
   'docs/architecture/v6-editor-session-commands.md',
   'docs/architecture/v9-autosave-recovery.md',
+  'docs/architecture/v10-opt-in-sync.md',
+  'docs/architecture/v11-realtime-crdt.md',
   'docs/upgrading-to-v1.md',
   'docs/upgrading-to-v2.md',
   'docs/publishing.md',
@@ -50,6 +56,7 @@ const RELEASE_ARTIFACTS = [
   'docs/api/persistent-editor-session.md',
   'docs/api/workspace-recovery.md',
   'docs/api/autosave-recovery.md',
+  'docs/api/realtime-crdt.md',
   'docs/api/geometry.md',
   'docs/api/plugins.md',
   'docs/api/react.md',

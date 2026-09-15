@@ -40,18 +40,25 @@ const releaseArtifacts = [
   'docs/release-notes-v5.md',
   'docs/release-notes-v6.md',
   'docs/release-notes-v9.md',
+  'docs/release-notes-v10.md',
+  'docs/release-notes-v11.md',
   'docs/release-assets-v4.md',
   'docs/release-assets-v5.md',
   'docs/release-assets-v6.md',
   'docs/release-assets-v9.md',
+  'docs/release-assets-v10.md',
+  'docs/release-assets-v11.md',
   'docs/architecture/v4-collaboration-runtime.md',
   'docs/architecture/v5-production-collaboration-adapters.md',
   'docs/architecture/v6-editor-session-commands.md',
   'docs/architecture/v9-autosave-recovery.md',
+  'docs/architecture/v10-opt-in-sync.md',
+  'docs/architecture/v11-realtime-crdt.md',
   'docs/upgrading-to-v1.md',
   'docs/upgrading-to-v2.md',
   'docs/publishing.md',
   'CHANGELOG.md',
+  'docs/api/realtime-crdt.md',
   ...packages.map((name) => `docs/api/${name.replace('renderer-', '')}.md`),
 ]
 
@@ -61,7 +68,7 @@ test('the dry run starts with the dependency-ordered clean release build', async
   assert.match(manifest.scripts['publish:dry-run'], /^pnpm build:release &&/)
 })
 
-async function createRepository(version = '10.0.0') {
+async function createRepository(version = '11.0.0') {
   const root = await mkdtemp(join(tmpdir(), 'canvaskit-release-'))
 
   for (const name of packages) {
@@ -127,7 +134,7 @@ test('accepts a complete stable release repository', async () => {
   })
 })
 
-test('rejects a publishable package version that is not 10.0.0', async () => {
+test('rejects a publishable package version that is not 11.0.0', async () => {
   await withRepository(async (root) => {
     const path = join(root, 'packages', 'core', 'package.json')
     const manifest = JSON.parse(await readFile(path, 'utf8'))
@@ -135,7 +142,7 @@ test('rejects a publishable package version that is not 10.0.0', async () => {
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
 
     assert.deepEqual(await verifyStableRelease(root), [
-      'packages/core/package.json: expected version 10.0.0, found 0.9.0.',
+      'packages/core/package.json: expected version 11.0.0, found 0.9.0.',
     ])
   })
 })
@@ -148,7 +155,7 @@ test('rejects a stale internal published-package dependency range', async () => 
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
 
     assert.deepEqual(await verifyStableRelease(root), [
-      'packages/react/package.json: @canvaskit/core must use workspace:^10.0.0, found workspace:^0.9.0.',
+      'packages/react/package.json: @canvaskit/core must use workspace:^11.0.0, found workspace:^0.9.0.',
     ])
   })
 })

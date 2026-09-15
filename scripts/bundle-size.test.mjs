@@ -19,8 +19,8 @@ const packages = [
   'vue',
 ]
 
-test('sets the Core V10 budget above the opt-in-sync baseline', () => {
-  assert.equal(BUNDLE_BUDGETS.core, 175_000)
+test('sets the Core V11 budget above the realtime-CRDT baseline', () => {
+  assert.equal(BUNDLE_BUDGETS.core, 176_000)
 })
 
 async function createRepository() {

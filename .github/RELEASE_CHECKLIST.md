@@ -1,5 +1,27 @@
 # Release Checklist
 
+## CanvasKit V11
+
+### Code
+
+- [x] Features complete / feature freeze confirmed (node CRDT foundation)
+- [x] Tests passing (Core convergence and browser collaboration E2E)
+- [x] Performance checked (bundle-budget regression coverage)
+- [x] Breaking changes documented (all public packages move to 11.0.0; Scene V7 is unchanged)
+
+### Documentation and media
+
+- [x] README, API, architecture, and release notes updated
+- [x] Three screenshots captured from the V11 reference demo (`docs/public/releases/v11/`)
+- [x] 6-second CRDT GIF captured from the V11 reference demo (`docs/public/releases/v11/v11.0-realtime-crdt.gif`)
+
+### Release
+
+- [x] Version bumped (all ten public packages: 11.0.0)
+- [x] CHANGELOG updated (`CHANGELOG.md`)
+- [x] Release notes written (`docs/release-notes-v11.md`)
+- [ ] GitHub Release created (requires explicit publication approval)
+
 ## CanvasKit V10
 
 ### Code

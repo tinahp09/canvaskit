@@ -2,15 +2,24 @@
 
 CanvasKit is a TypeScript-first engine for interactive visual editors on an infinite canvas.
 
-CanvasKit `10.0.0` adds opt-in, backend-neutral synchronization to the storage-neutral
-professional editor runtime. Package-root exports follow the documented
-compatibility policy; start with the [V10 release notes](docs/release-notes-v10.md)
-and [opt-in sync architecture](docs/architecture/v10-opt-in-sync.md).
+CanvasKit `11.0.0` adds a backend-neutral real-time CRDT foundation for
+independent canvas-node edits. Package-root exports follow the documented
+compatibility policy; start with the [V11 release notes](docs/release-notes-v11.md)
+and [real-time CRDT architecture](docs/architecture/v11-realtime-crdt.md).
 The project is available under the [MIT License](LICENSE).
 
 ## Current capabilities
 
 CanvasKit provides rectangle, circle, text, and asset-backed image scenes; Canvas 2D and SVG rendering; PNG/SVG export; pan/zoom navigation; selection primitives; graph edges and groups; opt-in Grid, Snap, Keyboard, and Minimap plugins; keyboard deletion; undo/redo and clipboard editing; versioned JSON persistence; and viewport-culling support for large Canvas 2D scenes.
+
+## V11 real-time CRDT
+
+V11 adds granular node upsert/remove operations, Lamport ordering, tombstones,
+and a host-injected `CrdtTransport`. It converges independent node edits across
+peers without selecting a WebSocket, WebRTC, BroadcastChannel, authentication,
+or persistence provider. Remote operations do not enter local undo history.
+
+See the [real-time CRDT API](docs/api/realtime-crdt.md) and [V11 release notes](docs/release-notes-v11.md).
 
 ## V10 opt-in sync
 

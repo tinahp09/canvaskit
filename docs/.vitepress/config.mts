@@ -33,6 +33,7 @@ export default defineConfig({
       { text: 'Persistence API', link: '/api/persistent-editor-session' },
       { text: 'Workspace recovery API', link: '/api/workspace-recovery' },
       { text: 'Opt-in sync API', link: '/api/opt-in-sync' },
+      { text: 'Real-time CRDT API', link: '/api/realtime-crdt' },
       { text: 'Examples', link: '/examples' },
       { text: 'V4 release', link: '/release-notes-v4' },
       { text: 'V5 release', link: '/release-notes-v5' },
@@ -41,6 +42,7 @@ export default defineConfig({
       { text: 'V8 release', link: '/release-notes-v8' },
       { text: 'V9 release', link: '/release-notes-v9' },
       { text: 'V10 release', link: '/release-notes-v10' },
+      { text: 'V11 release', link: '/release-notes-v11' },
     ],
     sidebar: {
       '/api/': [
@@ -55,6 +57,7 @@ export default defineConfig({
             { text: 'Persistent editor session', link: '/api/persistent-editor-session' },
             { text: 'Workspace recovery', link: '/api/workspace-recovery' },
             { text: 'Opt-in sync', link: '/api/opt-in-sync' },
+            { text: 'Real-time CRDT', link: '/api/realtime-crdt' },
             { text: 'Transform tools', link: '/api/transform-tools' },
             { text: 'Document & layers', link: '/api/document-layers' },
             { text: 'Diagram toolkit', link: '/api/diagram-toolkit' },
@@ -103,6 +106,9 @@ export default defineConfig({
             { text: 'CanvasKit 6.0.0', link: '/release-notes-v6' },
             { text: 'CanvasKit 9.0.0', link: '/release-notes-v7' },
             { text: 'CanvasKit 10.0.0', link: '/release-notes-v10' },
+            { text: 'CanvasKit 11.0.0', link: '/release-notes-v11' },
+            { text: 'V11 real-time CRDT architecture', link: '/architecture/v11-realtime-crdt' },
+            { text: 'V11 release asset manifest', link: '/release-assets-v11' },
             { text: 'CanvasKit 8.0.0', link: '/release-notes-v8' },
             { text: 'V8 workspace recovery architecture', link: '/architecture/v8-workspace-recovery' },
             { text: 'V8 release asset manifest', link: '/release-assets-v8' },

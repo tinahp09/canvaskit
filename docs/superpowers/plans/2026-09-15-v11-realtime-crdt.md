@@ -4,7 +4,7 @@
 
 **Goal:** Deliver convergent granular collaboration for Scene V7 without a backend or provider dependency.
 
-**Architecture:** A new `CrdtRuntime` maintains Lamport ordering, per-entity value registers, and tombstones. A CanvasKit bridge computes granular scene changes, publishes them through an injected transport, and applies remote mutations without creating undo entries.
+**Architecture:** A new `CrdtRuntime` maintains Lamport ordering, node value registers, and tombstones. A CanvasKit bridge computes granular node changes, publishes them through an injected transport, and applies remote mutations without creating undo entries. Dependent graph entities are intentionally deferred until the node operation contract is proven in a public release.
 
 **Tech Stack:** TypeScript, Vitest, Playwright, existing Scene V7, CanvasKit collaboration transport.
 

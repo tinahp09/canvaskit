@@ -1,5 +1,18 @@
 # Changelog
 
+## 11.0.0 — 2026-09-15
+
+CanvasKit 11.0.0 adds a backend-neutral, operation-based collaboration
+foundation for independent Scene V7 node changes. It includes public
+`CrdtRuntime`, `CrdtOperation`, and `CrdtTransport` contracts; deterministic
+Lamport ordering; duplicate and stale-operation rejection; tombstones; optional
+CanvasKit transport integration; and a two-peer browser reference demo.
+
+Breaking changes: all public packages now use the 11.x suite. Scene V7 is
+unchanged. V11 does not bundle a backend, credentials, provider SDK, durable
+CRDT storage, text-character merging, or operations for dependent graph
+entities such as connectors, groups, and layers.
+
 ## 10.0.0 — 2026-09-14
 
 CanvasKit 10.0.0 adds host-controlled, local-first synchronization. It

@@ -10,7 +10,7 @@ V4 collaboration publishes complete Scene V7 snapshots. V10 synchronizes durable
 
 ## Decision
 
-V11 introduces operation-based, last-writer-wins CRDT registers at individual scene paths. Each operation includes a target document, actor ID, Lamport clock, operation ID, and one mutation: node upsert/remove, edge upsert/remove, connector upsert/remove, group upsert/remove, layer upsert/remove, or scene-property assignment. Tombstones prevent stale recreation after a removal.
+V11 introduces operation-based, last-writer-wins CRDT registers for individual **nodes**. Each operation includes a target document, actor ID, Lamport clock, operation ID, and one mutation: node upsert or node remove. Tombstones prevent stale recreation after a removal. This deliberately establishes the public operation and transport contract before dependent graph entities (connectors, groups, layers, and scene properties) are added in a later version.
 
 ## Runtime
 
@@ -36,4 +36,4 @@ V11 adds Core contracts/runtime, a two-peer browser demonstration, convergence a
 
 ## Trade-offs
 
-Entity-level registers preserve independent node edits and are small enough to expose as a stable public API. They do not merge simultaneous edits to individual rich-text characters; a text CRDT remains a later specialization.
+Node-level registers preserve independent canvas-object edits and are small enough to expose as a stable public API. They do not yet merge graph entities or simultaneous edits to individual rich-text characters; those remain later specializations.
