@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { addRectangle, CrdtRuntime, createScene, serializeScene } from '../src/index.js'
+import { addRectangle, CrdtRuntime, createScene, serializeScene, validateCrdtOperation } from '../src/index.js'
 
 it('converges concurrent entity upserts regardless of delivery order', () => {
   const ada = new CrdtRuntime('ada')
@@ -36,4 +36,12 @@ it('is idempotent for duplicate remote operations', () => {
   const operation = source.recordLocal(base, scene)
   const applied = target.applyRemote(operation, base)
   expect(target.applyRemote(operation, applied.scene)).toMatchObject({ applied: false, reason: 'duplicate' })
+})
+
+it('rejects malformed remote operations before mutating a scene', () => {
+  const scene = createScene()
+  expect(() => validateCrdtOperation({ id: 'bad', actorId: 'ada', clock: 1, target: 'scene', kind: 'node-upsert', nodeId: 'node' })).toThrow('Invalid CRDT operation.')
+  const runtime = new CrdtRuntime('ada')
+  expect(() => runtime.applyRemote({ id: '', actorId: 'ada' }, scene)).toThrow('Invalid CRDT operation.')
+  expect(scene.nodes).toEqual([])
 })
