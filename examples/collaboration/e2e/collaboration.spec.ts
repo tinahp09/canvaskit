@@ -11,6 +11,16 @@ test('syncs an edit from Ada to Bea and exposes remote presence', async ({ page 
   await expect(page.getByRole('list', { name: 'Operation log' })).toContainText('ada:1 · delivered')
 })
 
+test('converges concurrent node edits from both collaborators', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4181')
+
+  await page.getByRole('button', { name: 'Ada: add rectangle' }).click()
+  await page.getByRole('button', { name: 'Bea: add circle' }).click()
+
+  await expect(page.getByRole('list', { name: 'Ada canvas content' }).getByRole('listitem')).toHaveText(['Rectangle: ada-rectangle', 'circle: bea-circle'])
+  await expect(page.getByRole('list', { name: 'Bea canvas content' }).getByRole('listitem')).toHaveText(['Rectangle: ada-rectangle', 'circle: bea-circle'])
+})
+
 test('delivers queued operations in order after reconnecting Bea', async ({ page }) => {
   await page.goto('http://127.0.0.1:4181')
 

@@ -1,4 +1,4 @@
-import { addRectangle, CanvasKit, type CrdtOperation, type CrdtTransport, type PresenceSnapshot } from '@canvaskit/core'
+import { addCircle, addRectangle, CanvasKit, type CrdtOperation, type CrdtTransport, type PresenceSnapshot } from '@canvaskit/core'
 import { CanvasRenderer } from '@canvaskit/renderer-canvas'
 import './style.css'
 
@@ -16,7 +16,7 @@ app.innerHTML = `<main class="shell">
     <p>Local scene changes travel as granular CRDT operations. Disconnected clients queue operations, then safely converge after reconnecting.</p>
   </section>
   <section class="control-bar" aria-label="Collaboration controls">
-    <div><button id="add-rectangle" class="primary">Ada: add rectangle</button><button id="recolor">Ada: recolor rectangle</button></div>
+    <div><button id="add-rectangle" class="primary">Ada: add rectangle</button><button id="recolor">Ada: recolor rectangle</button><button id="add-circle">Bea: add circle</button></div>
     <div><button id="disconnect">Disconnect Bea</button><button id="reconnect" disabled>Reconnect Bea</button><button id="newest-first" disabled>Deliver newest first</button></div>
   </section>
   <p id="status" class="status" role="status" aria-live="polite">Both editors are connected.</p>
@@ -47,6 +47,7 @@ let queuedForBea: CrdtOperation[] = []
 let operationLog: string[] = []
 let rectangleAdded = false
 let rectangleBlue = false
+let circleAdded = false
 
 const emit = (recipient: Recipient, operation: CrdtOperation) => {
   receivers.get(recipient)!.forEach((listener) => listener(operation))
@@ -83,6 +84,7 @@ const status = app.querySelector<HTMLParagraphElement>('#status')!
 const presence = app.querySelector<HTMLUListElement>('#presence')!
 const addButton = app.querySelector<HTMLButtonElement>('#add-rectangle')!
 const recolorButton = app.querySelector<HTMLButtonElement>('#recolor')!
+const circleButton = app.querySelector<HTMLButtonElement>('#add-circle')!
 const disconnectButton = app.querySelector<HTMLButtonElement>('#disconnect')!
 const reconnectButton = app.querySelector<HTMLButtonElement>('#reconnect')!
 const newestFirstButton = app.querySelector<HTMLButtonElement>('#newest-first')!
@@ -90,7 +92,7 @@ const newestFirstButton = app.querySelector<HTMLButtonElement>('#newest-first')!
 function syncPresence(): void {
   const snapshots: PresenceSnapshot[] = [
     { actorId: 'ada', updatedAt: 1, selection: rectangleAdded ? ['ada-rectangle'] : [], metadata: { role: 'author' } },
-    { actorId: 'bea', updatedAt: 1, selection: [], metadata: { role: beaConnected ? 'connected' : 'offline' } },
+    { actorId: 'bea', updatedAt: 1, selection: circleAdded ? ['bea-circle'] : [], metadata: { role: beaConnected ? 'connected' : 'offline' } },
   ]
   for (const runtime of [ada.collaboration, bea.collaboration]) snapshots.forEach((snapshot) => runtime?.setPresence(snapshot))
 }
@@ -130,6 +132,7 @@ function render(nextStatus?: string): void {
   newestFirstButton.disabled = beaConnected || queuedForBea.length < 2
   recolorButton.disabled = !rectangleAdded
   addButton.disabled = rectangleAdded
+  circleButton.disabled = circleAdded
   if (nextStatus) status.textContent = nextStatus
 }
 
@@ -158,6 +161,14 @@ recolorButton.onclick = () => {
     label: 'Ada recolors rectangle',
     execute: (scene) => ({ ...scene, nodes: scene.nodes.map((node) => node.id === 'ada-rectangle' ? { ...node, fill: rectangleBlue ? '#1976f3' : '#6d5dfc' } : node) }),
     undo: (scene) => scene,
+  })
+}
+circleButton.onclick = () => {
+  circleAdded = true
+  bea.execute({
+    label: 'Bea adds circle',
+    execute: (scene) => addCircle(scene, { id: 'bea-circle', position: { x: 405, y: 145 }, radius: 56, fill: '#38bdf8' }),
+    undo: (scene) => ({ ...scene, nodes: scene.nodes.filter((node) => node.id !== 'bea-circle') }),
   })
 }
 disconnectButton.onclick = () => { beaConnected = false; render('Bea is disconnected. New Ada operations will queue.') }
